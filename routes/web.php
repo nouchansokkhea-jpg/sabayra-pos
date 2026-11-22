@@ -8,6 +8,23 @@ use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
+// Diagnostics endpoint
+Route::get('/debug-db', function () {
+    $results = [];
+    try {
+        $pdo = \Illuminate\Support\Facades\DB::connection()->getPdo();
+        $results['db_status'] = 'CONNECTED';
+        $results['driver'] = \Illuminate\Support\Facades\DB::getDriverName();
+        $results['database'] = \Illuminate\Support\Facades\DB::connection()->getDatabaseName();
+        $tables = \Illuminate\Support\Facades\DB::select("SELECT table_name FROM information_schema.tables WHERE table_schema='public'");
+        $results['tables'] = array_map(fn($t) => $t->table_name ?? $t->TABLE_NAME, $tables);
+    } catch (\Throwable $e) {
+        $results['db_status'] = 'ERROR';
+        $results['error'] = $e->getMessage();
+    }
+    return response()->json($results);
+});
+
 // Public SaaS Homepage
 Route::get('/', function () {
     try {
