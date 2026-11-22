@@ -98,10 +98,17 @@ return [
         'supabase' => [
             'driver' => 'pgsql',
             'url' => env('DB_URL'),
-            'host' => env('DB_HOST', 'db.zdqqrqtujqwvlmbasuqo.supabase.co'),
+            'host' => env('DB_HOST', 'aws-0-ap-southeast-1.pooler.supabase.com'),
             'port' => env('DB_PORT', '5432'),
             'database' => env('DB_DATABASE', 'postgres'),
-            'username' => env('DB_USERNAME', 'postgres'),
+            'username' => (function () {
+                $user = env('DB_USERNAME', 'postgres');
+                $host = env('DB_HOST', '');
+                if (str_contains($host, 'pooler.supabase.com') && !str_contains($user, '.')) {
+                    return 'postgres.zdqqrqtujqwvlmbasuqo';
+                }
+                return $user;
+            })(),
             'password' => env('DB_PASSWORD', ''),
             'charset' => 'utf8',
             'prefix' => '',
