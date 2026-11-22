@@ -1,0 +1,41 @@
+services:
+  - type: web
+    name: sabayra-pos
+    runtime: docker
+    region: singapore
+    plan: free
+    branch: main
+    healthCheckPath: /up
+    envVars:
+      - key: APP_NAME
+        value: "SABAYRA Cambodia"
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: "false"
+      - key: APP_URL
+        sync: false
+      - key: APP_KEY
+        generateValue: true
+      - key: RUN_MIGRATIONS
+        value: "true"
+      - key: DB_CONNECTION
+        value: supabase
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        value: "5432"
+      - key: DB_DATABASE
+        sync: false
+      - key: DB_USERNAME
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_SSLMODE
+        value: require
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false

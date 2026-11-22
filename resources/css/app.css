@@ -1,0 +1,67 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Kantumruy+Pro:wght@400;500;600;700&family=Battambang:wght@400;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    * {
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+
+    body {
+        font-family: 'Inter', 'Kantumruy Pro', 'Battambang', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        text-rendering: optimizeLegibility;
+    }
+
+    /* Input placeholders high clarity */
+    ::placeholder {
+        color: #94a3b8 !important;
+        opacity: 1;
+    }
+}
+
+/* Ensure Khmer text has proper line-height and vertical alignment so subscripts are never cut off */
+.font-khmer, [lang="km"] {
+    font-family: 'Kantumruy Pro', 'Battambang', 'Inter', sans-serif !important;
+    line-height: 1.65 !important;
+    letter-spacing: 0.015em !important;
+}
+
+/* Monospace numbers for prices & order numbers */
+.font-mono {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-feature-settings: "tnum" 1, "zero" 1;
+}
+
+/* Enhanced high-contrast typography helper classes */
+.text-high-contrast {
+    color: #0f172a;
+}
+.dark .text-high-contrast {
+    color: #f8fafc;
+}
+
+.text-muted-readable {
+    color: #475569;
+}
+.dark .text-muted-readable {
+    color: #cbd5e1;
+}
+
+/* Smooth custom scrollbars */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 9999px;
+}
+.dark ::-webkit-scrollbar-thumb {
+    background: #334155;
+}

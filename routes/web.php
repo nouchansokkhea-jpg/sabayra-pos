@@ -1,0 +1,83 @@
+<?php
+
+use App\Http\Controllers\ProfileController;
+use App\Models\Business;
+use App\Models\Plan;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\App;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Route;
+
+// Public SaaS Homepage
+Route::get('/', function () {
+    try {
+        $plans = Plan::where('is_active', true)->orderBy('sort_order')->get();
+    } catch (\Throwable $e) {
+        $plans = collect();
+    }
+
+    try {
+        $demoBusiness = Business::where('slug', 'romdoul-kitchen')->first();
+    } catch (\Throwable $e) {
+        $demoBusiness = null;
+    }
+
+    // Real Live System Metrics from Database
+    try {
+        $activeOutlets = Business::where('status', 'active')->count();
+        $totalBranches = \App\Models\BusinessBranch::where('is_active', true)->count();
+        $outletsCount = max($activeOutlets, $totalBranches);
+
+        $totalQrScans = (int) \App\Models\QrCode::withoutGlobalScopes()->sum('scan_count');
+        $totalScanEvents = (int) \App\Models\QrScanEvent::count();
+        $totalMenuViews = max($totalQrScans, $totalScanEvents);
+
+        $totalProducts = (int) \App\Models\Product::withoutGlobalScopes()->count();
+        $totalOrders = (int) \App\Models\Order::withoutGlobalScopes()->count();
+    } catch (\Throwable $e) {
+        $outletsCount = 0;
+        $totalMenuViews = 0;
+        $totalProducts = 0;
+        $totalOrders = 0;
+    }
+
+    $liveStats = [
+        'active_outlets' => $outletsCount,
+        'menu_views' => $totalMenuViews,
+        'total_products' => $totalProducts,
+        'total_orders' => $totalOrders,
+    ];
+
+    return view('welcome', compact('plans', 'demoBusiness', 'liveStats'));
+})->name('home');
+
+// Quick Locale Switcher
+Route::get('/locale/{lang}', function (string $lang, Request $request) {
+    if (in_array($lang, ['en', 'km'], true)) {
+        session(['locale' => $lang]);
+        App::setLocale($lang);
+
+        if ($user = $request->user()) {
+            $user->update(['preferred_locale' => $lang]);
+        }
+    }
+
+    return back();
+})->name('locale.switch');
+
+// Unified Dashboard redirect
+Route::get('/dashboard', function () {
+    $user = Auth::user();
+    if ($user && $user->is_super_admin) {
+        return redirect()->route('admin.dashboard');
+    }
+    return redirect()->route('business.dashboard');
+})->middleware(['auth', 'verified'])->name('dashboard');
+
+Route::middleware('auth')->group(function () {
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+});
+
+require __DIR__.'/auth.php';
