@@ -22,19 +22,19 @@ services:
       - key: DB_CONNECTION
         value: supabase
       - key: DB_HOST
-        sync: false
+        value: "db.zdqqrqtujqwvlmbasuqo.supabase.co"
       - key: DB_PORT
         value: "5432"
       - key: DB_DATABASE
-        sync: false
+        value: "postgres"
       - key: DB_USERNAME
-        sync: false
+        value: "postgres"
       - key: DB_PASSWORD
         sync: false
       - key: DB_SSLMODE
         value: require
       - key: SUPABASE_URL
-        sync: false
+        value: "https://zdqqrqtujqwvlmbasuqo.supabase.co"
       - key: SUPABASE_ANON_KEY
         sync: false
       - key: SUPABASE_SERVICE_ROLE_KEY
