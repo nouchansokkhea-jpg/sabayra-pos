@@ -10,8 +10,8 @@ RUN npm install
 COPY . .
 RUN npm run build
 
-# Stage 2: Production PHP-FPM + Nginx
-FROM php:8.3-fpm-alpine
+# Stage 2: Production PHP-FPM + Nginx (PHP 8.4 matching Symfony 8 / Laravel requirements)
+FROM php:8.4-fpm-alpine
 
 # Install system dependencies
 RUN apk add --no-cache \
@@ -42,8 +42,8 @@ COPY . .
 # Copy compiled assets from frontend stage
 COPY --from=frontend /app/public/build ./public/build
 
-# Install production PHP dependencies
-RUN composer install --no-dev --optimize-autoloader --no-interaction
+# Install production PHP dependencies (ignoring platform minor variations)
+RUN composer install --no-dev --optimize-autoloader --no-interaction --ignore-platform-req=php+
 
 # Set up file permissions for storage and cache
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache \
@@ -55,7 +55,7 @@ COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
-# Render listens on port 80 by default
+# Render listens on port 80 by default (entrypoint handles custom $PORT)
 EXPOSE 80
 
 CMD ["/usr/local/bin/entrypoint.sh"]
