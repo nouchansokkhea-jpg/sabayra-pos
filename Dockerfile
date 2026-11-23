@@ -25,11 +25,12 @@ RUN apk add --no-cache \
     zip \
     unzip \
     postgresql-dev \
-    oniguruma-dev
+    oniguruma-dev \
+    sqlite-dev
 
 # Configure & Install PHP extensions
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install -j$(nproc) gd pdo pdo_pgsql mbstring zip bcmath opcache pcntl
+    && docker-php-ext-install -j$(nproc) gd pdo pdo_pgsql pdo_sqlite mbstring zip bcmath opcache pcntl
 
 # Install Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
