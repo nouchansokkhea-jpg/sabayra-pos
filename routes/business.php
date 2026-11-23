@@ -88,6 +88,7 @@ Route::get('/orders/{order}', [OrderManagementController::class, 'show'])->name(
 Route::post('/orders/{order}/status', [OrderManagementController::class, 'updateStatus'])->name('orders.update-status');
 Route::post('/orders/{order}/payment', [OrderManagementController::class, 'updatePayment'])->name('orders.update-payment');
 Route::get('/orders/{order}/receipt', [OrderManagementController::class, 'receipt'])->name('orders.receipt');
+Route::get('/orders/{order}/kitchen-ticket', [OrderManagementController::class, 'kitchenTicket'])->name('orders.kitchen-ticket');
 
 // Reservations
 Route::get('/reservations', [ReservationController::class, 'index'])->name('reservations.index');
@@ -120,7 +121,9 @@ Route::post('/pos/checkout', [PosController::class, 'checkout'])->name('pos.chec
 // Printers
 Route::get('/printers', [PrinterController::class, 'index'])->name('printers.index');
 Route::post('/printers', [PrinterController::class, 'store'])->name('printers.store');
+Route::put('/printers/{printer}', [PrinterController::class, 'update'])->name('printers.update');
 Route::delete('/printers/{printer}', [PrinterController::class, 'destroy'])->name('printers.destroy');
+Route::get('/printers/{printer}/test-print', [PrinterController::class, 'testPrint'])->name('printers.test-print');
 
 // ==========================================
 // 4. MANAGEMENT
@@ -191,6 +194,7 @@ Route::get('/ai/upsell-pairings', [AiInsightController::class, 'upsellPairings']
 // 7. QR & ADVANCED FEATURES
 // ==========================================
 Route::get('/qr-codes', [QrStudioController::class, 'index'])->name('qr.index');
+Route::get('/qr-studio', [QrStudioController::class, 'index'])->name('qr-studio.index');
 Route::put('/qr-codes/settings', [QrStudioController::class, 'updateSettings'])->name('qr.update-settings');
 
 Route::get('/ar-cards', [ArAssistantController::class, 'arCards'])->name('ar.cards');
@@ -200,6 +204,7 @@ Route::post('/3d-models', [ArAssistantController::class, 'storeAsset'])->name('a
 // ==========================================
 // 8. LEARNING & SUPPORT
 // ==========================================
+Route::get('/workflow-guide', [GuideController::class, 'orderFlow'])->name('workflow-guide');
 Route::get('/guides/order-flow', [GuideController::class, 'orderFlow'])->name('guides.order-flow');
 Route::get('/tutorials', [GuideController::class, 'tutorials'])->name('tutorials.index');
 Route::get('/guides/tutorials', [GuideController::class, 'tutorials'])->name('guides.tutorials');

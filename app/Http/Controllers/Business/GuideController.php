@@ -15,13 +15,14 @@ class GuideController extends Controller
     public function orderFlow(): View
     {
         $business = TenantContext::get();
+        $publicMenuUrl = \App\Services\Qr\QrCodeService::getMenuUrl($business);
         $terminology = [
             'catalog' => BusinessFeatureService::getTerminology($business, 'catalog', 'Catalog Items'),
             'orders' => BusinessFeatureService::getTerminology($business, 'orders', 'Customer Orders'),
             'operations' => BusinessFeatureService::getTerminology($business, 'operations', 'Store Operations'),
         ];
 
-        return view('business.guides.order_flow', compact('business', 'terminology'));
+        return view('business.guides.order_flow', compact('business', 'terminology', 'publicMenuUrl'));
     }
 
     /**

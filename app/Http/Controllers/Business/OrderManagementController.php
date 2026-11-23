@@ -113,9 +113,24 @@ class OrderManagementController extends Controller
      */
     public function receipt(Order $order): View
     {
-        $order->load(['table', 'items.addons', 'branch']);
         $business = TenantContext::get();
+        abort_if($order->business_id !== $business->id, 403);
+
+        $order->load(['table', 'items.addons', 'branch']);
 
         return view('business.orders.receipt', compact('order', 'business'));
+    }
+
+    /**
+     * Render 80mm thermal kitchen order docket layout for printing without financial data.
+     */
+    public function kitchenTicket(Order $order): View
+    {
+        $business = TenantContext::get();
+        abort_if($order->business_id !== $business->id, 403);
+
+        $order->load(['table', 'items.addons', 'items.variant', 'branch']);
+
+        return view('business.orders.kitchen_ticket', compact('order', 'business'));
     }
 }

@@ -98,4 +98,9 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
+// Backward compatibility redirect for /business/* -> /app/*
+Route::get('/business/{path}', function (string $path) {
+    return redirect('/app/' . $path);
+})->where('path', '.*');
+
 require __DIR__.'/auth.php';
