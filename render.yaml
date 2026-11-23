@@ -1,3 +1,10 @@
+databases:
+  - name: sabayra-db
+    databaseName: menuhub_db
+    user: sabayra_user
+    plan: free
+    region: singapore
+
 services:
   - type: web
     name: sabayra-pos
@@ -8,38 +15,48 @@ services:
     healthCheckPath: /up
     envVars:
       - key: APP_NAME
-        value: "SABAYRA Cambodia"
+        value: "SABAYRA"
       - key: APP_ENV
         value: production
       - key: APP_DEBUG
         value: "false"
-      - key: APP_URL
-        sync: false
       - key: APP_KEY
         generateValue: true
       - key: RUN_MIGRATIONS
         value: "true"
-      - key: SUBSCRIPTION_PLANS_ENABLED
-        value: "false"
       - key: SESSION_DRIVER
-        value: "file"
+        value: "database"
+      - key: CACHE_STORE
+        value: "database"
+      - key: QUEUE_CONNECTION
+        value: "database"
       - key: DB_CONNECTION
-        value: supabase
+        value: pgsql
       - key: DB_HOST
-        value: "db.zdqqrqtujqwvlmbasuqo.supabase.co"
+        fromDatabase:
+          name: sabayra-db
+          property: host
       - key: DB_PORT
-        value: "5432"
+        fromDatabase:
+          name: sabayra-db
+          property: port
       - key: DB_DATABASE
-        value: "postgres"
+        fromDatabase:
+          name: sabayra-db
+          property: database
       - key: DB_USERNAME
-        value: "postgres"
+        fromDatabase:
+          name: sabayra-db
+          property: user
       - key: DB_PASSWORD
-        sync: false
-      - key: DB_SSLMODE
-        value: require
+        fromDatabase:
+          name: sabayra-db
+          property: password
+      - key: DEFAULT_CURRENCY
+        value: "USD"
+      - key: DEFAULT_EXCHANGE_RATE_KHR
+        value: "4100"
       - key: SUPABASE_URL
         value: "https://zdqqrqtujqwvlmbasuqo.supabase.co"
-      - key: SUPABASE_ANON_KEY
-        sync: false
-      - key: SUPABASE_SERVICE_ROLE_KEY
-        sync: false
+      - key: SUPABASE_STORAGE_BUCKET
+        value: "menuhub-assets"

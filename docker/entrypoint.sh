@@ -31,8 +31,9 @@ fi
 
 # Run database migrations if enabled
 if [ "$RUN_MIGRATIONS" = "true" ]; then
-    echo "Running database migrations..."
+    echo "Running database migrations & setting up Super Admin..."
     php artisan migrate --force || true
+    php artisan app:create-super-admin || true
 fi
 
 # Start services via supervisord
