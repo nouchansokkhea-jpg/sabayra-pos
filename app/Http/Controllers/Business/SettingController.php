@@ -58,6 +58,7 @@ class SettingController extends Controller
             'exchange_rate_khr' => ['required', 'numeric', 'min:1000'],
             'tax_percent' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'theme_preset' => ['nullable', 'string', 'max:50'],
+            'public_url' => ['nullable', 'string', 'max:255'],
             'primary_color' => ['nullable', 'string', 'max:30'],
             'secondary_color' => ['nullable', 'string', 'max:30'],
             'font' => ['nullable', 'string', 'max:100'],
@@ -94,6 +95,7 @@ class SettingController extends Controller
             'secondary_color' => $validated['secondary_color'] ?? ($existingTheme['secondary_color'] ?? '#1f2937'),
             'font' => $validated['font'] ?? ($existingTheme['font'] ?? 'Inter, Kantumruy Pro, Battambang, sans-serif'),
             'layout' => $validated['layout'] ?? ($existingTheme['layout'] ?? 'modern'),
+            'public_url' => !empty($validated['public_url']) ? rtrim($validated['public_url'], '/') : ($existingTheme['public_url'] ?? null),
             'social_links' => $validated['social_links'] ?? ($existingTheme['social_links'] ?? []),
         ]);
 
@@ -107,6 +109,7 @@ class SettingController extends Controller
             $validated['secondary_color'],
             $validated['font'],
             $validated['layout'],
+            $validated['public_url'],
             $validated['social_links']
         );
 

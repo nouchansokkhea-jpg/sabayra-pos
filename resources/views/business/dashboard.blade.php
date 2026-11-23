@@ -306,42 +306,119 @@
         </div>
     </div>
 
-    <!-- QR CODE MODAL WITH NETWORK HOST RESOLUTION -->
-    <div x-show="qrModalOpen" x-cloak class="fixed inset-0 z-50 overflow-y-auto bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
-        <div @click.away="qrModalOpen = false" class="bg-gray-800 border border-gray-700 rounded-3xl max-w-md w-full p-6 text-center space-y-4 shadow-2xl"
+    <!-- QR CODE MODAL WITH 5G CELLULAR & LOCAL NETWORK RESOLUTION -->
+    <div x-show="qrModalOpen" x-cloak class="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+        <div @click.away="qrModalOpen = false" class="bg-gray-800 border border-gray-700 rounded-3xl max-w-lg w-full p-6 text-center space-y-4 shadow-2xl"
              x-data="{
-                 currentUrl: '{{ $publicMenuUrl }}',
-                 lanUrl: '{{ \App\Services\Qr\QrCodeService::getBaseUrl() }}/{{ $business->slug }}',
+                 mode: 'cellular',
+                 publicDomain: localStorage.getItem('sabayra_public_url_{{ $business->id }}') || '{{ $business->theme_settings['public_url'] ?? '' }}',
+                 lanUrl: 'http://172.20.10.3:8000/{{ $business->slug }}',
                  localUrl: '{{ rtrim(request()->schemeAndHttpHost(), '/') }}/{{ $business->slug }}',
-                 setUrl(u) {
-                     this.currentUrl = u;
+                 tunnelCopied: false,
+                 get currentUrl() {
+                     if (this.mode === 'cellular') {
+                         if (this.publicDomain && this.publicDomain.trim().length > 0) {
+                             let d = this.publicDomain.trim().replace(/\/+$/, '');
+                             if (!d.startsWith('http://') && !d.startsWith('https://')) {
+                                 d = 'https://' + d;
+                             }
+                             return d + '/{{ $business->slug }}';
+                         }
+                         return 'https://sabayra.com/{{ $business->slug }}';
+                     } else if (this.mode === 'wifi') {
+                         return this.lanUrl;
+                     } else {
+                         return this.localUrl;
+                     }
+                 },
+                 savePublicDomain() {
+                     if (this.publicDomain) {
+                         localStorage.setItem('sabayra_public_url_{{ $business->id }}', this.publicDomain);
+                     }
                  }
              }">
-            <div class="flex items-center justify-between pb-2 border-b border-gray-700">
-                <h3 class="text-base font-bold text-white flex items-center gap-2">
-                    <svg class="w-5 h-5 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg>
-                    <span>Storefront QR Code</span>
-                </h3>
+            <div class="flex items-center justify-between pb-2.5 border-b border-gray-700">
+                <div class="flex items-center gap-2">
+                    <span class="w-8 h-8 rounded-xl bg-orange-500/20 text-orange-400 border border-orange-500/30 flex items-center justify-center text-sm font-black">
+                        QR
+                    </span>
+                    <div class="text-left">
+                        <h3 class="text-sm font-bold text-white">Storefront QR Code</h3>
+                        <p class="text-[11px] text-slate-300">Scan from table standees or counter</p>
+                    </div>
+                </div>
                 <button @click="qrModalOpen = false" class="text-slate-400 hover:text-white p-1">
                     <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                 </button>
             </div>
 
-            <!-- Host Selector (Wi-Fi LAN vs Localhost) -->
-            <div class="text-left bg-gray-900/80 p-2.5 rounded-xl border border-gray-700/80 space-y-1.5">
-                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-300 block">Select Target Host for Mobile Scan:</span>
-                <div class="grid grid-cols-2 gap-2 text-xs">
-                    <button type="button" @click="setUrl(lanUrl)"
-                            :class="currentUrl === lanUrl ? 'bg-orange-600 text-white font-bold border-orange-500' : 'bg-gray-800 text-slate-300 hover:bg-gray-700 border-gray-700'"
-                            class="px-2.5 py-1.5 rounded-lg border text-center transition text-[11px] font-medium">
-                        📶 Wi-Fi LAN IP (Phone)
+            <!-- Scanning Mode Selector (5G Cellular vs Wi-Fi LAN vs Localhost) -->
+            <div class="text-left space-y-1.5">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-300 block">Customer Network Connection:</span>
+                <div class="grid grid-cols-3 gap-1.5 text-xs">
+                    <button type="button" @click="mode = 'cellular'"
+                            :class="mode === 'cellular' ? 'bg-orange-600 text-white font-bold border-orange-500 shadow-sm' : 'bg-gray-900/90 text-slate-300 hover:bg-gray-700 border-gray-700'"
+                            class="px-2 py-2 rounded-xl border text-center transition text-[11px] flex flex-col items-center gap-0.5">
+                        <span class="font-bold text-xs">🌐 5G Cellular</span>
+                        <span class="text-[9px] opacity-80">Public Internet</span>
                     </button>
-                    <button type="button" @click="setUrl(localUrl)"
-                            :class="currentUrl === localUrl ? 'bg-orange-600 text-white font-bold border-orange-500' : 'bg-gray-800 text-slate-300 hover:bg-gray-700 border-gray-700'"
-                            class="px-2.5 py-1.5 rounded-lg border text-center transition text-[11px] font-medium">
-                        💻 Local PC Browser
+                    <button type="button" @click="mode = 'wifi'"
+                            :class="mode === 'wifi' ? 'bg-orange-600 text-white font-bold border-orange-500 shadow-sm' : 'bg-gray-900/90 text-slate-300 hover:bg-gray-700 border-gray-700'"
+                            class="px-2 py-2 rounded-xl border text-center transition text-[11px] flex flex-col items-center gap-0.5">
+                        <span class="font-bold text-xs">📶 Wi-Fi LAN</span>
+                        <span class="text-[9px] opacity-80">Same Network</span>
+                    </button>
+                    <button type="button" @click="mode = 'local'"
+                            :class="mode === 'local' ? 'bg-orange-600 text-white font-bold border-orange-500 shadow-sm' : 'bg-gray-900/90 text-slate-300 hover:bg-gray-700 border-gray-700'"
+                            class="px-2 py-2 rounded-xl border text-center transition text-[11px] flex flex-col items-center gap-0.5">
+                        <span class="font-bold text-xs">💻 PC Local</span>
+                        <span class="text-[9px] opacity-80">This Computer</span>
                     </button>
                 </div>
+            </div>
+
+            <!-- Mode 1: 5G Cellular Domain / Tunnel Input -->
+            <div x-show="mode === 'cellular'" class="text-left bg-gray-900/90 p-3 rounded-xl border border-gray-700/80 space-y-2">
+                <div class="flex items-center justify-between">
+                    <label class="text-[10px] font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                        <span>Your Public Domain or Tunnel URL:</span>
+                    </label>
+                    <span class="text-[10px] text-slate-400">Works with Smart, Cellcard, Metfone</span>
+                </div>
+                <div class="flex gap-2">
+                    <input type="text" x-model="publicDomain" @input="savePublicDomain()"
+                           placeholder="e.g. https://xxxx.pinggy.link or https://sabayra.com"
+                           class="w-full text-xs font-mono rounded-lg border border-gray-700 bg-gray-950 text-white px-3 py-2 focus:border-orange-500 focus:ring-0">
+                </div>
+
+                <!-- 1-Click Free Tunnel Command -->
+                <div class="pt-2 border-t border-gray-800 text-[11px] text-slate-300 space-y-1.5">
+                    <div class="flex items-center justify-between text-[10px] text-slate-400 font-bold uppercase">
+                        <span>Instant Free Tunnel for 5G (No signup):</span>
+                        <button type="button"
+                                @click="navigator.clipboard.writeText('ssh -p 443 -R0:localhost:8000 a.pinggy.io'); tunnelCopied = true; setTimeout(() => tunnelCopied = false, 2500)"
+                                class="text-orange-400 hover:text-orange-300 flex items-center gap-1">
+                            <span x-text="tunnelCopied ? 'Copied!' : 'Copy Command'"></span>
+                        </button>
+                    </div>
+                    <code class="block bg-black/60 p-2 rounded-lg text-[10px] font-mono text-amber-300 border border-gray-800 select-all">
+                        ssh -p 443 -R0:localhost:8000 a.pinggy.io
+                    </code>
+                    <p class="text-[10px] text-slate-400">Run this in your terminal to get an instant HTTPS link, paste it above, and scan with 5G immediately!</p>
+                </div>
+            </div>
+
+            <!-- Mode 2: Wi-Fi LAN Info -->
+            <div x-show="mode === 'wifi'" class="text-left bg-gray-900/90 p-2.5 rounded-xl border border-gray-700/80 text-[11px] text-slate-300">
+                <span class="text-amber-300 font-bold block mb-1">📶 Wi-Fi LAN Mode:</span>
+                <span>Both your phone and this computer must be connected to the same Wi-Fi router.</span>
+            </div>
+
+            <!-- Mode 3: Local PC Info -->
+            <div x-show="mode === 'local'" class="text-left bg-gray-900/90 p-2.5 rounded-xl border border-gray-700/80 text-[11px] text-slate-300">
+                <span class="text-sky-300 font-bold block mb-1">💻 Local PC Mode:</span>
+                <span>For testing directly in your computer's browser at <code class="text-white">localhost:8000</code>.</span>
             </div>
 
             <!-- QR Code Display Box -->
@@ -351,26 +428,16 @@
             </div>
 
             <!-- URL Text Display -->
-            <div class="text-[11px] text-slate-200 font-mono bg-gray-900 p-2 rounded-xl border border-gray-700/80 break-all select-all"
+            <div class="text-[11px] text-slate-200 font-mono bg-gray-900 p-2.5 rounded-xl border border-gray-700/80 break-all select-all font-bold"
                  x-text="currentUrl">
-            </div>
-
-            <!-- Phone Connection Instructions -->
-            <div class="text-[11px] text-amber-200 bg-amber-950/40 p-3 rounded-xl border border-amber-800/60 text-left space-y-1.5 leading-relaxed">
-                <p class="font-bold text-amber-300 flex items-center gap-1.5">
-                    <span>📱 Important for Phone Scanning:</span>
-                </p>
-                <ul class="list-disc list-inside space-y-1 text-[11px] text-amber-100/90">
-                    <li>Connect your smartphone to the <strong>same Wi-Fi network</strong> as this computer (turn on Wi-Fi on your phone, not cellular 5G).</li>
-                    <li>Always use the <strong>Wi-Fi LAN IP</strong> option above so mobile Safari/Chrome can connect to your PC.</li>
-                </ul>
             </div>
 
             <div class="flex gap-2 pt-2 border-t border-gray-700">
                 <a :href="'https://api.qrserver.com/v1/create-qr-code/?size=800x800&data=' + encodeURIComponent(currentUrl)"
                    download="{{ $business->slug }}-qr.png" target="_blank"
-                   class="flex-1 py-2.5 px-4 bg-orange-600 text-white rounded-xl text-xs font-bold hover:bg-orange-700 transition shadow-xs">
-                    Download PNG
+                   class="flex-1 py-2.5 px-4 bg-orange-600 text-white rounded-xl text-xs font-bold hover:bg-orange-700 transition shadow-xs flex items-center justify-center gap-1.5">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                    <span>Download High-Res QR</span>
                 </a>
                 <button @click="qrModalOpen = false" class="py-2.5 px-4 bg-gray-700 hover:bg-gray-600 text-white rounded-xl text-xs font-bold transition">
                     Close

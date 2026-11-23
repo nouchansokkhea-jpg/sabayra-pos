@@ -63,6 +63,19 @@
                         </div>
                         @error('slug') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
                     </div>
+
+                    <div class="sm:col-span-2">
+                        <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">
+                            Public Menu Domain / Tunnel URL (For Cellular 5G Mobile Scanning)
+                        </label>
+                        <input type="text" name="public_url" value="{{ old('public_url', $business->theme_settings['public_url'] ?? '') }}"
+                               placeholder="e.g. https://sabayra.com or https://xxxx.pinggy.link or your production domain"
+                               class="w-full text-xs rounded-xl border-gray-200 dark:border-gray-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 focus:border-orange-500 focus:ring-orange-500 font-mono">
+                        <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-1.5 flex items-center gap-1.5">
+                            <span class="text-emerald-500">🌐</span>
+                            <span>When set, all customer Storefront QR codes and Table Standee QR codes use this public URL so customers on Cellular 5G / 4G (Smart, Cellcard, Metfone) can scan and order anywhere.</span>
+                        </p>
+                    </div>
                 </div>
             </div>
 
