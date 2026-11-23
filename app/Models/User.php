@@ -24,6 +24,10 @@ class User extends Authenticatable
         'is_super_admin',
         'status',
         'preferred_locale',
+        'two_factor_enabled',
+        'two_factor_secret',
+        'last_login_at',
+        'failed_login_attempts',
     ];
 
     protected $hidden = [
@@ -52,6 +56,9 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'is_super_admin' => 'boolean',
+            'two_factor_enabled' => 'boolean',
+            'last_login_at' => 'datetime',
+            'failed_login_attempts' => 'integer',
         ];
     }
 

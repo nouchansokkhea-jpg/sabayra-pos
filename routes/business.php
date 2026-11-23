@@ -1,20 +1,43 @@
 <?php
 
+use App\Http\Controllers\Business\AiInsightController;
+use App\Http\Controllers\Business\AiMenuBuilderController;
+use App\Http\Controllers\Business\AnalyticsController;
+use App\Http\Controllers\Business\ArAssistantController;
 use App\Http\Controllers\Business\BranchController;
 use App\Http\Controllers\Business\BusinessWorkspaceController;
 use App\Http\Controllers\Business\CategoryController;
+use App\Http\Controllers\Business\CouponController;
+use App\Http\Controllers\Business\CustomerController;
 use App\Http\Controllers\Business\DashboardController;
+use App\Http\Controllers\Business\DeliveryZoneController;
 use App\Http\Controllers\Business\GuideController;
+use App\Http\Controllers\Business\HappyHourController;
+use App\Http\Controllers\Business\HelpCenterController;
 use App\Http\Controllers\Business\InventoryController;
 use App\Http\Controllers\Business\KitchenController;
 use App\Http\Controllers\Business\LiveOrderController;
+use App\Http\Controllers\Business\LoyaltyController;
 use App\Http\Controllers\Business\OrderManagementController;
 use App\Http\Controllers\Business\PosController;
+use App\Http\Controllers\Business\PrinterController;
 use App\Http\Controllers\Business\ProductController;
+use App\Http\Controllers\Business\ProductImportController;
+use App\Http\Controllers\Business\QrStudioController;
+use App\Http\Controllers\Business\RecipeController;
+use App\Http\Controllers\Business\ReferralController;
 use App\Http\Controllers\Business\ReportController;
+use App\Http\Controllers\Business\ReservationController;
+use App\Http\Controllers\Business\ReviewController;
+use App\Http\Controllers\Business\SecurityCenterController;
 use App\Http\Controllers\Business\SettingController;
 use App\Http\Controllers\Business\StaffController;
+use App\Http\Controllers\Business\StorefrontTemplateController;
+use App\Http\Controllers\Business\SubscriptionController;
+use App\Http\Controllers\Business\SupplierController;
 use App\Http\Controllers\Business\TableController;
+use App\Http\Controllers\Business\TranslationController;
+use App\Http\Controllers\Business\WaitlistController;
 use Illuminate\Support\Facades\Route;
 
 // Workspace onboarding & switching
@@ -22,63 +45,175 @@ Route::get('/create-business', [BusinessWorkspaceController::class, 'create'])->
 Route::post('/create-business', [BusinessWorkspaceController::class, 'store'])->name('store');
 Route::post('/switch-business/{business}', [BusinessWorkspaceController::class, 'switch'])->name('switch');
 
-// Main Business Dashboard
+// ==========================================
+// 1. OVERVIEW
+// ==========================================
 Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+Route::get('/dashboard/refresh-ai', [DashboardController::class, 'refreshAiInsights'])->name('dashboard.refresh-ai');
 
-// Category Management
-Route::resource('categories', CategoryController::class);
-Route::post('/categories/{category}/toggle-status', [CategoryController::class, 'toggleStatus'])->name('categories.toggle-status');
+// ==========================================
+// 2. CATALOG & MENU
+// ==========================================
+// Products Bulk Import (must precede products resource to avoid slug collision)
+Route::get('/products/import/template', [ProductImportController::class, 'downloadTemplate'])->name('products.import.template');
+Route::get('/products/import', [ProductImportController::class, 'index'])->name('products.import');
+Route::post('/products/import', [ProductImportController::class, 'store'])->name('products.import.store');
 
-// Product Management
 Route::resource('products', ProductController::class);
 Route::post('/products/{product}/toggle-availability', [ProductController::class, 'toggleAvailability'])->name('products.toggle-availability');
 
-// Branch Management
-Route::resource('branches', BranchController::class)->only(['index', 'store', 'update', 'destroy']);
+Route::resource('categories', CategoryController::class);
+Route::post('/categories/{category}/toggle-status', [CategoryController::class, 'toggleStatus'])->name('categories.toggle-status');
 
-// Staff Management
-Route::post('/staff/transfer-ownership', [StaffController::class, 'transferOwnership'])->name('staff.transfer-ownership');
-Route::resource('staff', StaffController::class)->only(['index', 'store', 'update', 'destroy']);
+Route::get('/storefront-templates', [StorefrontTemplateController::class, 'index'])->name('storefront.templates');
+Route::put('/storefront-templates', [StorefrontTemplateController::class, 'update'])->name('storefront.templates.update');
 
-// Business Settings
-Route::get('/settings', [SettingController::class, 'index'])->name('settings.index');
-Route::put('/settings', [SettingController::class, 'update'])->name('settings.update');
+Route::get('/translations', [TranslationController::class, 'index'])->name('translations.index');
+Route::put('/translations', [TranslationController::class, 'update'])->name('translations.update');
 
-// Table & QR Code Management
+Route::get('/ai-menu-builder', [AiMenuBuilderController::class, 'index'])->name('ai.menu-builder');
+Route::post('/ai-menu-builder', [AiMenuBuilderController::class, 'store'])->name('ai.menu-builder.store');
+
+// ==========================================
+// 3. OPERATIONS
+// ==========================================
+// Live Orders Kanban & Polling
+Route::get('/orders/live', [LiveOrderController::class, 'index'])->name('orders.live');
+Route::get('/orders/live/api', [LiveOrderController::class, 'pollApi'])->name('orders.live.api');
+Route::get('/orders/live/poll', [LiveOrderController::class, 'pollApi'])->name('orders.live.poll');
+
+// Standard Orders
+Route::get('/orders', [OrderManagementController::class, 'index'])->name('orders.index');
+Route::get('/orders/{order}', [OrderManagementController::class, 'show'])->name('orders.show');
+Route::post('/orders/{order}/status', [OrderManagementController::class, 'updateStatus'])->name('orders.update-status');
+Route::post('/orders/{order}/payment', [OrderManagementController::class, 'updatePayment'])->name('orders.update-payment');
+Route::get('/orders/{order}/receipt', [OrderManagementController::class, 'receipt'])->name('orders.receipt');
+
+// Reservations
+Route::get('/reservations', [ReservationController::class, 'index'])->name('reservations.index');
+Route::post('/reservations', [ReservationController::class, 'store'])->name('reservations.store');
+Route::post('/reservations/{reservation}/status', [ReservationController::class, 'updateStatus'])->name('reservations.update-status');
+
+// Waitlist
+Route::get('/waitlist', [WaitlistController::class, 'index'])->name('waitlist.index');
+Route::post('/waitlist', [WaitlistController::class, 'store'])->name('waitlist.store');
+Route::post('/waitlist/{waitlist}/status', [WaitlistController::class, 'updateStatus'])->name('waitlist.update-status');
+
+// Tables & QR Codes
 Route::get('/tables/master/download-png', [TableController::class, 'downloadMasterQrPng'])->name('tables.master.download-png');
 Route::get('/tables/master/standee', [TableController::class, 'masterStandee'])->name('tables.master.standee');
 Route::get('/tables/{table}/download-png', [TableController::class, 'downloadTableQrPng'])->name('tables.download-png');
 Route::get('/tables/{table}/standee', [TableController::class, 'tableStandee'])->name('tables.standee');
 Route::resource('tables', TableController::class)->only(['index', 'store', 'update', 'destroy']);
 
-// Order Management
-Route::get('/orders', [OrderManagementController::class, 'index'])->name('orders.index');
-Route::get('/orders/live', [LiveOrderController::class, 'index'])->name('orders.live');
-Route::get('/orders/live/poll', [LiveOrderController::class, 'pollApi'])->name('orders.live.poll');
-Route::get('/orders/{order}', [OrderManagementController::class, 'show'])->name('orders.show');
-Route::post('/orders/{order}/status', [OrderManagementController::class, 'updateStatus'])->name('orders.update-status');
-Route::post('/orders/{order}/payment', [OrderManagementController::class, 'updatePayment'])->name('orders.update-payment');
-Route::get('/orders/{order}/receipt', [OrderManagementController::class, 'receipt'])->name('orders.receipt');
-
-// Operational Guides & Walkthroughs
-Route::get('/guides/order-flow', [GuideController::class, 'orderFlow'])->name('guides.order-flow');
-Route::get('/guides/tutorials', [GuideController::class, 'tutorials'])->name('guides.tutorials');
-
 // Kitchen Display System (KDS)
 Route::get('/kitchen', [KitchenController::class, 'index'])->name('kitchen.index');
 Route::get('/kitchen/api/orders', [KitchenController::class, 'ordersApi'])->name('kitchen.api');
 Route::post('/kitchen/orders/{order}/bump', [KitchenController::class, 'bump'])->name('kitchen.bump');
 
-// Touch POS Terminal System
+// Touch POS
 Route::get('/pos', [PosController::class, 'index'])->name('pos.index');
 Route::post('/pos/open-session', [PosController::class, 'openSession'])->name('pos.open-session');
 Route::post('/pos/close-session/{session}', [PosController::class, 'closeSession'])->name('pos.close-session');
 Route::post('/pos/checkout', [PosController::class, 'checkout'])->name('pos.checkout');
 
-// Inventory Management
+// Printers
+Route::get('/printers', [PrinterController::class, 'index'])->name('printers.index');
+Route::post('/printers', [PrinterController::class, 'store'])->name('printers.store');
+Route::delete('/printers/{printer}', [PrinterController::class, 'destroy'])->name('printers.destroy');
+
+// ==========================================
+// 4. MANAGEMENT
+// ==========================================
+Route::post('/staff/transfer-ownership', [StaffController::class, 'transferOwnership'])->name('staff.transfer-ownership');
+Route::resource('staff', StaffController::class)->only(['index', 'store', 'update', 'destroy']);
+
 Route::resource('inventory', InventoryController::class)->only(['index', 'store', 'update', 'destroy']);
 Route::post('/inventory/{inventory}/adjust', [InventoryController::class, 'adjustStock'])->name('inventory.adjust-stock');
 
-// Financial Analytics & Reports
+Route::get('/recipes', [RecipeController::class, 'index'])->name('recipes.index');
+Route::post('/recipes', [RecipeController::class, 'store'])->name('recipes.store');
+Route::delete('/recipes/{recipe}', [RecipeController::class, 'destroy'])->name('recipes.destroy');
+
+Route::get('/suppliers', [SupplierController::class, 'index'])->name('suppliers.index');
+Route::post('/suppliers', [SupplierController::class, 'store'])->name('suppliers.store');
+Route::post('/suppliers/po', [SupplierController::class, 'storePo'])->name('suppliers.po.store');
+Route::post('/suppliers/po/{po}/status', [SupplierController::class, 'updatePoStatus'])->name('suppliers.po.status');
+
+Route::resource('branches', BranchController::class)->only(['index', 'store', 'update', 'destroy']);
+
+Route::get('/delivery-zones', [DeliveryZoneController::class, 'index'])->name('delivery-zones.index');
+Route::post('/delivery-zones', [DeliveryZoneController::class, 'store'])->name('delivery-zones.store');
+Route::delete('/delivery-zones/{zone}', [DeliveryZoneController::class, 'destroy'])->name('delivery-zones.destroy');
+
+// ==========================================
+// 5. CUSTOMER & MARKETING
+// ==========================================
+Route::get('/customers', [CustomerController::class, 'index'])->name('customers.index');
+Route::get('/customers/{customer}', [CustomerController::class, 'show'])->name('customers.show');
+Route::put('/customers/{customer}', [CustomerController::class, 'update'])->name('customers.update');
+
+Route::get('/reviews', [ReviewController::class, 'index'])->name('reviews.index');
+Route::post('/reviews/{review}/respond', [ReviewController::class, 'respond'])->name('reviews.respond');
+Route::post('/reviews/{review}/status', [ReviewController::class, 'updateStatus'])->name('reviews.update-status');
+
+Route::get('/coupons', [CouponController::class, 'index'])->name('coupons.index');
+Route::post('/coupons', [CouponController::class, 'store'])->name('coupons.store');
+Route::post('/coupons/{coupon}/toggle', [CouponController::class, 'toggleStatus'])->name('coupons.toggle');
+Route::delete('/coupons/{coupon}', [CouponController::class, 'destroy'])->name('coupons.destroy');
+
+Route::get('/happy-hours', [HappyHourController::class, 'index'])->name('happy-hours.index');
+Route::post('/happy-hours', [HappyHourController::class, 'store'])->name('happy-hours.store');
+Route::post('/happy-hours/{happyHour}/toggle', [HappyHourController::class, 'toggle'])->name('happy-hours.toggle');
+Route::delete('/happy-hours/{happyHour}', [HappyHourController::class, 'destroy'])->name('happy-hours.destroy');
+
+Route::get('/loyalty', [LoyaltyController::class, 'index'])->name('loyalty.index');
+Route::put('/loyalty', [LoyaltyController::class, 'update'])->name('loyalty.update');
+
+Route::get('/referrals', [ReferralController::class, 'index'])->name('referrals.index');
+Route::post('/referrals', [ReferralController::class, 'store'])->name('referrals.store');
+Route::delete('/referrals/{referral}', [ReferralController::class, 'destroy'])->name('referrals.destroy');
+
+// ==========================================
+// 6. BUSINESS INTELLIGENCE
+// ==========================================
+Route::get('/analytics', [AnalyticsController::class, 'index'])->name('analytics.index');
+
 Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
 Route::get('/reports/export', [ReportController::class, 'exportCsv'])->name('reports.export');
+
+Route::get('/ai/insights', [AiInsightController::class, 'weeklySummary'])->name('ai.insights');
+Route::get('/ai/menu-audit', [AiInsightController::class, 'menuAudit'])->name('ai.menu-audit');
+Route::get('/ai/sentiment', [AiInsightController::class, 'sentimentRadar'])->name('ai.sentiment');
+Route::get('/ai/upsell-pairings', [AiInsightController::class, 'upsellPairings'])->name('ai.upsell-pairings');
+
+// ==========================================
+// 7. QR & ADVANCED FEATURES
+// ==========================================
+Route::get('/qr-codes', [QrStudioController::class, 'index'])->name('qr.index');
+Route::put('/qr-codes/settings', [QrStudioController::class, 'updateSettings'])->name('qr.update-settings');
+
+Route::get('/ar-cards', [ArAssistantController::class, 'arCards'])->name('ar.cards');
+Route::get('/3d-models', [ArAssistantController::class, 'scanAssistant'])->name('ar.scan-assistant');
+Route::post('/3d-models', [ArAssistantController::class, 'storeAsset'])->name('ar.store-asset');
+
+// ==========================================
+// 8. LEARNING & SUPPORT
+// ==========================================
+Route::get('/guides/order-flow', [GuideController::class, 'orderFlow'])->name('guides.order-flow');
+Route::get('/tutorials', [GuideController::class, 'tutorials'])->name('tutorials.index');
+Route::get('/guides/tutorials', [GuideController::class, 'tutorials'])->name('guides.tutorials');
+
+Route::get('/help', [HelpCenterController::class, 'index'])->name('help.index');
+Route::post('/help/tickets', [HelpCenterController::class, 'storeTicket'])->name('help.store-ticket');
+
+// ==========================================
+// 9. ACCOUNT
+// ==========================================
+Route::get('/subscription', [SubscriptionController::class, 'index'])->name('subscription.index');
+
+Route::get('/settings', [SettingController::class, 'index'])->name('settings.index');
+Route::put('/settings', [SettingController::class, 'update'])->name('settings.update');
+
+Route::get('/security', [SecurityCenterController::class, 'index'])->name('security.index');
+Route::post('/security/2fa', [SecurityCenterController::class, 'toggleTwoFactor'])->name('security.2fa');
