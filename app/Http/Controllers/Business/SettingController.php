@@ -97,6 +97,10 @@ class SettingController extends Controller
             'social_links' => $validated['social_links'] ?? ($existingTheme['social_links'] ?? []),
         ]);
 
+        if (!empty($validated['social_links']['telegram'])) {
+            $validated['telegram_handle'] = $validated['social_links']['telegram'];
+        }
+
         unset(
             $validated['theme_preset'],
             $validated['primary_color'],

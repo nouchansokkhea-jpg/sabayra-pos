@@ -119,6 +119,10 @@
                         <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">Full Address</label>
                         <input type="text" name="address" value="{{ old('address', $business->address) }}" placeholder="Street #, Sangkat, Khan..."
                                class="w-full text-sm rounded-xl border-gray-200 dark:border-gray-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 focus:border-orange-500 focus:ring-orange-500">
+                        <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-1.5 flex items-center gap-1.5">
+                            <svg class="w-3.5 h-3.5 text-red-500 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/></svg>
+                            <span>When customers click your address on the digital menu storefront, it will automatically open Google Maps navigation.</span>
+                        </p>
                     </div>
                 </div>
             </div>
@@ -228,7 +232,7 @@
 
                     <div>
                         <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Facebook Page URL</label>
-                        <input type="url" name="social_links[facebook]" value="{{ old('social_links.facebook', $social['facebook'] ?? '') }}" placeholder="https://facebook.com/yourpage"
+                        <input type="text" name="social_links[facebook]" value="{{ old('social_links.facebook', $social['facebook'] ?? '') }}" placeholder="https://facebook.com/yourpage"
                                class="w-full text-xs rounded-xl border-gray-200 dark:border-gray-700 dark:bg-gray-900 dark:text-white px-3 py-2.5 focus:border-orange-500 focus:ring-orange-500">
                     </div>
 

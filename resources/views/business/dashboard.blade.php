@@ -314,6 +314,19 @@
             <div class="p-4 bg-white rounded-2xl border-2 border-dashed border-orange-200 dark:border-gray-700 inline-block shadow-inner">
                 <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data={{ urlencode($publicMenuUrl) }}&color=000000" alt="Storefront QR" class="w-48 h-48 mx-auto">
             </div>
+            <div class="text-[11px] text-zinc-600 dark:text-zinc-300 font-mono bg-zinc-50 dark:bg-zinc-900 p-2 rounded-xl break-all">
+                {{ $publicMenuUrl }}
+            </div>
+            @if (\Illuminate\Support\Str::contains($publicMenuUrl, ['192.168.', '172.', '10.']))
+                <div class="text-[11px] text-amber-800 dark:text-amber-200 bg-amber-50 dark:bg-amber-950/40 p-2.5 rounded-xl border border-amber-200 dark:border-amber-800/50 text-left space-y-1">
+                    <p class="font-bold flex items-center gap-1">
+                        <span>📱 Phone Connection Tip:</span>
+                    </p>
+                    <p class="text-[10px] leading-relaxed">
+                        Ensure your smartphone is connected to the <strong>same Wi-Fi network</strong> as this computer (not mobile data/5G) so it can reach this local IP address.
+                    </p>
+                </div>
+            @endif
             <div class="flex gap-2">
                 <a href="https://api.qrserver.com/v1/create-qr-code/?size=800x800&data={{ urlencode($publicMenuUrl) }}" download="{{ $business->slug }}-qr.png" target="_blank" class="flex-1 py-2 px-4 bg-orange-600 text-white rounded-xl text-xs font-bold hover:bg-orange-700 transition">
                     Download PNG
