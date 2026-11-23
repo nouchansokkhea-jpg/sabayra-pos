@@ -19,7 +19,7 @@ services:
       - key: APP_ENV
         value: production
       - key: APP_DEBUG
-        value: "false"
+        value: "true"
       - key: APP_KEY
         generateValue: true
       - key: RUN_MIGRATIONS
@@ -32,6 +32,10 @@ services:
         value: "database"
       - key: DB_CONNECTION
         value: pgsql
+      - key: DATABASE_URL
+        fromDatabase:
+          name: sabayra-db
+          property: connectionString
       - key: DB_HOST
         fromDatabase:
           name: sabayra-db
@@ -52,6 +56,8 @@ services:
         fromDatabase:
           name: sabayra-db
           property: password
+      - key: DB_SSLMODE
+        value: "prefer"
       - key: DEFAULT_CURRENCY
         value: "USD"
       - key: DEFAULT_EXCHANGE_RATE_KHR

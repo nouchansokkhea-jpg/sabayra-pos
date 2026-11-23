@@ -21,19 +21,35 @@ chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 # Create storage symlink
 php artisan storage:link || true
 
-# If APP_KEY is provided, cache optimizations
+# Clear stale caches
+php artisan config:clear || true
+
+# Run database migrations with wait/retry loop
+if [ "$RUN_MIGRATIONS" = "true" ]; then
+    echo "Waiting for database connection..."
+    max_retries=15
+    count=0
+    until php artisan db:monitor || [ $count -ge $max_retries ]; do
+        echo "Database unavailable, waiting 2 seconds... ($count/$max_retries)"
+        sleep 2
+        count=$((count+1))
+    done
+
+    echo "Running database migrations..."
+    php artisan migrate --force
+
+    echo "Seeding roles, plans, and Super Admin..."
+    php artisan db:seed --class=RolesAndPermissionsSeeder --force || true
+    php artisan db:seed --class=PlansSeeder --force || true
+    php artisan app:create-super-admin || true
+fi
+
+# If APP_KEY is provided, cache optimizations after migrations
 if [ -n "$APP_KEY" ]; then
     echo "Caching Laravel configuration, routes, and views..."
     php artisan config:cache || true
     php artisan route:cache || true
     php artisan view:cache || true
-fi
-
-# Run database migrations if enabled
-if [ "$RUN_MIGRATIONS" = "true" ]; then
-    echo "Running database migrations & setting up Super Admin..."
-    php artisan migrate --force || true
-    php artisan app:create-super-admin || true
 fi
 
 # Start services via supervisord
