@@ -65,8 +65,8 @@
                                                 <span class="ml-1.5 text-[9px] bg-amber-100 text-amber-800 font-bold px-1.5 py-0.5 rounded uppercase">Featured</span>
                                             @endif
                                         </p>
-                                        <p class="text-xs text-slate-500 dark:text-slate-400 font-khmer font-medium">{{ $prod->name_km ?? '—' }}</p>
-                                        <span class="text-[11px] text-slate-500 dark:text-slate-400 font-mono font-medium">SKU: {{ $prod->sku ?? 'N/A' }}</span>
+                                        <p class="text-xs text-slate-700 dark:text-slate-200 font-khmer font-semibold">{{ $prod->name_km ?? '—' }}</p>
+                                        <span class="text-[11px] text-slate-600 dark:text-slate-300 font-mono font-medium">SKU: {{ $prod->sku ?? 'N/A' }}</span>
                                     </div>
                                 </div>
                             </td>
@@ -77,7 +77,7 @@
                                 <div>
                                     <x-khr-price :usd="$prod->effective_price" />
                                     @if ($prod->discount_price && $prod->discount_price < $prod->base_price)
-                                        <p class="text-[11px] text-gray-400 line-through">${{ number_format($prod->base_price, 2) }}</p>
+                                        <p class="text-[11px] text-gray-500 dark:text-gray-400 font-medium line-through">${{ number_format($prod->base_price, 2) }}</p>
                                     @endif
                                 </div>
                             </td>
@@ -96,7 +96,7 @@
                                         {{ $prod->stock_quantity }} {{ $prod->unit }}
                                     </span>
                                 @else
-                                    <span class="text-gray-400 text-[11px]">Untracked</span>
+                                    <span class="text-gray-600 dark:text-gray-300 font-medium text-[11px]">Untracked</span>
                                 @endif
                             </td>
                             <td class="px-6 py-4">
@@ -125,7 +125,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="px-6 py-8 text-center text-gray-400">No products match your search.</td>
+                            <td colspan="7" class="px-6 py-8 text-center text-gray-600 dark:text-gray-300 font-medium">No products match your search.</td>
                         </tr>
                     @endforelse
                 </tbody>

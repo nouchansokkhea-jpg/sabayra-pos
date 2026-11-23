@@ -36,7 +36,7 @@
                     <form method="POST" action="{{ route('business.qr.update-settings') }}" class="space-y-4">
                         @csrf
                         <div>
-                            <label class="block text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-1">{{ __('QR Primary Color') }}</label>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-200 mb-1">{{ __('QR Primary Color') }}</label>
                             <div class="flex items-center gap-3">
                                 <input type="color" name="color" value="{{ $qrSettings['color'] ?? '#f97316' }}" class="h-10 w-14 rounded-lg border border-zinc-300 dark:border-zinc-600 cursor-pointer">
                                 <input type="text" name="color_hex" value="{{ $qrSettings['color'] ?? '#f97316' }}" readonly class="w-full text-xs font-mono rounded-lg border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 text-zinc-600 dark:text-zinc-300">
@@ -44,7 +44,7 @@
                         </div>
 
                         <div>
-                            <label class="block text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-1">{{ __('Background Color') }}</label>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-200 mb-1">{{ __('Background Color') }}</label>
                             <div class="flex items-center gap-3">
                                 <input type="color" name="background" value="{{ $qrSettings['background'] ?? '#ffffff' }}" class="h-10 w-14 rounded-lg border border-zinc-300 dark:border-zinc-600 cursor-pointer">
                                 <input type="text" name="bg_hex" value="{{ $qrSettings['background'] ?? '#ffffff' }}" readonly class="w-full text-xs font-mono rounded-lg border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 text-zinc-600 dark:text-zinc-300">
@@ -52,7 +52,7 @@
                         </div>
 
                         <div>
-                            <label class="block text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-1">{{ __('Frame Layout') }}</label>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-200 mb-1">{{ __('Frame Layout') }}</label>
                             <select name="frame" class="w-full text-sm rounded-xl border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 text-zinc-800 dark:text-zinc-200">
                                 <option value="minimal" {{ ($qrSettings['frame'] ?? '') === 'minimal' ? 'selected' : '' }}>{{ __('Minimal (Just QR)') }}</option>
                                 <option value="badge" {{ ($qrSettings['frame'] ?? '') === 'badge' ? 'selected' : '' }}>{{ __('Scan Me Badge') }}</option>
@@ -80,7 +80,7 @@
                         <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
                         {{ __('Recommended Print Sizes') }}
                     </h3>
-                    <ul class="text-xs text-zinc-500 dark:text-zinc-400 space-y-2">
+                    <ul class="text-xs text-zinc-600 dark:text-zinc-300 font-medium space-y-2">
                         <li class="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-700/50 pb-1.5">
                             <span>{{ __('Table Stickers') }}</span>
                             <span class="font-medium text-zinc-700 dark:text-zinc-300">50mm × 50mm</span>
@@ -104,14 +104,14 @@
                     <div class="flex flex-col sm:flex-row items-center gap-6">
                         <div class="p-4 bg-white rounded-2xl border-2 border-dashed border-orange-200 dark:border-zinc-700 shadow-inner flex flex-col items-center">
                             <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data={{ urlencode($publicMenuUrl) }}&color=000000" alt="Main Storefront QR" class="w-44 h-44 rounded-lg">
-                            <span class="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider mt-2">{{ __('Scan For Storefront') }}</span>
+                            <span class="text-[11px] font-bold text-zinc-700 dark:text-zinc-200 uppercase tracking-wider mt-2">{{ __('Scan For Storefront') }}</span>
                         </div>
                         <div class="flex-1 space-y-3 text-center sm:text-left">
                             <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-800 dark:bg-orange-950/40 dark:text-orange-300">
                                 {{ __('Public Storefront QR') }}
                             </div>
                             <h3 class="text-xl font-bold text-zinc-900 dark:text-zinc-100">{{ $business->name }}</h3>
-                            <p class="text-sm text-zinc-500 dark:text-zinc-400">
+                            <p class="text-sm text-zinc-600 dark:text-zinc-300 font-medium">
                                 {{ __('Customers can scan this code to browse products, view prices in USD/KHR, and place pickup or delivery orders.') }}
                             </p>
                             <div class="p-3 bg-zinc-50 dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-700 text-xs font-mono text-zinc-600 dark:text-zinc-300 break-all">
@@ -134,15 +134,15 @@
                     <div class="flex items-center justify-between mb-4">
                         <div>
                             <h3 class="text-base font-bold text-zinc-900 dark:text-zinc-100">{{ __('Dine-In Table QR Codes') }}</h3>
-                            <p class="text-xs text-zinc-500 dark:text-zinc-400">{{ __('Unique codes mapped to specific tables for contactless dine-in ordering.') }}</p>
+                            <p class="text-xs text-zinc-600 dark:text-zinc-300 font-medium">{{ __('Unique codes mapped to specific tables for contactless dine-in ordering.') }}</p>
                         </div>
-                        <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-zinc-100 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300">
+                        <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-zinc-100 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-200">
                             {{ $tables->count() }} {{ __('Tables') }}
                         </span>
                     </div>
 
                     @if ($tables->isEmpty())
-                        <div class="py-8 text-center text-zinc-500 dark:text-zinc-400">
+                        <div class="py-8 text-center text-zinc-600 dark:text-zinc-300 font-medium">
                             <p class="text-sm">{{ __('No tables registered for this business yet.') }}</p>
                             <a href="{{ route('business.tables.index') }}" class="mt-2 inline-block text-xs font-semibold text-orange-600 hover:text-orange-500">
                                 + {{ __('Add Tables in Operations') }}

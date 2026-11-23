@@ -238,8 +238,8 @@
                    x-model="searchQuery"
                    placeholder="{{ app()->getLocale() === 'km' ? 'ស្វែងរកមុខម្ហូប ឬភេសជ្ជៈ... (Search dishes, drinks...)' : 'Search dishes, drinks, or ingredients...' }}"
                    style="--tw-ring-color: var(--brand-primary);"
-                   class="w-full pl-10 pr-9 py-2.5 rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 shadow-xs transition">
-            <button type="button" x-show="searchQuery.length > 0" @click="searchQuery = ''" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1">
+                   class="w-full pl-10 pr-9 py-2.5 rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-sm text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-400 focus:outline-none focus:ring-2 shadow-xs transition">
+            <button type="button" x-show="searchQuery.length > 0" @click="searchQuery = ''" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 dark:hover:text-white p-1">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
             </button>
         </div>
@@ -314,7 +314,7 @@
             <div x-show="activeCategory === 'all' || activeCategory === '{{ $category->id }}'" class="space-y-4">
                 <div class="flex items-center space-x-2 border-b border-gray-200 dark:border-gray-800 pb-2">
                     <h2 class="text-lg font-black text-gray-900 dark:text-white">{{ $category->localized_name }}</h2>
-                    <span class="text-xs font-semibold text-gray-400">({{ $category->products->count() }})</span>
+                    <span class="text-xs font-bold text-gray-600 dark:text-gray-300">({{ $category->products->count() }})</span>
                 </div>
 
                 @if ($layout === 'grid')
@@ -340,7 +340,7 @@
                                 <div class="p-3 flex flex-col justify-between grow">
                                     <div>
                                         <h3 class="font-bold text-xs sm:text-sm text-gray-900 dark:text-white truncate">{{ $product->localized_name }}</h3>
-                                        <p class="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-1 mt-0.5">{{ $product->localized_description }}</p>
+                                        <p class="text-[11px] text-slate-600 dark:text-slate-300 font-medium line-clamp-1 mt-0.5">{{ $product->localized_description }}</p>
                                     </div>
                                     <div class="mt-2.5 flex items-center justify-between">
                                         <x-khr-price :usd="$product->effective_price" size="sm" />
@@ -353,7 +353,7 @@
                                 </div>
                             </div>
                         @empty
-                            <p class="col-span-full text-xs text-gray-400 py-4">No items listed in this category.</p>
+                            <p class="col-span-full text-xs text-gray-600 dark:text-gray-300 font-medium py-4">No items listed in this category.</p>
                         @endforelse
                     </div>
                 @elseif ($layout === 'minimal')
@@ -375,7 +375,7 @@
                                     </div>
                                     <div class="min-w-0">
                                         <h3 class="font-bold text-xs sm:text-sm text-gray-900 dark:text-white truncate">{{ $product->localized_name }}</h3>
-                                        <p class="text-[11px] text-slate-500 dark:text-slate-400 truncate">{{ $product->localized_description }}</p>
+                                        <p class="text-[11px] text-slate-600 dark:text-slate-300 font-medium truncate">{{ $product->localized_description }}</p>
                                     </div>
                                 </div>
                                 <div class="flex items-center gap-2.5 shrink-0">
@@ -388,7 +388,7 @@
                                 </div>
                             </div>
                         @empty
-                            <p class="text-xs text-gray-400 py-4 px-3">No items listed in this category.</p>
+                            <p class="text-xs text-gray-600 dark:text-gray-300 font-medium py-4 px-3">No items listed in this category.</p>
                         @endforelse
                     </div>
                 @else
@@ -425,7 +425,7 @@
                                 </div>
                             </div>
                         @empty
-                            <p class="col-span-2 text-xs text-gray-400 py-4">No items listed in this category.</p>
+                            <p class="col-span-2 text-xs text-gray-600 dark:text-gray-300 font-medium py-4">No items listed in this category.</p>
                         @endforelse
                     </div>
                 @endif
@@ -475,7 +475,7 @@
                     </template>
                     <div>
                         <h3 class="font-bold text-base text-gray-900 dark:text-white" x-text="selectedProduct?.name_en"></h3>
-                        <p class="text-xs text-gray-500 font-khmer" x-text="selectedProduct?.name_km"></p>
+                        <p class="text-xs text-gray-600 dark:text-gray-300 font-khmer font-medium" x-text="selectedProduct?.name_km"></p>
                         <p class="text-sm font-bold mt-1" style="color: var(--brand-primary);" x-text="'$' + (selectedProduct?.discount_price && selectedProduct?.discount_price > 0 ? selectedProduct?.discount_price : selectedProduct?.base_price)"></p>
                     </div>
                 </div>
@@ -483,7 +483,7 @@
                 <!-- Variants Selection (if available) -->
                 <template x-if="selectedProduct?.variants && selectedProduct.variants.length > 0">
                     <div>
-                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">{{ __('menu.variants') }}</label>
+                        <label class="block text-xs font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider mb-2">{{ __('menu.variants') }}</label>
                         <div class="space-y-2">
                             <template x-for="variant in selectedProduct.variants" :key="variant.id">
                                 <label class="flex items-center justify-between p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 cursor-pointer text-xs">
@@ -492,7 +492,7 @@
                                                style="accent-color: var(--brand-primary);" class="focus:ring-0">
                                         <span class="font-semibold text-gray-800 dark:text-gray-200" x-text="variant.name_en"></span>
                                     </div>
-                                    <span class="text-gray-500 font-bold" x-text="variant.price_adjustment > 0 ? '+$' + parseFloat(variant.price_adjustment).toFixed(2) : '+$0.00'"></span>
+                                    <span class="text-gray-700 dark:text-gray-200 font-bold" x-text="variant.price_adjustment > 0 ? '+$' + parseFloat(variant.price_adjustment).toFixed(2) : '+$0.00'"></span>
                                 </label>
                             </template>
                         </div>
@@ -502,7 +502,7 @@
                 <!-- Add-ons Selection (if available) -->
                 <template x-if="selectedProduct?.addons && selectedProduct.addons.length > 0">
                     <div>
-                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">{{ __('menu.addons') }}</label>
+                        <label class="block text-xs font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider mb-2">{{ __('menu.addons') }}</label>
                         <div class="space-y-2">
                             <template x-for="addon in selectedProduct.addons" :key="addon.id">
                                 <label class="flex items-center justify-between p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 cursor-pointer text-xs">
@@ -511,7 +511,7 @@
                                                style="accent-color: var(--brand-primary);" class="rounded focus:ring-0">
                                         <span class="font-semibold text-gray-800 dark:text-gray-200" x-text="addon.name_en"></span>
                                     </div>
-                                    <span class="text-gray-500 font-bold" x-text="'+$' + parseFloat(addon.price).toFixed(2)"></span>
+                                    <span class="text-gray-700 dark:text-gray-200 font-bold" x-text="'+$' + parseFloat(addon.price).toFixed(2)"></span>
                                 </label>
                             </template>
                         </div>
@@ -520,7 +520,7 @@
 
                 <!-- Quantity Stepper -->
                 <div class="flex items-center justify-between pt-2">
-                    <span class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Quantity</span>
+                    <span class="text-xs font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Quantity</span>
                     <div class="flex items-center space-x-3 bg-gray-100 dark:bg-gray-800 rounded-xl p-1">
                         <button type="button" @click="if (modalQuantity > 1) modalQuantity--" class="w-8 h-8 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-white font-bold flex items-center justify-center">-</button>
                         <span class="w-8 text-center font-bold text-sm" x-text="modalQuantity"></span>
@@ -559,13 +559,13 @@
                                 <div>
                                     <p class="font-bold text-gray-900 dark:text-white" x-text="item.product_name"></p>
                                     <template x-if="item.variant_name">
-                                        <p class="text-[11px] text-gray-500 font-medium" x-text="'Size: ' + item.variant_name"></p>
+                                        <p class="text-[11px] text-gray-600 dark:text-gray-300 font-medium" x-text="'Size: ' + item.variant_name"></p>
                                     </template>
                                     <p class="font-bold mt-0.5" style="color: var(--brand-primary);" x-text="'$' + (item.unit_price * item.quantity).toFixed(2)"></p>
                                 </div>
                                 <div class="flex items-center space-x-2">
-                                    <span class="font-bold" x-text="'x' + item.quantity"></span>
-                                    <button type="button" @click="cart.splice(index, 1); saveCart();" class="text-red-500 font-bold ml-2">✕</button>
+                                    <span class="font-bold text-gray-900 dark:text-white" x-text="'x' + item.quantity"></span>
+                                    <button type="button" @click="cart.splice(index, 1); saveCart();" class="text-red-500 hover:text-red-700 font-bold ml-2">✕</button>
                                 </div>
                             </div>
                         </template>
@@ -575,7 +575,7 @@
                 <!-- Checkout Form -->
                 <form @submit.prevent="submitOrder" class="space-y-4 pt-4 border-t border-gray-200 dark:border-gray-800 text-xs">
                     <div>
-                        <label class="block font-bold uppercase tracking-wider text-gray-600 dark:text-gray-400 mb-1">Dining Option</label>
+                        <label class="block font-bold uppercase tracking-wider text-gray-800 dark:text-gray-200 mb-1">Dining Option</label>
                         <div class="grid grid-cols-3 gap-2">
                             <button type="button" @click="orderType = 'dine_in'"
                                     :style="orderType === 'dine_in' ? 'background-color: var(--brand-primary); color: #fff;' : ''"
@@ -593,29 +593,29 @@
                     </div>
 
                     <div x-show="orderType === 'dine_in'">
-                        <label class="block font-semibold mb-1">Table Number</label>
-                        <input type="text" x-model="tableNumber" required class="w-full rounded-xl border-gray-200 dark:border-gray-700 dark:bg-gray-800 px-3 py-2 text-xs">
+                        <label class="block font-bold uppercase tracking-wider text-gray-800 dark:text-gray-200 mb-1">Table Number</label>
+                        <input type="text" x-model="tableNumber" required class="w-full rounded-xl border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white px-3 py-2 text-xs">
                     </div>
 
                     <div x-show="orderType === 'delivery'" style="display: none;">
-                        <label class="block font-semibold mb-1">Delivery Address</label>
-                        <input type="text" x-model="deliveryAddress" placeholder="Street, house number, landmarks..." class="w-full rounded-xl border-gray-200 dark:border-gray-700 dark:bg-gray-800 px-3 py-2 text-xs">
+                        <label class="block font-bold uppercase tracking-wider text-gray-800 dark:text-gray-200 mb-1">Delivery Address</label>
+                        <input type="text" x-model="deliveryAddress" placeholder="Street, house number, landmarks..." class="w-full rounded-xl border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white px-3 py-2 text-xs">
                     </div>
 
                     <div class="grid grid-cols-2 gap-2">
                         <div>
-                            <label class="block font-semibold mb-1">Your Name *</label>
-                            <input type="text" x-model="customerName" required placeholder="Name" class="w-full rounded-xl border-gray-200 dark:border-gray-700 dark:bg-gray-800 px-3 py-2 text-xs">
+                            <label class="block font-bold uppercase tracking-wider text-gray-800 dark:text-gray-200 mb-1">Your Name *</label>
+                            <input type="text" x-model="customerName" required placeholder="Name" class="w-full rounded-xl border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white px-3 py-2 text-xs">
                         </div>
                         <div>
-                            <label class="block font-semibold mb-1">Phone Number *</label>
-                            <input type="text" x-model="customerPhone" required placeholder="012 345 678" class="w-full rounded-xl border-gray-200 dark:border-gray-700 dark:bg-gray-800 px-3 py-2 text-xs">
+                            <label class="block font-bold uppercase tracking-wider text-gray-800 dark:text-gray-200 mb-1">Phone Number *</label>
+                            <input type="text" x-model="customerPhone" required placeholder="012 345 678" class="w-full rounded-xl border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white px-3 py-2 text-xs">
                         </div>
                     </div>
 
                     <div>
-                        <label class="block font-semibold mb-1">Payment Method</label>
-                        <select x-model="paymentMethod" class="w-full rounded-xl border-gray-200 dark:border-gray-700 dark:bg-gray-800 px-3 py-2 text-xs">
+                        <label class="block font-bold uppercase tracking-wider text-gray-800 dark:text-gray-200 mb-1">Payment Method</label>
+                        <select x-model="paymentMethod" class="w-full rounded-xl border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white px-3 py-2 text-xs font-medium">
                             <option value="khqr">Bakong KHQR (Scan to Pay)</option>
                             <option value="cash">Cash at Counter</option>
                         </select>
@@ -623,13 +623,13 @@
 
                     <!-- Total Calculation -->
                     <div class="pt-3 border-t border-gray-100 dark:border-gray-800 space-y-1">
-                        <div class="flex justify-between font-bold text-sm">
+                        <div class="flex justify-between font-bold text-sm text-gray-900 dark:text-white">
                             <span>Total (USD)</span>
                             <span class="font-black" style="color: var(--brand-primary);" x-text="'$' + cartTotalAmount.toFixed(2)"></span>
                         </div>
-                        <div class="flex justify-between text-[11px] text-gray-500">
+                        <div class="flex justify-between text-xs text-gray-600 dark:text-gray-300 font-medium">
                             <span>Khmer Riel Equivalent</span>
-                            <span class="font-bold" x-text="Math.round(cartTotalAmount * {{ $business->exchange_rate_khr }}).toLocaleString() + ' ៛'"></span>
+                            <span class="font-bold text-gray-900 dark:text-white" x-text="Math.round(cartTotalAmount * {{ $business->exchange_rate_khr }}).toLocaleString() + ' ៛'"></span>
                         </div>
                     </div>
 

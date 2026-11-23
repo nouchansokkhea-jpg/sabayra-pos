@@ -98,7 +98,7 @@
                     <div class="p-4 bg-white dark:bg-gray-800 rounded-xl border border-amber-300 dark:border-amber-900/60 shadow-xs space-y-3 transition hover:shadow-md">
                         <div class="flex items-center justify-between">
                             <span class="font-black text-gray-900 dark:text-white text-sm">#{{ $order->order_number }}</span>
-                            <span class="text-[10px] text-slate-400 font-medium">{{ $order->created_at->diffForHumans() }}</span>
+                            <span class="text-[10px] text-slate-600 dark:text-slate-300 font-medium">{{ $order->created_at->diffForHumans() }}</span>
                         </div>
                         <div class="flex items-center justify-between text-xs">
                             <span class="font-bold text-gray-700 dark:text-gray-300">
@@ -114,7 +114,7 @@
                                     <span>
                                         <strong class="text-orange-600 font-bold">{{ (int) $it->quantity }}x</strong> {{ $it->product_name }}
                                         @if ($it->variant)
-                                            <span class="text-[10px] text-slate-400">({{ $it->variant->name }})</span>
+                                            <span class="text-[10px] text-slate-600 dark:text-slate-300">({{ $it->variant->name }})</span>
                                         @endif
                                     </span>
                                     <span class="font-mono font-medium text-slate-500">${{ number_format($it->subtotal, 2) }}</span>
@@ -129,7 +129,7 @@
                         <div class="pt-2 flex justify-between items-center border-t border-gray-100 dark:border-gray-700/60">
                             <div>
                                 <span class="text-sm font-black text-emerald-600 dark:text-emerald-400 font-mono">${{ number_format($order->total_amount, 2) }}</span>
-                                <span class="text-[10px] text-slate-400 block font-mono">៛{{ number_format($order->total_amount * 4100) }}</span>
+                                <span class="text-[10px] text-slate-600 dark:text-slate-300 block font-mono font-medium">៛{{ number_format($order->total_amount * 4100) }}</span>
                             </div>
                             <form method="POST" action="{{ route('business.orders.update-status', $order) }}">
                                 @csrf
@@ -142,7 +142,7 @@
                         </div>
                     </div>
                 @empty
-                    <div class="p-8 text-center text-xs text-slate-400">No new pending tickets.</div>
+                    <div class="p-8 text-center text-xs text-slate-600 dark:text-slate-300 font-medium">No new pending tickets.</div>
                 @endforelse
             </div>
         </div>
@@ -162,7 +162,7 @@
                     <div class="p-4 bg-white dark:bg-gray-800 rounded-xl border border-blue-200 dark:border-blue-900/60 shadow-xs space-y-3 transition hover:shadow-md">
                         <div class="flex items-center justify-between">
                             <span class="font-black text-gray-900 dark:text-white text-sm">#{{ $order->order_number }}</span>
-                            <span class="text-[10px] text-slate-400 font-medium">{{ $order->created_at->diffForHumans() }}</span>
+                            <span class="text-[10px] text-slate-600 dark:text-slate-300 font-medium">{{ $order->created_at->diffForHumans() }}</span>
                         </div>
                         <div class="flex items-center justify-between text-xs">
                             <span class="font-bold text-gray-700 dark:text-gray-300">
@@ -191,7 +191,7 @@
                         </div>
                     </div>
                 @empty
-                    <div class="p-8 text-center text-xs text-slate-400">No confirmed tickets queued.</div>
+                    <div class="p-8 text-center text-xs text-slate-600 dark:text-slate-300 font-medium">No confirmed tickets queued.</div>
                 @endforelse
             </div>
         </div>
@@ -217,7 +217,7 @@
                             <span class="font-bold text-gray-700 dark:text-gray-300">
                                 {{ $order->table ? ($order->table->name ?? 'Table ' . $order->table->table_number) : ($order->customer_name ?: 'Takeaway Guest') }}
                             </span>
-                            <span class="text-[10px] text-slate-400">{{ $order->created_at->diffForHumans() }}</span>
+                            <span class="text-[10px] text-slate-600 dark:text-slate-300 font-medium">{{ $order->created_at->diffForHumans() }}</span>
                         </div>
                         <div class="text-xs text-slate-600 dark:text-slate-300 divide-y divide-gray-100 dark:divide-gray-700/60 pt-1">
                             @foreach ($order->items as $it)
@@ -266,7 +266,7 @@
                             <span class="font-bold text-gray-700 dark:text-gray-300">
                                 {{ $order->table ? ($order->table->name ?? 'Table ' . $order->table->table_number) : ($order->customer_name ?: 'Takeaway Guest') }}
                             </span>
-                            <span class="text-[10px] text-slate-400">{{ $order->created_at->diffForHumans() }}</span>
+                            <span class="text-[10px] text-slate-600 dark:text-slate-300 font-medium">{{ $order->created_at->diffForHumans() }}</span>
                         </div>
                         <div class="text-xs text-slate-600 dark:text-slate-300 divide-y divide-gray-100 dark:divide-gray-700/60 pt-1">
                             @foreach ($order->items as $it)
@@ -279,7 +279,7 @@
                         <div class="pt-2 flex justify-between items-center border-t border-gray-100 dark:border-gray-700/60">
                             <div>
                                 <span class="text-xs font-black text-emerald-600 font-mono">${{ number_format($order->total_amount, 2) }}</span>
-                                <span class="text-[10px] text-slate-400 block font-mono">៛{{ number_format($order->total_amount * 4100) }}</span>
+                                <span class="text-[10px] text-slate-600 dark:text-slate-300 block font-mono font-medium">៛{{ number_format($order->total_amount * 4100) }}</span>
                             </div>
                             <div class="flex items-center gap-1.5">
                                 <a href="{{ route('business.orders.receipt', $order) }}" target="_blank"
@@ -298,7 +298,7 @@
                         </div>
                     </div>
                 @empty
-                    <div class="p-8 text-center text-xs text-slate-400">No orders awaiting pickup or delivery.</div>
+                    <div class="p-8 text-center text-xs text-slate-600 dark:text-slate-300 font-medium">No orders awaiting pickup or delivery.</div>
                 @endforelse
             </div>
         </div>

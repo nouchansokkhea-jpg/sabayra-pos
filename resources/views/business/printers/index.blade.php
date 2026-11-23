@@ -220,13 +220,13 @@
         </div>
 
         @if ($recentOrders->isEmpty())
-            <div class="p-8 text-center text-xs text-slate-400">
+            <div class="p-8 text-center text-xs text-slate-600 dark:text-slate-300 font-medium">
                 No recent orders to print.
             </div>
         @else
             <div class="overflow-x-auto">
                 <table class="w-full text-left text-xs divide-y divide-gray-100 dark:divide-gray-700/60">
-                    <thead class="bg-gray-50 dark:bg-gray-900/50 text-slate-400 uppercase font-black text-[10px] tracking-wider">
+                    <thead class="bg-gray-50 dark:bg-gray-900/50 text-slate-700 dark:text-slate-200 uppercase font-black text-[10px] tracking-wider border-b border-gray-100 dark:border-gray-800">
                         <tr>
                             <th class="px-5 py-3">Order #</th>
                             <th class="px-5 py-3">Date & Time</th>
@@ -319,14 +319,14 @@
                 </template>
 
                 <div>
-                    <label class="block font-bold text-slate-500 dark:text-slate-400 mb-1">Printer Name <span class="text-red-500">*</span></label>
+                    <label class="block font-bold text-slate-800 dark:text-slate-100 mb-1">Printer Name <span class="text-red-500">*</span></label>
                     <input type="text" name="name" x-model="form.name" required placeholder="e.g. Front Counter Receipt Printer"
                            class="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-2.5 text-xs text-gray-900 dark:text-white focus:ring-2 focus:ring-orange-500 outline-hidden" />
                 </div>
 
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="block font-bold text-slate-500 dark:text-slate-400 mb-1">Printer Type <span class="text-red-500">*</span></label>
+                        <label class="block font-bold text-slate-800 dark:text-slate-100 mb-1">Printer Type <span class="text-red-500">*</span></label>
                         <select name="printer_type" x-model="form.printer_type" class="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-2.5 text-xs text-gray-900 dark:text-white">
                             <option value="receipt">Receipt Printer</option>
                             <option value="kitchen">Kitchen Printer</option>
@@ -334,7 +334,7 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block font-bold text-slate-500 dark:text-slate-400 mb-1">Printing Purpose <span class="text-red-500">*</span></label>
+                        <label class="block font-bold text-slate-800 dark:text-slate-100 mb-1">Printing Purpose <span class="text-red-500">*</span></label>
                         <select name="printing_purpose" x-model="form.printing_purpose" class="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-2.5 text-xs text-gray-900 dark:text-white">
                             <option value="both">Both (Receipts & Tickets)</option>
                             <option value="customer_receipts">Customer Receipts Only</option>
@@ -345,7 +345,7 @@
 
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="block font-bold text-slate-500 dark:text-slate-400 mb-1">Connection Type <span class="text-red-500">*</span></label>
+                        <label class="block font-bold text-slate-800 dark:text-slate-100 mb-1">Connection Type <span class="text-red-500">*</span></label>
                         <select name="connection_type" x-model="form.connection_type" class="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-2.5 text-xs text-gray-900 dark:text-white">
                             <option value="network">Wi-Fi / Network (ESC/POS)</option>
                             <option value="usb">USB Direct</option>
@@ -354,7 +354,7 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block font-bold text-slate-500 dark:text-slate-400 mb-1">Paper Width <span class="text-red-500">*</span></label>
+                        <label class="block font-bold text-slate-800 dark:text-slate-100 mb-1">Paper Width <span class="text-red-500">*</span></label>
                         <select name="paper_size" x-model="form.paper_size" class="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-2.5 text-xs text-gray-900 dark:text-white">
                             <option value="80mm">80mm Thermal (Standard)</option>
                             <option value="58mm">58mm Mini Thermal</option>
@@ -365,19 +365,19 @@
 
                 <div class="grid grid-cols-2 gap-3" x-show="form.connection_type === 'network'">
                     <div>
-                        <label class="block font-bold text-slate-500 dark:text-slate-400 mb-1">IP Address</label>
+                        <label class="block font-bold text-slate-800 dark:text-slate-100 mb-1">IP Address</label>
                         <input type="text" name="ip_address" x-model="form.ip_address" placeholder="192.168.1.200"
                                class="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-2.5 text-xs text-gray-900 dark:text-white font-mono" />
                     </div>
                     <div>
-                        <label class="block font-bold text-slate-500 dark:text-slate-400 mb-1">Port</label>
+                        <label class="block font-bold text-slate-800 dark:text-slate-100 mb-1">Port</label>
                         <input type="number" name="port" x-model="form.port" placeholder="9100"
                                class="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-2.5 text-xs text-gray-900 dark:text-white font-mono" />
                     </div>
                 </div>
 
                 <div>
-                    <label class="block font-bold text-slate-500 dark:text-slate-400 mb-1">Branch Outlet Assignment</label>
+                    <label class="block font-bold text-slate-800 dark:text-slate-100 mb-1">Branch Outlet Assignment</label>
                     <select name="branch_id" x-model="form.branch_id" class="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-2.5 text-xs text-gray-900 dark:text-white">
                         <option value="">All Branch Outlets</option>
                         @foreach ($branches as $br)

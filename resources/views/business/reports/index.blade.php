@@ -45,7 +45,7 @@
         <!-- KPI Cards Grid -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             <div class="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-slate-200/80 dark:border-gray-700 shadow-sm">
-                <span class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{{ __('Total Revenue') }}</span>
+                <span class="text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider">{{ __('Total Revenue') }}</span>
                 <div class="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1 font-mono">
                     ${{ number_format($totalRevenue, 2) }}
                 </div>
@@ -55,7 +55,7 @@
             </div>
 
             <div class="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-slate-200/80 dark:border-gray-700 shadow-sm">
-                <span class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{{ __('Total Orders') }}</span>
+                <span class="text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider">{{ __('Total Orders') }}</span>
                 <div class="text-2xl font-black text-slate-900 dark:text-white mt-1">
                     {{ $totalOrders }}
                 </div>
@@ -65,7 +65,7 @@
             </div>
 
             <div class="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-slate-200/80 dark:border-gray-700 shadow-sm">
-                <span class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{{ __('Menu Views / Scans') }}</span>
+                <span class="text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider">{{ __('Menu Views / Scans') }}</span>
                 <div class="text-2xl font-black text-orange-600 dark:text-orange-400 mt-1 font-mono">
                     {{ number_format($periodQrScans ?? $totalQrScans) }}
                 </div>
@@ -75,7 +75,7 @@
             </div>
 
             <div class="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-slate-200/80 dark:border-gray-700 shadow-sm">
-                <span class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{{ __('Avg Order Value (AOV)') }}</span>
+                <span class="text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider">{{ __('Avg Order Value (AOV)') }}</span>
                 <div class="text-2xl font-black text-slate-900 dark:text-white mt-1 font-mono">
                     ${{ number_format($avgOrderValue, 2) }}
                 </div>
@@ -85,7 +85,7 @@
             </div>
 
             <div class="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-slate-200/80 dark:border-gray-700 shadow-sm">
-                <span class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{{ __('Fulfillment Rate') }}</span>
+                <span class="text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider">{{ __('Fulfillment Rate') }}</span>
                 <div class="text-2xl font-black text-indigo-600 dark:text-indigo-400 mt-1">
                     {{ $totalOrders > 0 ? round(($completedOrders / $totalOrders) * 100) : 100 }}%
                 </div>
@@ -119,12 +119,12 @@
                                     @elseif($pay->payment_method === 'cash') 💵 Cash
                                     @else 💳 Card
                                     @endif
-                                    <span class="text-slate-500 dark:text-slate-400 font-medium">({{ $pay->count }} orders)</span>
+                                    <span class="text-slate-600 dark:text-slate-300 font-medium">({{ $pay->count }} orders)</span>
                                 </span>
                                 <span class="font-mono font-bold text-slate-900 dark:text-white text-sm">${{ number_format($pay->total, 2) }}</span>
                             </div>
                         @empty
-                            <p class="text-xs text-slate-500 dark:text-slate-400 italic py-2">{{ __('No settled payments for this period.') }}</p>
+                            <p class="text-xs text-slate-600 dark:text-slate-300 font-medium italic py-2">{{ __('No settled payments for this period.') }}</p>
                         @endforelse
                     </div>
                 </div>
@@ -141,12 +141,12 @@
                                     @elseif($chan->order_type === 'takeaway') 🛍️ Takeaway
                                     @else 🛵 Delivery
                                     @endif
-                                    <span class="text-slate-500 dark:text-slate-400 font-medium">({{ $chan->count }} orders)</span>
+                                    <span class="text-slate-600 dark:text-slate-300 font-medium">({{ $chan->count }} orders)</span>
                                 </span>
                                 <span class="font-mono font-bold text-slate-900 dark:text-white text-sm">${{ number_format($chan->total, 2) }}</span>
                             </div>
                         @empty
-                            <p class="text-xs text-slate-500 dark:text-slate-400 italic py-2">{{ __('No orders for this period.') }}</p>
+                            <p class="text-xs text-slate-600 dark:text-slate-300 font-medium italic py-2">{{ __('No orders for this period.') }}</p>
                         @endforelse
                     </div>
                 </div>
@@ -159,14 +159,14 @@
                 </h3>
 
                 @if($topProducts->isEmpty())
-                    <p class="text-xs text-slate-500 dark:text-slate-400 italic py-6 text-center">{{ __('No sales data recorded for this period.') }}</p>
+                    <p class="text-xs text-slate-600 dark:text-slate-300 font-medium italic py-6 text-center">{{ __('No sales data recorded for this period.') }}</p>
                 @else
                     <div class="divide-y divide-slate-100 dark:divide-gray-700 mt-2">
                         @foreach($topProducts as $top)
                             <div class="py-3 flex items-center justify-between">
                                 <div>
                                     <h4 class="text-sm font-bold text-slate-900 dark:text-white">{{ $top->product_name }}</h4>
-                                    <span class="text-xs text-slate-500 dark:text-slate-400 font-medium">{{ (int)$top->total_qty }} {{ __('units sold') }}</span>
+                                    <span class="text-xs text-slate-600 dark:text-slate-300 font-medium">{{ (int)$top->total_qty }} {{ __('units sold') }}</span>
                                 </div>
                                 <div class="text-right">
                                     <div class="font-mono font-black text-sm text-emerald-600 dark:text-emerald-400">${{ number_format($top->total_sales, 2) }}</div>

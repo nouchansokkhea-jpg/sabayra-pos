@@ -1,7 +1,7 @@
 <x-business-layout title="Categories" heading="Product Categories">
 <div class="space-y-6">
     <div class="flex items-center justify-between">
-        <p class="text-xs text-gray-500 dark:text-gray-400">Organize your menu or retail catalog into logical sections</p>
+        <p class="text-xs text-gray-600 dark:text-gray-300 font-medium">Organize your menu or retail catalog into logical sections</p>
         <a href="{{ route('business.categories.create') }}" class="inline-flex items-center px-4 py-2 text-xs font-bold text-white bg-orange-600 hover:bg-orange-700 rounded-xl shadow-xs transition">
             + Add Category
         </a>
@@ -34,7 +34,7 @@
                                     @endif
                                     <div>
                                         <p class="font-bold text-gray-900 dark:text-white">{{ $cat->name_en }}</p>
-                                        <p class="text-xs text-slate-500 dark:text-slate-400 font-khmer font-medium">{{ $cat->name_km ?? '—' }}</p>
+                                        <p class="text-xs text-slate-700 dark:text-slate-200 font-khmer font-semibold">{{ $cat->name_km ?? '—' }}</p>
                                     </div>
                                 </div>
                             </td>
@@ -44,7 +44,7 @@
                             <td class="px-6 py-4 text-center font-bold text-slate-800 dark:text-slate-100">
                                 {{ $cat->products_count }}
                             </td>
-                            <td class="px-6 py-4 text-center text-slate-600 dark:text-slate-400 font-medium">
+                            <td class="px-6 py-4 text-center text-slate-700 dark:text-slate-200 font-bold">
                                 {{ $cat->sort_order }}
                             </td>
                             <td class="px-6 py-4">
@@ -73,7 +73,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="px-6 py-8 text-center text-gray-400">No categories created yet. Click "+ Add Category" to get started.</td>
+                            <td colspan="6" class="px-6 py-8 text-center text-gray-600 dark:text-gray-300 font-medium">No categories created yet. Click "+ Add Category" to get started.</td>
                         </tr>
                     @endforelse
                 </tbody>

@@ -62,10 +62,10 @@
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
                 <h3 class="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider">Quick Links for Your Shop</h3>
-                <p class="text-xs text-gray-500 dark:text-gray-400">Direct shortcuts to active store operations and customer touchpoints</p>
+                <p class="text-xs text-gray-600 dark:text-gray-300 font-medium">Direct shortcuts to active store operations and customer touchpoints</p>
             </div>
             <div class="flex items-center gap-2">
-                <span class="text-xs text-gray-500 font-mono truncate max-w-xs bg-gray-50 dark:bg-gray-700/50 px-3 py-1.5 rounded-xl border border-gray-200 dark:border-gray-600">
+                <span class="text-xs text-gray-700 dark:text-gray-200 font-mono font-medium truncate max-w-xs bg-gray-50 dark:bg-gray-700/50 px-3 py-1.5 rounded-xl border border-gray-200 dark:border-gray-600">
                     {{ $publicMenuUrl }}
                 </span>
                 <button
@@ -85,7 +85,7 @@
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
                 </div>
                 <span class="text-xs font-bold text-gray-800 dark:text-gray-200 block truncate">View Menu</span>
-                <span class="text-[10px] text-gray-400 block">Customer Web</span>
+                <span class="text-[10px] text-gray-600 dark:text-gray-300 font-medium block">Customer Web</span>
             </a>
 
             <!-- Live Orders -->
@@ -94,7 +94,7 @@
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                 </div>
                 <span class="text-xs font-bold text-gray-800 dark:text-gray-200 block truncate">Live Orders</span>
-                <span class="text-[10px] text-gray-400 block">Kanban Stream</span>
+                <span class="text-[10px] text-gray-600 dark:text-gray-300 font-medium block">Kanban Stream</span>
             </a>
 
             <!-- Kitchen Display -->
@@ -103,7 +103,7 @@
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
                 </div>
                 <span class="text-xs font-bold text-gray-800 dark:text-gray-200 block truncate">Kitchen (KDS)</span>
-                <span class="text-[10px] text-gray-400 block">Chef Screen</span>
+                <span class="text-[10px] text-gray-600 dark:text-gray-300 font-medium block">Chef Screen</span>
             </a>
 
             <!-- Touch POS -->
@@ -112,7 +112,7 @@
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
                 </div>
                 <span class="text-xs font-bold text-gray-800 dark:text-gray-200 block truncate">Touch POS</span>
-                <span class="text-[10px] text-gray-400 block">Cashier Desk</span>
+                <span class="text-[10px] text-gray-600 dark:text-gray-300 font-medium block">Cashier Desk</span>
             </a>
 
             <!-- QR Studio -->
@@ -121,7 +121,7 @@
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg>
                 </div>
                 <span class="text-xs font-bold text-gray-800 dark:text-gray-200 block truncate">QR Studio</span>
-                <span class="text-[10px] text-gray-400 block">Standees & Menus</span>
+                <span class="text-[10px] text-gray-600 dark:text-gray-300 font-medium block">Standees & Menus</span>
             </a>
 
             <!-- Printers -->
@@ -130,7 +130,7 @@
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
                 </div>
                 <span class="text-xs font-bold text-gray-800 dark:text-gray-200 block truncate">Printers</span>
-                <span class="text-[10px] text-gray-400 block">Receipts & KDS</span>
+                <span class="text-[10px] text-gray-600 dark:text-gray-300 font-medium block">Receipts & KDS</span>
             </a>
 
             <!-- Reports -->
@@ -139,7 +139,7 @@
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
                 </div>
                 <span class="text-xs font-bold text-gray-800 dark:text-gray-200 block truncate">Reports</span>
-                <span class="text-[10px] text-gray-400 block">Sales & Insights</span>
+                <span class="text-[10px] text-gray-600 dark:text-gray-300 font-medium block">Sales & Insights</span>
             </a>
         </div>
     </div>
@@ -162,7 +162,7 @@
                         </span>
                     </div>
                     <h4 class="text-base font-bold text-gray-900 dark:text-white">Customer Orders & Order Placement</h4>
-                    <p class="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
+                    <p class="text-xs text-gray-700 dark:text-gray-200 leading-relaxed">
                         Guest scans the QR code at their table or counter. The storefront opens instantly in mobile browser without installing any app. Customer browses food, sets options/sugar/notes, adds to cart, and submits order.
                     </p>
                 </div>
@@ -190,7 +190,7 @@
                         </span>
                     </div>
                     <h4 class="text-base font-bold text-gray-900 dark:text-white">Staff Confirmation</h4>
-                    <p class="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
+                    <p class="text-xs text-gray-700 dark:text-gray-200 leading-relaxed">
                         A real-time notification with sound alert rings on cashier POS and Live Orders feed. Staff reviews customer requests, checks kitchen availability, confirms order, and dispatches it for preparation.
                     </p>
                 </div>
@@ -218,7 +218,7 @@
                         </span>
                     </div>
                     <h4 class="text-base font-bold text-gray-900 dark:text-white">Kitchen Preparation</h4>
-                    <p class="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
+                    <p class="text-xs text-gray-700 dark:text-gray-200 leading-relaxed">
                         Ticket appears on the chef's Kitchen Display System (KDS) and prints to 80mm thermal kitchen printer. Kitchen staff clicks "Start Preparing", and the preparation timer measures cooking speed.
                     </p>
                 </div>
@@ -246,7 +246,7 @@
                         </span>
                     </div>
                     <h4 class="text-base font-bold text-gray-900 dark:text-white">Ready to Serve</h4>
-                    <p class="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
+                    <p class="text-xs text-gray-700 dark:text-gray-200 leading-relaxed">
                         Kitchen chef bumps card to "Ready". Floor staff or delivery runners receive visual alert with Table Number. Food is picked up at the pass and served promptly to the customer.
                     </p>
                 </div>
@@ -274,7 +274,7 @@
                         </span>
                     </div>
                     <h4 class="text-base font-bold text-gray-900 dark:text-white">Invoice & Payment</h4>
-                    <p class="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
+                    <p class="text-xs text-gray-700 dark:text-gray-200 leading-relaxed">
                         Cashier presents bill with dual USD ($) and Khmer Riel (៛) totals. Customer pays with Cash or scans Bakong KHQR dynamic QR code. System automatically generates printed 58mm/80mm customer invoice.
                     </p>
                 </div>
@@ -302,7 +302,7 @@
                         </span>
                     </div>
                     <h4 class="text-base font-bold text-gray-900 dark:text-white">Complete & Analytics</h4>
-                    <p class="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
+                    <p class="text-xs text-gray-700 dark:text-gray-200 leading-relaxed">
                         Order is completed. Dining table automatically resets to available for next guests. Recipe ingredients auto-deplete from inventory, and revenue analytics update in real time on the owner's dashboard.
                     </p>
                 </div>
@@ -334,7 +334,7 @@
                     <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
                 </div>
                 <h4 class="text-base font-bold text-gray-900 dark:text-white">Owner / Manager Device</h4>
-                <p class="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
+                <p class="text-xs text-gray-700 dark:text-gray-200 leading-relaxed">
                     Laptop, Desktop PC, or iPad running Chrome/Safari. Use for product catalog management, staff permissions, inventory recipes, live sales audits, and exportable financial reports.
                 </p>
                 <div class="text-[11px] text-gray-500 space-y-1 pt-2 border-t border-gray-100 dark:border-gray-700">
@@ -349,7 +349,7 @@
                     <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
                 </div>
                 <h4 class="text-base font-bold text-gray-900 dark:text-white">Kitchen Display (KDS)</h4>
-                <p class="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
+                <p class="text-xs text-gray-700 dark:text-gray-200 leading-relaxed">
                     Dedicated 10-inch or larger Android Tablet, iPad, or Touch Screen mounted on the kitchen or barista counter. Displays real-time tickets, elapsed cook times, and one-tap bump status.
                 </p>
                 <div class="text-[11px] text-gray-500 space-y-1 pt-2 border-t border-gray-100 dark:border-gray-700">
@@ -364,7 +364,7 @@
                     <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
                 </div>
                 <h4 class="text-base font-bold text-gray-900 dark:text-white">Cashier POS & Thermal Printer</h4>
-                <p class="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
+                <p class="text-xs text-gray-700 dark:text-gray-200 leading-relaxed">
                     Touch POS terminal or iPad paired with 58mm or 80mm ESC/POS thermal receipt printer (LAN/Wi-Fi/USB/Bluetooth). Instant customer receipts and kitchen order tickets.
                 </p>
                 <div class="text-[11px] text-gray-500 space-y-1 pt-2 border-t border-gray-100 dark:border-gray-700">
@@ -394,7 +394,7 @@
                     <span>1. Do customers need to install an app to view the menu or order?</span>
                     <svg class="w-4 h-4 text-gray-400 transform transition-transform" :class="{ 'rotate-180': activeFaq === 1 }" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                 </button>
-                <div x-show="activeFaq === 1" x-cloak class="p-4 bg-white dark:bg-gray-800 text-xs text-gray-600 dark:text-gray-400 border-t border-gray-100 dark:border-gray-700/60 leading-relaxed">
+                <div x-show="activeFaq === 1" x-cloak class="p-4 bg-white dark:bg-gray-800 text-xs text-gray-700 dark:text-gray-200 border-t border-gray-100 dark:border-gray-700/60 leading-relaxed">
                     No. SABAYRA uses progressive web technology. When customers point their phone's camera at the table QR code, your shop's menu opens instantly in mobile Safari, Chrome, or any built-in camera browser. No download, registration, or app store login is ever required.
                 </div>
             </div>
@@ -408,7 +408,7 @@
                     <span>2. Can we use SABAYRA without a physical kitchen printer?</span>
                     <svg class="w-4 h-4 text-gray-400 transform transition-transform" :class="{ 'rotate-180': activeFaq === 2 }" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                 </button>
-                <div x-show="activeFaq === 2" x-cloak class="p-4 bg-white dark:bg-gray-800 text-xs text-gray-600 dark:text-gray-400 border-t border-gray-100 dark:border-gray-700/60 leading-relaxed">
+                <div x-show="activeFaq === 2" x-cloak class="p-4 bg-white dark:bg-gray-800 text-xs text-gray-700 dark:text-gray-200 border-t border-gray-100 dark:border-gray-700/60 leading-relaxed">
                     Yes! You can operate 100% paperless by opening the Kitchen Display System (KDS) on any Android tablet, iPad, or spare laptop in the kitchen. Order cards appear in real time with audio chimes, eliminating paper tickets, lost dockets, and expensive printer paper waste.
                 </div>
             </div>
@@ -422,7 +422,7 @@
                     <span>3. Does the system support Bakong KHQR payments in USD and KHR?</span>
                     <svg class="w-4 h-4 text-gray-400 transform transition-transform" :class="{ 'rotate-180': activeFaq === 3 }" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                 </button>
-                <div x-show="activeFaq === 3" x-cloak class="p-4 bg-white dark:bg-gray-800 text-xs text-gray-600 dark:text-gray-400 border-t border-gray-100 dark:border-gray-700/60 leading-relaxed">
+                <div x-show="activeFaq === 3" x-cloak class="p-4 bg-white dark:bg-gray-800 text-xs text-gray-700 dark:text-gray-200 border-t border-gray-100 dark:border-gray-700/60 leading-relaxed">
                     Yes! SABAYRA is engineered specifically for Cambodia. The POS and checkout calculate the exact amount in both USD ($) and Khmer Riel (៛) using your store's live exchange rate (e.g. 4,100 KHR = $1 USD). Customers can scan dynamic KHQR via ABA, Wing, Acleda, Prince, or any Bakong-enabled banking app.
                 </div>
             </div>
@@ -436,7 +436,7 @@
                     <span>4. What happens when an ingredient or item runs out of stock?</span>
                     <svg class="w-4 h-4 text-gray-400 transform transition-transform" :class="{ 'rotate-180': activeFaq === 4 }" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                 </button>
-                <div x-show="activeFaq === 4" x-cloak class="p-4 bg-white dark:bg-gray-800 text-xs text-gray-600 dark:text-gray-400 border-t border-gray-100 dark:border-gray-700/60 leading-relaxed">
+                <div x-show="activeFaq === 4" x-cloak class="p-4 bg-white dark:bg-gray-800 text-xs text-gray-700 dark:text-gray-200 border-t border-gray-100 dark:border-gray-700/60 leading-relaxed">
                     When you link products to recipes in the Inventory section, raw ingredients automatically deplete upon order completion. You can also toggle any item "Unavailable" with one click in the Products catalog or Touch POS. Once marked unavailable, the item instantly disappears or shows "Sold Out" on the live customer menu.
                 </div>
             </div>
@@ -450,7 +450,7 @@
                     <span>5. Can multiple staff members use the system at the same time?</span>
                     <svg class="w-4 h-4 text-gray-400 transform transition-transform" :class="{ 'rotate-180': activeFaq === 5 }" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                 </button>
-                <div x-show="activeFaq === 5" x-cloak class="p-4 bg-white dark:bg-gray-800 text-xs text-gray-600 dark:text-gray-400 border-t border-gray-100 dark:border-gray-700/60 leading-relaxed">
+                <div x-show="activeFaq === 5" x-cloak class="p-4 bg-white dark:bg-gray-800 text-xs text-gray-700 dark:text-gray-200 border-t border-gray-100 dark:border-gray-700/60 leading-relaxed">
                     Yes. Under Staff & Permissions, you can create accounts for Cashiers, Kitchen Chefs, Waiters, and Managers. Each staff role is strictly scoped: kitchen staff only see the KDS, cashiers can only ring up sales and print receipts, while only Owners and Managers can access financial reports and system settings.
                 </div>
             </div>
@@ -464,7 +464,7 @@
                     <span>6. Does SABAYRA work offline or during internet interruptions?</span>
                     <svg class="w-4 h-4 text-gray-400 transform transition-transform" :class="{ 'rotate-180': activeFaq === 6 }" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                 </button>
-                <div x-show="activeFaq === 6" x-cloak class="p-4 bg-white dark:bg-gray-800 text-xs text-gray-600 dark:text-gray-400 border-t border-gray-100 dark:border-gray-700/60 leading-relaxed">
+                <div x-show="activeFaq === 6" x-cloak class="p-4 bg-white dark:bg-gray-800 text-xs text-gray-700 dark:text-gray-200 border-t border-gray-100 dark:border-gray-700/60 leading-relaxed">
                     SABAYRA is a cloud-first multi-tenant platform. For multi-device coordination (e.g. customer phone &rarr; cashier POS &rarr; kitchen KDS), an internet or local network connection is required. The Touch POS is built with local session recovery, preserving active cart items if the browser page is refreshed or if Wi-Fi momentarily drops.
                 </div>
             </div>

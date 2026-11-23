@@ -34,7 +34,7 @@
     {{-- 2. CATALOG & MENU --}}
     {{-- ============================================================== --}}
     <li class="pt-3">
-        <p class="px-2.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Catalog & Menu</p>
+        <p class="px-2.5 text-[10px] font-black text-slate-300 dark:text-slate-200 uppercase tracking-wider">Catalog & Menu</p>
     </li>
 
     <li>
@@ -61,7 +61,7 @@
     {{-- 3. OPERATIONS --}}
     {{-- ============================================================== --}}
     <li class="pt-3">
-        <p class="px-2.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Operations</p>
+        <p class="px-2.5 text-[10px] font-black text-slate-300 dark:text-slate-200 uppercase tracking-wider">Operations</p>
     </li>
 
     <li>
@@ -140,7 +140,7 @@
     {{-- 4. MANAGEMENT --}}
     {{-- ============================================================== --}}
     <li class="pt-3">
-        <p class="px-2.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Management</p>
+        <p class="px-2.5 text-[10px] font-black text-slate-300 dark:text-slate-200 uppercase tracking-wider">Management</p>
     </li>
 
     <li>
@@ -179,7 +179,7 @@
     {{-- 5. BUSINESS INTELLIGENCE --}}
     {{-- ============================================================== --}}
     <li class="pt-3">
-        <p class="px-2.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Business Intelligence</p>
+        <p class="px-2.5 text-[10px] font-black text-slate-300 dark:text-slate-200 uppercase tracking-wider">Business Intelligence</p>
     </li>
 
     <li>
@@ -196,7 +196,7 @@
     {{-- 6. ACCOUNT & SETTINGS --}}
     {{-- ============================================================== --}}
     <li class="pt-3">
-        <p class="px-2.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Account & Settings</p>
+        <p class="px-2.5 text-[10px] font-black text-slate-300 dark:text-slate-200 uppercase tracking-wider">Account & Settings</p>
     </li>
 
     <li>

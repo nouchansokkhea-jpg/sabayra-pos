@@ -114,7 +114,7 @@
                                                 {{ $order->order_number }}
                                             </a>
                                         </div>
-                                        <span class="text-xs text-slate-500 dark:text-slate-400 font-medium block mt-0.5">{{ $order->created_at->format('M d, Y h:i A') }}</span>
+                                        <span class="text-xs text-slate-600 dark:text-slate-300 font-medium block mt-0.5">{{ $order->created_at->format('M d, Y h:i A') }}</span>
                                         <div class="mt-2 flex items-center gap-1.5">
                                             @if($order->payment_status === 'paid')
                                                 <span class="px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300 border border-emerald-300/40">
@@ -154,13 +154,13 @@
                                                 <li class="flex items-start justify-between gap-2">
                                                     <span class="text-slate-800 dark:text-slate-200 font-medium">
                                                         <strong class="text-emerald-700 dark:text-emerald-400 font-bold">{{ (int)$item->quantity }}x</strong> {{ $item->product_name }}
-                                                        @if($item->variant_name) <span class="text-slate-500 dark:text-slate-400">({{ $item->variant_name }})</span> @endif
+                                                        @if($item->variant_name) <span class="text-slate-600 dark:text-slate-300 font-medium">({{ $item->variant_name }})</span> @endif
                                                     </span>
                                                     <span class="text-slate-700 dark:text-slate-300 font-mono font-semibold">${{ number_format($item->subtotal, 2) }}</span>
                                                 </li>
                                             @endforeach
                                             @if($order->items->count() > 3)
-                                                <li class="text-[11px] text-slate-500 dark:text-slate-400 italic font-medium">
+                                                <li class="text-[11px] text-slate-600 dark:text-slate-300 italic font-semibold">
                                                     +{{ $order->items->count() - 3 }} {{ __('more item(s)...') }}
                                                 </li>
                                             @endif

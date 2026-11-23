@@ -21,9 +21,9 @@
                 ✓
             </div>
             <h1 class="text-xl font-black text-gray-900 dark:text-white">Order Received!</h1>
-            <p class="text-xs text-gray-500 font-mono">Order Number: <span class="font-bold text-orange-600">{{ $order->order_number }}</span></p>
-            <p class="text-xs text-gray-600 dark:text-gray-300 font-medium">{{ __('Customer') }}: <span class="font-bold text-gray-900 dark:text-white">{{ $order->customer_name }}</span></p>
-            <p class="text-[11px] text-gray-400">{{ $order->created_at->format('M d, Y - h:i A') }}</p>
+            <p class="text-xs text-gray-700 dark:text-gray-300 font-mono">Order Number: <span class="font-bold text-orange-600">{{ $order->order_number }}</span></p>
+            <p class="text-xs text-gray-700 dark:text-gray-200 font-medium">{{ __('Customer') }}: <span class="font-bold text-gray-900 dark:text-white">{{ $order->customer_name }}</span></p>
+            <p class="text-[11px] text-gray-500 dark:text-gray-300 font-medium">{{ $order->created_at->format('M d, Y - h:i A') }}</p>
         </div>
 
         <!-- Order Progress Bar -->
@@ -33,13 +33,13 @@
             if ($currentIndex === false) $currentIndex = 0;
         @endphp
         <div class="py-4 border-y border-gray-100 dark:border-gray-800">
-            <p class="text-xs font-bold uppercase tracking-wider text-gray-500 mb-3 text-center">Live Order Progress</p>
+            <p class="text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-200 mb-3 text-center">Live Order Progress</p>
             <div class="flex items-center justify-between text-[10px] font-bold">
-                <span class="{{ $currentIndex >= 0 ? 'text-orange-600' : 'text-gray-400' }}">Received</span>
-                <span class="{{ $currentIndex >= 1 ? 'text-orange-600' : 'text-gray-400' }}">Confirmed</span>
-                <span class="{{ $currentIndex >= 2 ? 'text-orange-600' : 'text-gray-400' }}">Kitchen (Preparing)</span>
-                <span class="{{ $currentIndex >= 3 ? 'text-orange-600' : 'text-gray-400' }}">Ready</span>
-                <span class="{{ $currentIndex >= 4 ? 'text-emerald-600' : 'text-gray-400' }}">Completed</span>
+                <span class="{{ $currentIndex >= 0 ? 'text-orange-600' : 'text-gray-400 dark:text-gray-500' }}">Received</span>
+                <span class="{{ $currentIndex >= 1 ? 'text-orange-600' : 'text-gray-400 dark:text-gray-500' }}">Confirmed</span>
+                <span class="{{ $currentIndex >= 2 ? 'text-orange-600' : 'text-gray-400 dark:text-gray-500' }}">Kitchen (Preparing)</span>
+                <span class="{{ $currentIndex >= 3 ? 'text-orange-600' : 'text-gray-400 dark:text-gray-500' }}">Ready</span>
+                <span class="{{ $currentIndex >= 4 ? 'text-emerald-600' : 'text-gray-400 dark:text-gray-500' }}">Completed</span>
             </div>
             <div class="w-full bg-gray-100 dark:bg-gray-800 h-2 rounded-full overflow-hidden mt-2">
                 <div class="bg-orange-600 h-full transition-all duration-500" style="width: {{ min(100, max(20, ($currentIndex + 1) * 20)) }}%"></div>
@@ -61,14 +61,14 @@
                 </div>
                 <div class="text-xs">
                     <p class="font-bold text-gray-900 dark:text-white">${{ number_format($order->total_amount, 2) }}</p>
-                    <p class="text-gray-500 font-mono text-[11px]">(~ {{ number_format($order->total_khr, 0) }} ៛)</p>
+                    <p class="text-gray-600 dark:text-gray-300 font-mono text-[11px] font-medium">(~ {{ number_format($order->total_khr, 0) }} ៛)</p>
                 </div>
             </div>
         @endif
 
         <!-- Order Items Detail -->
         <div class="space-y-3 text-xs">
-            <h3 class="font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300">Order Items</h3>
+            <h3 class="font-bold uppercase tracking-wider text-gray-800 dark:text-gray-200">Order Items</h3>
             <div class="divide-y divide-gray-100 dark:divide-gray-800">
                 @foreach ($order->items as $item)
                     <div class="py-2.5 flex justify-between items-start">
@@ -77,10 +77,10 @@
                                 <span class="text-orange-600">{{ (int)$item->quantity }}x</span> {{ $item->product_name }}
                             </p>
                             @if ($item->variant_name)
-                                <p class="text-[11px] text-gray-400">Size: {{ $item->variant_name }}</p>
+                                <p class="text-[11px] text-gray-600 dark:text-gray-300 font-medium">Size: {{ $item->variant_name }}</p>
                             @endif
                             @if ($item->addons->count() > 0)
-                                <p class="text-[10px] text-gray-400 font-medium">
+                                <p class="text-[10px] text-gray-600 dark:text-gray-300 font-medium">
                                     Add-ons: {{ $item->addons->pluck('name')->implode(', ') }}
                                 </p>
                             @endif
@@ -91,21 +91,21 @@
             </div>
 
             <div class="pt-3 border-t border-gray-100 dark:border-gray-800 space-y-1.5">
-                <div class="flex justify-between text-gray-500">
+                <div class="flex justify-between text-gray-700 dark:text-gray-300 font-medium">
                     <span>Subtotal</span>
                     <span>${{ number_format($order->subtotal, 2) }}</span>
                 </div>
                 @if ($order->tax_amount > 0)
-                    <div class="flex justify-between text-gray-500">
+                    <div class="flex justify-between text-gray-700 dark:text-gray-300 font-medium">
                         <span>Tax</span>
                         <span>${{ number_format($order->tax_amount, 2) }}</span>
                     </div>
                 @endif
-                <div class="flex justify-between font-black text-sm pt-2 border-t border-gray-100 dark:border-gray-800">
+                <div class="flex justify-between font-black text-sm pt-2 border-t border-gray-100 dark:border-gray-800 text-gray-900 dark:text-white">
                     <span>Total Amount</span>
                     <div class="text-right">
                         <span class="text-orange-600">${{ number_format($order->total_amount, 2) }}</span>
-                        <p class="text-xs text-gray-400 font-normal">({{ number_format($order->total_khr, 0) }} ៛)</p>
+                        <p class="text-xs text-gray-600 dark:text-gray-300 font-semibold">({{ number_format($order->total_khr, 0) }} ៛)</p>
                     </div>
                 </div>
             </div>

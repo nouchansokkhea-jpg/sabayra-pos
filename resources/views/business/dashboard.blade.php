@@ -45,7 +45,7 @@
         <!-- Today's Revenue -->
         <div class="p-5 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 rounded-2xl shadow-xs">
             <div class="flex items-center justify-between">
-                <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Today's Revenue</span>
+                <span class="text-xs font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Today's Revenue</span>
                 @if ($revenueChangePercent >= 0)
                     <span class="inline-flex items-center text-xs font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full">
                         ↑ +{{ $revenueChangePercent }}%
@@ -59,16 +59,16 @@
             <div class="mt-2 text-2xl font-black text-gray-900 dark:text-white">
                 ${{ number_format($todayRevenueUsd, 2) }}
             </div>
-            <div class="mt-1 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+            <div class="mt-1 flex items-center justify-between text-xs text-gray-600 dark:text-gray-300 font-medium">
                 <span>Yesterday: ${{ number_format($yesterdayRevenueUsd, 2) }}</span>
-                <span class="font-semibold text-orange-600">{{ number_format($todayRevenueUsd * $business->exchange_rate_khr, 0) }} ៛</span>
+                <span class="font-bold text-orange-600">{{ number_format($todayRevenueUsd * $business->exchange_rate_khr, 0) }} ៛</span>
             </div>
         </div>
 
         <!-- Today's Orders -->
         <div class="p-5 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 rounded-2xl shadow-xs">
             <div class="flex items-center justify-between">
-                <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Today's Orders</span>
+                <span class="text-xs font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Today's Orders</span>
                 @if ($ordersChangePercent >= 0)
                     <span class="inline-flex items-center text-xs font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full">
                         ↑ +{{ $ordersChangePercent }}%
@@ -80,32 +80,32 @@
                 @endif
             </div>
             <div class="mt-2 text-2xl font-black text-gray-900 dark:text-white">
-                {{ $todayOrders }} <span class="text-xs font-normal text-gray-400">orders</span>
+                {{ $todayOrders }} <span class="text-xs font-medium text-gray-500 dark:text-gray-300">orders</span>
             </div>
-            <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+            <div class="mt-1 text-xs text-gray-600 dark:text-gray-300 font-medium">
                 Yesterday: {{ $yesterdayOrders }} orders
             </div>
         </div>
 
         <!-- Active Floor Status -->
         <div class="p-5 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 rounded-2xl shadow-xs">
-            <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Orders in Flow</span>
+            <span class="text-xs font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Orders in Flow</span>
             <div class="mt-2 text-2xl font-black text-gray-900 dark:text-white">
                 {{ $pendingOrders + $preparingOrders }}
             </div>
-            <div class="mt-1 flex items-center gap-3 text-xs">
-                <span class="text-amber-600 font-bold">{{ $pendingOrders }} Pending</span>
-                <span class="text-blue-600 font-bold">{{ $preparingOrders }} In Kitchen</span>
+            <div class="mt-1 flex items-center gap-3 text-xs font-bold">
+                <span class="text-amber-600">{{ $pendingOrders }} Pending</span>
+                <span class="text-blue-600">{{ $preparingOrders }} In Kitchen</span>
             </div>
         </div>
 
         <!-- Weekly Summary -->
         <div class="p-5 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 rounded-2xl shadow-xs">
-            <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Weekly Revenue</span>
+            <span class="text-xs font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Weekly Revenue</span>
             <div class="mt-2 text-2xl font-black text-emerald-600 dark:text-emerald-400">
                 ${{ number_format($weeklyRevenue, 2) }}
             </div>
-            <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+            <div class="mt-1 text-xs text-gray-600 dark:text-gray-300 font-medium">
                 {{ $weeklyOrdersCount }} orders completed this week
             </div>
         </div>
@@ -113,7 +113,7 @@
 
     <!-- 3. QUICK ACTIONS GRID -->
     <div class="p-5 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 rounded-2xl shadow-xs">
-        <h3 class="text-xs font-bold uppercase tracking-wider text-gray-400 mb-3">Quick Operational Actions</h3>
+        <h3 class="text-xs font-extrabold uppercase tracking-wider text-gray-700 dark:text-gray-200 mb-3">Quick Operational Actions</h3>
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
             <a href="{{ route('business.pos.index') }}" class="p-3 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/30 dark:hover:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800/60 text-emerald-800 dark:text-emerald-300 font-bold text-xs flex flex-col items-center gap-1.5 transition">
                 <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
@@ -150,39 +150,39 @@
     <!-- 4. BUSINESS STATS GRID (6 INDICATORS) -->
     <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
         <div class="p-4 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 rounded-2xl shadow-xs">
-            <span class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Total Products</span>
+            <span class="text-[11px] font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Total Products</span>
             <div class="mt-1 text-xl font-black text-gray-900 dark:text-white">{{ $totalProducts }}</div>
-            <span class="text-[11px] text-emerald-600 font-medium">{{ $activeProducts }} active</span>
+            <span class="text-[11px] text-emerald-600 font-semibold">{{ $activeProducts }} active</span>
         </div>
 
         <div class="p-4 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 rounded-2xl shadow-xs">
-            <span class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Featured Items</span>
+            <span class="text-[11px] font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Featured Items</span>
             <div class="mt-1 text-xl font-black text-orange-600">{{ $featuredProducts }}</div>
-            <span class="text-[11px] text-gray-400">highlighted</span>
+            <span class="text-[11px] text-gray-600 dark:text-gray-300 font-medium">highlighted</span>
         </div>
 
         <div class="p-4 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 rounded-2xl shadow-xs">
-            <span class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Categories</span>
+            <span class="text-[11px] font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Categories</span>
             <div class="mt-1 text-xl font-black text-gray-900 dark:text-white">{{ $totalCategories }}</div>
-            <span class="text-[11px] text-gray-400">catalog sections</span>
+            <span class="text-[11px] text-gray-600 dark:text-gray-300 font-medium">catalog sections</span>
         </div>
 
         <div class="p-4 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 rounded-2xl shadow-xs">
-            <span class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Total Menu Views</span>
+            <span class="text-[11px] font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Total Menu Views</span>
             <div class="mt-1 text-xl font-black text-cyan-600">{{ number_format($totalMenuViews) }}</div>
-            <span class="text-[11px] text-gray-400">{{ $todayMenuViews }} views today</span>
+            <span class="text-[11px] text-gray-600 dark:text-gray-300 font-medium">{{ $todayMenuViews }} views today</span>
         </div>
 
         <div class="p-4 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 rounded-2xl shadow-xs">
-            <span class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Total Customers</span>
+            <span class="text-[11px] font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Total Customers</span>
             <div class="mt-1 text-xl font-black text-purple-600">{{ $newCustomersThisWeek }}</div>
-            <span class="text-[11px] text-gray-400">new this week</span>
+            <span class="text-[11px] text-gray-600 dark:text-gray-300 font-medium">new this week</span>
         </div>
 
         <div class="p-4 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 rounded-2xl shadow-xs">
-            <span class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Avg Order Value</span>
+            <span class="text-[11px] font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Avg Order Value</span>
             <div class="mt-1 text-xl font-black text-emerald-600">${{ number_format($averageOrderValue, 2) }}</div>
-            <span class="text-[11px] text-gray-400">per checkout</span>
+            <span class="text-[11px] text-gray-600 dark:text-gray-300 font-medium">per checkout</span>
         </div>
     </div>
 
@@ -193,7 +193,7 @@
             <div class="flex items-center justify-between mb-4">
                 <div>
                     <h3 class="text-base font-bold text-gray-900 dark:text-white">Revenue Trend (Last 7 Days)</h3>
-                    <p class="text-xs text-gray-400">Daily paid checkout revenue in USD</p>
+                    <p class="text-xs text-gray-600 dark:text-gray-300 font-medium">Daily paid checkout revenue in USD</p>
                 </div>
             </div>
             <div class="h-64">
@@ -208,7 +208,7 @@
                     <svg class="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
                     <span>Security & Health</span>
                 </h3>
-                <p class="text-xs text-gray-400 mb-4">Account status & workspace protection</p>
+                <p class="text-xs text-gray-600 dark:text-gray-300 font-medium mb-4">Account status & workspace protection</p>
 
                 <div class="space-y-3 text-xs">
                     <div class="flex items-center justify-between p-2.5 rounded-xl bg-gray-50 dark:bg-gray-700/50">
@@ -247,7 +247,7 @@
         <div class="p-6 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 rounded-2xl shadow-xs">
             <h3 class="text-base font-bold text-gray-900 dark:text-white mb-4">Top Selling Items</h3>
             @if ($bestSellers->isEmpty())
-                <div class="py-8 text-center text-xs text-gray-400">
+                <div class="py-8 text-center text-xs text-gray-600 dark:text-gray-300 font-medium">
                     No sales recorded yet. As orders are placed via POS or live menu, top performers will appear here.
                 </div>
             @else
@@ -256,7 +256,7 @@
                         <div class="flex items-center justify-between p-3 rounded-xl bg-gray-50 dark:bg-gray-700/40">
                             <div>
                                 <h4 class="text-xs font-bold text-gray-900 dark:text-white">{{ $item->product_name }}</h4>
-                                <span class="text-[11px] text-gray-400">{{ (float) $item->total_sold }} units sold</span>
+                                <span class="text-[11px] text-gray-600 dark:text-gray-300 font-medium">{{ (float) $item->total_sold }} units sold</span>
                             </div>
                             <span class="text-xs font-black text-emerald-600">${{ number_format($item->total_earned, 2) }}</span>
                         </div>
@@ -273,7 +273,7 @@
             </div>
 
             @if ($recentProducts->isEmpty())
-                <div class="py-8 text-center text-xs text-gray-400">
+                <div class="py-8 text-center text-xs text-gray-600 dark:text-gray-300 font-medium">
                     No products added yet. Click <a href="{{ route('business.products.create') }}" class="text-orange-600 font-bold hover:underline">+ Add First Product</a> to start.
                 </div>
             @else
@@ -290,12 +290,12 @@
                                 </div>
                                 <div>
                                     <h4 class="text-xs font-bold text-gray-900 dark:text-white">{{ $p->name_en }}</h4>
-                                    <span class="text-[10px] text-gray-400">{{ $p->category?->name_en ?? 'General' }}</span>
+                                    <span class="text-[10px] text-gray-600 dark:text-gray-300 font-medium">{{ $p->category?->name_en ?? 'General' }}</span>
                                 </div>
                             </div>
                             <div class="text-right">
                                 <span class="text-xs font-bold text-gray-900 dark:text-white">${{ number_format($p->base_price, 2) }}</span>
-                                <div class="text-[10px] {{ $p->is_available ? 'text-emerald-600 font-semibold' : 'text-gray-400' }}">
+                                <div class="text-[10px] font-bold {{ $p->is_available ? 'text-emerald-600' : 'text-gray-500 dark:text-gray-400' }}">
                                     {{ $p->is_available ? 'Active' : 'Hidden' }}
                                 </div>
                             </div>
@@ -310,7 +310,7 @@
     <div x-show="qrModalOpen" x-cloak class="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
         <div @click.away="qrModalOpen = false" class="bg-white dark:bg-gray-800 rounded-3xl max-w-sm w-full p-6 text-center space-y-4 shadow-xl">
             <h3 class="text-lg font-bold text-gray-900 dark:text-white">Storefront QR Code</h3>
-            <p class="text-xs text-gray-500 dark:text-gray-400">Scan with your smartphone camera to preview the live menu</p>
+            <p class="text-xs text-gray-600 dark:text-gray-300 font-medium">Scan with your smartphone camera to preview the live menu</p>
             <div class="p-4 bg-white rounded-2xl border-2 border-dashed border-orange-200 dark:border-gray-700 inline-block shadow-inner">
                 <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data={{ urlencode($publicMenuUrl) }}&color=000000" alt="Storefront QR" class="w-48 h-48 mx-auto">
             </div>
@@ -373,12 +373,16 @@
                             beginAtZero: true,
                             ticks: {
                                 callback: function(value) { return '$' + value; },
-                                font: { size: 10 }
+                                color: document.documentElement.classList.contains('dark') ? '#cbd5e1' : '#475569',
+                                font: { size: 11, weight: 'bold' }
                             },
-                            grid: { color: 'rgba(156, 163, 175, 0.1)' }
+                            grid: { color: 'rgba(156, 163, 175, 0.15)' }
                         },
                         x: {
-                            ticks: { font: { size: 10 } },
+                            ticks: {
+                                color: document.documentElement.classList.contains('dark') ? '#cbd5e1' : '#475569',
+                                font: { size: 11, weight: 'bold' }
+                            },
                             grid: { display: false }
                         }
                     }

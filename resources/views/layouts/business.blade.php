@@ -42,7 +42,7 @@
                                 <img src="{{ asset('images/sabayra-icon.png') }}" alt="SABAYRA" class="w-8 h-8 rounded-lg object-contain shrink-0" />
                                 <div>
                                     <span class="text-orange-500 text-xl font-black tracking-tight leading-none block">SABAYRA</span>
-                                    <span class="text-[9px] text-slate-400 font-mono font-bold">MERCHANT POS</span>
+                                    <span class="text-[9px] text-orange-400 font-mono font-bold">MERCHANT POS</span>
                                 </div>
                             </a>
                             <button @click="sidebarOpen = false" class="text-gray-400 hover:text-white">
@@ -68,7 +68,7 @@
                         <img src="{{ asset('images/sabayra-icon.png') }}" alt="SABAYRA" class="w-8 h-8 rounded-lg object-contain shrink-0" />
                         <div>
                             <span class="text-orange-500 text-xl font-black tracking-tight leading-none block">SABAYRA</span>
-                            <span class="text-[9px] text-slate-400 font-mono font-bold">POS & SAAS</span>
+                            <span class="text-[9px] text-orange-400 font-mono font-bold">POS & SAAS</span>
                         </div>
                     </a>
                 </div>
@@ -196,15 +196,15 @@
                         <div x-show="open" @click.away="open = false" style="display: none;"
                              class="absolute right-0 w-48 mt-2 origin-top-right bg-white border border-gray-200 rounded-xl shadow-lg dark:bg-gray-800 dark:border-gray-700 py-1 z-50">
                             <div class="px-4 py-2 border-b border-gray-100 dark:border-gray-700">
-                                <p class="text-xs text-gray-500 dark:text-gray-400">Signed in as</p>
-                                <p class="text-sm font-semibold truncate text-gray-900 dark:text-white">{{ Auth::user()->email }}</p>
+                                <p class="text-xs text-gray-600 dark:text-gray-300 font-medium">Signed in as</p>
+                                <p class="text-sm font-bold truncate text-gray-900 dark:text-white">{{ Auth::user()->email }}</p>
                             </div>
-                            <a href="{{ route('profile.edit') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700">
+                            <a href="{{ route('profile.edit') }}" class="block px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-700">
                                 Profile Settings
                             </a>
                             <form method="POST" action="{{ route('logout') }}">
                                 @csrf
-                                <button type="submit" class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20">
+                                <button type="submit" class="w-full text-left px-4 py-2 text-sm font-bold text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20">
                                     {{ __('app.logout') }}
                                 </button>
                             </form>
