@@ -71,7 +71,7 @@ class ReportController extends Controller
         // QR Scans & Menu Views Metrics
         $totalQrScans = (int) $business->qrCodes()->sum('scan_count');
         $periodQrScans = (int) \App\Models\QrScanEvent::where('business_id', $business->id)
-            ->whereBetween('created_at', [$startDate, $endDate])
+            ->whereBetween('scanned_at', [$startDate, $endDate])
             ->count();
         if ($periodQrScans === 0 && $totalQrScans > 0) {
             $periodQrScans = $totalQrScans;
@@ -91,7 +91,7 @@ class ReportController extends Controller
             $chartData[] = (float) $daySales;
 
             $dayViews = \App\Models\QrScanEvent::where('business_id', $business->id)
-                ->whereDate('created_at', $date)
+                ->whereDate('scanned_at', $date)
                 ->count();
             $viewsChartData[] = $dayViews;
         }

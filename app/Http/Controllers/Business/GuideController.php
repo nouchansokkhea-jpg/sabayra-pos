@@ -33,3 +33,4 @@ class GuideController extends Controller
         return view('business.guides.tutorials', compact('business'));
     }
 }
+

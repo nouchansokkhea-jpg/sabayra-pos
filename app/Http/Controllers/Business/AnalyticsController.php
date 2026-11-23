@@ -21,7 +21,10 @@ class AnalyticsController extends Controller
         $business = TenantContext::get();
 
         // 1. Hourly Peak Distribution (from actual orders)
-        $hourlyDistribution = Order::select(DB::raw("CAST(strftime('%H', created_at) AS INTEGER) as hour"), DB::raw('COUNT(*) as total_orders'))
+        $isPgsql = DB::connection()->getDriverName() === 'pgsql';
+        $hourExpr = $isPgsql ? 'EXTRACT(HOUR FROM created_at)::INTEGER as hour' : "CAST(strftime('%H', created_at) AS INTEGER) as hour";
+
+        $hourlyDistribution = Order::select(DB::raw($hourExpr), DB::raw('COUNT(*) as total_orders'))
             ->where('business_id', $business->id)
             ->groupBy('hour')
             ->orderBy('hour')

@@ -288,6 +288,20 @@ class PosAndInventoryTest extends TestCase
             'payment_status' => 'paid',
             'payment_method' => 'khqr',
         ]);
+
+        $qrCode = \App\Models\QrCode::create([
+            'business_id' => $this->business->id,
+            'type' => 'menu',
+            'code' => 'TEST-QR-SCAN',
+            'target_url' => 'http://localhost/test',
+            'scan_count' => 12,
+        ]);
+
+        \App\Models\QrScanEvent::create([
+            'qr_code_id' => $qrCode->id,
+            'business_id' => $this->business->id,
+            'scanned_at' => now(),
+        ]);
         TenantContext::clear();
 
         // 1. View Reports Page
