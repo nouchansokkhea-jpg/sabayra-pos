@@ -4,8 +4,10 @@ use App\Http\Controllers\Business\BranchController;
 use App\Http\Controllers\Business\BusinessWorkspaceController;
 use App\Http\Controllers\Business\CategoryController;
 use App\Http\Controllers\Business\DashboardController;
+use App\Http\Controllers\Business\GuideController;
 use App\Http\Controllers\Business\InventoryController;
 use App\Http\Controllers\Business\KitchenController;
+use App\Http\Controllers\Business\LiveOrderController;
 use App\Http\Controllers\Business\OrderManagementController;
 use App\Http\Controllers\Business\PosController;
 use App\Http\Controllers\Business\ProductController;
@@ -51,10 +53,16 @@ Route::resource('tables', TableController::class)->only(['index', 'store', 'upda
 
 // Order Management
 Route::get('/orders', [OrderManagementController::class, 'index'])->name('orders.index');
+Route::get('/orders/live', [LiveOrderController::class, 'index'])->name('orders.live');
+Route::get('/orders/live/poll', [LiveOrderController::class, 'pollApi'])->name('orders.live.poll');
 Route::get('/orders/{order}', [OrderManagementController::class, 'show'])->name('orders.show');
 Route::post('/orders/{order}/status', [OrderManagementController::class, 'updateStatus'])->name('orders.update-status');
 Route::post('/orders/{order}/payment', [OrderManagementController::class, 'updatePayment'])->name('orders.update-payment');
 Route::get('/orders/{order}/receipt', [OrderManagementController::class, 'receipt'])->name('orders.receipt');
+
+// Operational Guides & Walkthroughs
+Route::get('/guides/order-flow', [GuideController::class, 'orderFlow'])->name('guides.order-flow');
+Route::get('/guides/tutorials', [GuideController::class, 'tutorials'])->name('guides.tutorials');
 
 // Kitchen Display System (KDS)
 Route::get('/kitchen', [KitchenController::class, 'index'])->name('kitchen.index');
