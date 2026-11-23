@@ -80,7 +80,7 @@
                     </p>
                     <div class="border-2 border-dashed border-purple-200 dark:border-zinc-700 rounded-xl p-6 text-center bg-purple-50/50 dark:bg-zinc-900/50">
                         <div class="w-20 h-20 bg-white rounded-xl shadow-md mx-auto mb-3 flex items-center justify-center p-2">
-                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data={{ urlencode(url('/' . $business->slug . '?ar=1')) }}" alt="AR Preview QR" class="w-full h-full">
+                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data={{ urlencode(\App\Services\Qr\QrCodeService::getMenuUrl($business) . '?ar=1') }}" alt="AR Preview QR" class="w-full h-full">
                         </div>
                         <h4 class="text-xs font-bold text-zinc-800 dark:text-zinc-200">{{ $business->name }}</h4>
                         <p class="text-[11px] text-purple-600 font-semibold mt-1">{{ __('Scan to view 3D Menu') }}</p>

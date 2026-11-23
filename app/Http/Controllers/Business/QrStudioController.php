@@ -21,7 +21,7 @@ class QrStudioController extends Controller
     {
         $business = TenantContext::get();
         $tables = RestaurantTable::with('qrCode')->where('business_id', $business->id)->orderBy('table_number')->get();
-        $publicMenuUrl = url('/' . $business->slug);
+        $publicMenuUrl = QrCodeService::getMenuUrl($business);
 
         $qrSettings = $business->theme_settings['qr'] ?? [
             'color' => '#f97316',

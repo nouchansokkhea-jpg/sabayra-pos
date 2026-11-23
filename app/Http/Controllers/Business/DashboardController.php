@@ -129,7 +129,7 @@ class DashboardController extends Controller
         ];
 
         // Public Storefront URL
-        $publicMenuUrl = url('/' . $business->slug);
+        $publicMenuUrl = \App\Services\Qr\QrCodeService::getMenuUrl($business);
 
         return view('business.dashboard', compact(
             'business',
