@@ -98,20 +98,10 @@ return [
         'supabase' => [
             'driver' => 'pgsql',
             'url' => env('DB_URL'),
-            'host' => (function () {
-                $h = env('DB_HOST');
-                if ($h === '127.0.0.1' || $h === 'localhost') {
-                    return $h;
-                }
-                return 'db.zdqqrqtujqwvlmbasuqo.supabase.co';
-            })(),
+            'host' => env('DB_HOST', 'db.zdqqrqtujqwvlmbasuqo.supabase.co'),
             'port' => (int) env('DB_PORT', 5432),
             'database' => env('DB_DATABASE', 'postgres'),
-            'username' => (function () {
-                $u = env('DB_USERNAME', 'postgres');
-                // Direct host always uses postgres
-                return 'postgres';
-            })(),
+            'username' => env('DB_USERNAME', 'postgres'),
             'password' => env('DB_PASSWORD', ''),
             'charset' => 'utf8',
             'prefix' => '',

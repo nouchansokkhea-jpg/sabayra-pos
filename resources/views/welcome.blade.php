@@ -102,7 +102,14 @@
                 <a href="#features" class="hover:text-orange-400 transition">Features</a>
                 <a href="#businesses" class="hover:text-orange-400 transition">Business Types</a>
                 <a href="#preview" class="hover:text-orange-400 transition">Live Preview</a>
-                <a href="#pricing" class="hover:text-orange-400 transition">Pricing</a>
+                @if (config('subscription.plans_enabled', false))
+                    <a href="#pricing" class="hover:text-orange-400 transition">Pricing</a>
+                @else
+                    <a href="#free-access" class="hover:text-emerald-400 text-emerald-400 transition flex items-center gap-1">
+                        <span>100% Free</span>
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                    </a>
+                @endif
                 <a href="#faq" class="hover:text-orange-400 transition">FAQ</a>
             </nav>
 
@@ -806,127 +813,206 @@
         </div>
     </section>
 
-    <!-- Pricing Section (Dynamic from Database) -->
-    <section id="pricing" class="py-20 bg-slate-950">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="text-center max-w-3xl mx-auto mb-16">
-                <h2 class="text-xs font-bold uppercase tracking-wider text-orange-400 mb-2">{{ __('app.pricing') }}</h2>
-                <p class="text-3xl font-black text-white sm:text-4xl">Simple, Transparent Investment</p>
-                <p class="mt-3 text-slate-400 text-sm">{{ __('app.pricing_subtitle') }}</p>
+    <!-- Pricing Section (Toggleable via Secret PIN: RESTORE-SUBSCRIPTION-PLANS) -->
+    @if (config('subscription.plans_enabled', false))
+        <section id="pricing" class="py-20 bg-slate-950">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center max-w-3xl mx-auto mb-16">
+                    <h2 class="text-xs font-bold uppercase tracking-wider text-orange-400 mb-2">{{ __('app.pricing') }}</h2>
+                    <p class="text-3xl font-black text-white sm:text-4xl">Simple, Transparent Investment</p>
+                    <p class="mt-3 text-slate-400 text-sm">{{ __('app.pricing_subtitle') }}</p>
 
-                <!-- Billing Cycle Toggle -->
-                <div class="mt-8 inline-flex items-center space-x-3 bg-slate-900 p-1.5 rounded-2xl border border-slate-800">
-                    <button @click="billingAnnual = false"
-                            :class="!billingAnnual ? 'bg-orange-600 text-white font-bold shadow' : 'text-slate-400 hover:text-white'"
-                            class="px-4 py-2 rounded-xl text-xs sm:text-sm transition">
-                        Monthly Billing
-                    </button>
-                    <button @click="billingAnnual = true"
-                            :class="billingAnnual ? 'bg-orange-600 text-white font-bold shadow' : 'text-slate-400 hover:text-white'"
-                            class="px-4 py-2 rounded-xl text-xs sm:text-sm transition flex items-center space-x-1.5">
-                        <span>Yearly Billing</span>
-                        <span class="bg-emerald-500 text-slate-950 text-[10px] font-bold px-1.5 py-0.5 rounded-full uppercase">Save 2 Months</span>
-                    </button>
+                    <!-- Billing Cycle Toggle -->
+                    <div class="mt-8 inline-flex items-center space-x-3 bg-slate-900 p-1.5 rounded-2xl border border-slate-800">
+                        <button @click="billingAnnual = false"
+                                :class="!billingAnnual ? 'bg-orange-600 text-white font-bold shadow' : 'text-slate-400 hover:text-white'"
+                                class="px-4 py-2 rounded-xl text-xs sm:text-sm transition">
+                            Monthly Billing
+                        </button>
+                        <button @click="billingAnnual = true"
+                                :class="billingAnnual ? 'bg-orange-600 text-white font-bold shadow' : 'text-slate-400 hover:text-white'"
+                                class="px-4 py-2 rounded-xl text-xs sm:text-sm transition flex items-center space-x-1.5">
+                            <span>Yearly Billing</span>
+                            <span class="bg-emerald-500 text-slate-950 text-[10px] font-bold px-1.5 py-0.5 rounded-full uppercase">Save 2 Months</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Dynamic Plans Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    @foreach ($plans as $plan)
+                        <div class="rounded-3xl p-6 flex flex-col justify-between transition-all duration-300 {{ $plan->is_popular ? 'bg-gradient-to-b from-slate-900 to-slate-950 border-2 border-orange-500 shadow-xl shadow-orange-500/10 relative scale-105' : 'bg-slate-900/60 border border-slate-800 hover:border-slate-700' }}">
+
+                            @if ($plan->is_popular)
+                                <div class="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-gradient-to-r from-orange-600 to-amber-500 text-white text-[10px] font-extrabold uppercase px-3 py-1 rounded-full tracking-wider shadow">
+                                    Most Popular
+                                </div>
+                            @endif
+
+                            <div>
+                                <!-- Plan Name & Description -->
+                                <div class="flex items-center justify-between">
+                                    <h3 class="font-black text-xl text-white">{{ $plan->name }}</h3>
+                                    <span class="text-[10px] font-mono text-slate-400 uppercase">{{ $plan->slug }}</span>
+                                </div>
+                                <p class="text-xs text-slate-400 mt-2 min-h-[32px]">{{ $plan->description }}</p>
+
+                                <!-- Pricing Display -->
+                                <div class="my-6">
+                                    <div class="flex items-baseline space-x-1">
+                                        <span class="text-3xl sm:text-4xl font-black font-mono text-white"
+                                              x-text="billingAnnual ? '${{ number_format($plan->yearly_price / 12, 0) }}' : '${{ number_format($plan->monthly_price, 0) }}'">
+                                        </span>
+                                        <span class="text-xs text-slate-400">/ month</span>
+                                    </div>
+                                    <p class="text-[11px] text-slate-400 font-mono mt-1"
+                                       x-text="'≈ ' + (billingAnnual ? '{{ number_format(($plan->yearly_price / 12) * 4100, 0) }}' : '{{ number_format($plan->monthly_price * 4100, 0) }}') + ' ៛ KHR'">
+                                    </p>
+                                </div>
+
+                                <!-- Features List -->
+                                <ul class="space-y-3 text-xs text-slate-300 border-t border-slate-800/80 pt-6">
+                                    <li class="flex items-center space-x-2">
+                                        <svg class="w-4 h-4 text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                        </svg>
+                                        <span><strong>{{ $plan->product_limit >= 9999 ? 'Unlimited' : $plan->product_limit }}</strong> Products / Items</span>
+                                    </li>
+                                    <li class="flex items-center space-x-2">
+                                        <svg class="w-4 h-4 text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                        </svg>
+                                        <span><strong>{{ $plan->branch_limit }}</strong> Business Branch(es)</span>
+                                    </li>
+                                    <li class="flex items-center space-x-2">
+                                        <svg class="w-4 h-4 text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                        </svg>
+                                        <span><strong>{{ $plan->staff_limit }}</strong> Staff User Accounts</span>
+                                    </li>
+                                    <li class="flex items-center space-x-2">
+                                        <svg class="w-4 h-4 {{ $plan->has_pos ? 'text-emerald-400' : 'text-slate-600' }} shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            @if ($plan->has_pos)
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                            @else
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                            @endif
+                                        </svg>
+                                        <span class="{{ $plan->has_pos ? '' : 'text-slate-500 line-through' }}">Touch POS Terminal</span>
+                                    </li>
+                                    <li class="flex items-center space-x-2">
+                                        <svg class="w-4 h-4 {{ $plan->has_inventory ? 'text-emerald-400' : 'text-slate-600' }} shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            @if ($plan->has_inventory)
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                            @else
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                            @endif
+                                        </svg>
+                                        <span class="{{ $plan->has_inventory ? '' : 'text-slate-500 line-through' }}">Recipe & Inventory Tracking</span>
+                                    </li>
+                                    <li class="flex items-center space-x-2">
+                                        <svg class="w-4 h-4 {{ $plan->has_analytics ? 'text-emerald-400' : 'text-slate-600' }} shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            @if ($plan->has_analytics)
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                            @else
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                            @endif
+                                        </svg>
+                                        <span class="{{ $plan->has_analytics ? '' : 'text-slate-500 line-through' }}">Financial Analytics & Export</span>
+                                    </li>
+                                </ul>
+                            </div>
+
+                            <!-- CTA Button -->
+                            <div class="mt-8">
+                                <a href="{{ route('register') }}"
+                                   class="w-full py-3 px-4 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center transition shadow {{ $plan->is_popular ? 'bg-orange-600 hover:bg-orange-500 text-white shadow-orange-600/30' : 'bg-slate-800 hover:bg-slate-700 text-slate-200' }}">
+                                    Get Started
+                                </a>
+                            </div>
+                        </div>
+                    @endforeach
                 </div>
             </div>
+        </section>
+    @else
+        <!-- 100% Free Community Edition Section -->
+        <section id="free-access" class="py-20 bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 relative overflow-hidden">
+            <div class="absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-orange-500/10 via-transparent to-transparent pointer-events-none"></div>
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+                <div class="text-center max-w-3xl mx-auto mb-16">
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 mb-4">
+                        <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                        </svg>
+                        100% Free for Everyone &bull; No Subscription Fees
+                    </span>
+                    <h2 class="text-3xl sm:text-5xl font-black text-white tracking-tight">
+                        Empowering Every Business in Cambodia
+                    </h2>
+                    <p class="mt-4 text-base sm:text-lg text-slate-300 leading-relaxed">
+                        SABAYRA is completely free to use. No monthly subscription fees, no credit card required, and no hidden charges. Every merchant gets unlimited access to all platform features.
+                    </p>
+                </div>
 
-            <!-- Dynamic Plans Grid -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                @foreach ($plans as $plan)
-                    <div class="rounded-3xl p-6 flex flex-col justify-between transition-all duration-300 {{ $plan->is_popular ? 'bg-gradient-to-b from-slate-900 to-slate-950 border-2 border-orange-500 shadow-xl shadow-orange-500/10 relative scale-105' : 'bg-slate-900/60 border border-slate-800 hover:border-slate-700' }}">
-
-                        @if ($plan->is_popular)
-                            <div class="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-gradient-to-r from-orange-600 to-amber-500 text-white text-[10px] font-extrabold uppercase px-3 py-1 rounded-full tracking-wider shadow">
-                                Most Popular
-                            </div>
-                        @endif
-
-                        <div>
-                            <!-- Plan Name & Description -->
-                            <div class="flex items-center justify-between">
-                                <h3 class="font-black text-xl text-white">{{ $plan->name }}</h3>
-                                <span class="text-[10px] font-mono text-slate-400 uppercase">{{ $plan->slug }}</span>
-                            </div>
-                            <p class="text-xs text-slate-400 mt-2 min-h-[32px]">{{ $plan->description }}</p>
-
-                            <!-- Pricing Display -->
-                            <div class="my-6">
-                                <div class="flex items-baseline space-x-1">
-                                    <span class="text-3xl sm:text-4xl font-black font-mono text-white"
-                                          x-text="billingAnnual ? '${{ number_format($plan->yearly_price / 12, 0) }}' : '${{ number_format($plan->monthly_price, 0) }}'">
-                                    </span>
-                                    <span class="text-xs text-slate-400">/ month</span>
-                                </div>
-                                <p class="text-[11px] text-slate-400 font-mono mt-1"
-                                   x-text="'≈ ' + (billingAnnual ? '{{ number_format(($plan->yearly_price / 12) * 4100, 0) }}' : '{{ number_format($plan->monthly_price * 4100, 0) }}') + ' ៛ KHR'">
-                                </p>
-                            </div>
-
-                            <!-- Features List -->
-                            <ul class="space-y-3 text-xs text-slate-300 border-t border-slate-800/80 pt-6">
-                                <li class="flex items-center space-x-2">
-                                    <svg class="w-4 h-4 text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                                    </svg>
-                                    <span><strong>{{ $plan->product_limit >= 9999 ? 'Unlimited' : $plan->product_limit }}</strong> Products / Items</span>
-                                </li>
-                                <li class="flex items-center space-x-2">
-                                    <svg class="w-4 h-4 text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                                    </svg>
-                                    <span><strong>{{ $plan->branch_limit }}</strong> Business Branch(es)</span>
-                                </li>
-                                <li class="flex items-center space-x-2">
-                                    <svg class="w-4 h-4 text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                                    </svg>
-                                    <span><strong>{{ $plan->staff_limit }}</strong> Staff User Accounts</span>
-                                </li>
-                                <li class="flex items-center space-x-2">
-                                    <svg class="w-4 h-4 {{ $plan->has_pos ? 'text-emerald-400' : 'text-slate-600' }} shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        @if ($plan->has_pos)
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                                        @else
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                                        @endif
-                                    </svg>
-                                    <span class="{{ $plan->has_pos ? '' : 'text-slate-500 line-through' }}">Touch POS Terminal</span>
-                                </li>
-                                <li class="flex items-center space-x-2">
-                                    <svg class="w-4 h-4 {{ $plan->has_inventory ? 'text-emerald-400' : 'text-slate-600' }} shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        @if ($plan->has_inventory)
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                                        @else
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                                        @endif
-                                    </svg>
-                                    <span class="{{ $plan->has_inventory ? '' : 'text-slate-500 line-through' }}">Recipe & Inventory Tracking</span>
-                                </li>
-                                <li class="flex items-center space-x-2">
-                                    <svg class="w-4 h-4 {{ $plan->has_analytics ? 'text-emerald-400' : 'text-slate-600' }} shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        @if ($plan->has_analytics)
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                                        @else
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                                        @endif
-                                    </svg>
-                                    <span class="{{ $plan->has_analytics ? '' : 'text-slate-500 line-through' }}">Financial Analytics & Export</span>
-                                </li>
-                            </ul>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div class="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 hover:border-orange-500/50 transition duration-300">
+                        <div class="w-12 h-12 rounded-2xl bg-orange-500/10 text-orange-400 flex items-center justify-center text-2xl mb-4">
+                            🍽️
                         </div>
-
-                        <!-- CTA Button -->
-                        <div class="mt-8">
-                            <a href="{{ route('register') }}"
-                               class="w-full py-3 px-4 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center transition shadow {{ $plan->is_popular ? 'bg-orange-600 hover:bg-orange-500 text-white shadow-orange-600/30' : 'bg-slate-800 hover:bg-slate-700 text-slate-200' }}">
-                                Get Started
-                            </a>
-                        </div>
+                        <div class="text-emerald-400 font-bold text-xs uppercase tracking-wider mb-1">100% Free</div>
+                        <h3 class="text-lg font-black text-white mb-2">Unlimited Products & Menus</h3>
+                        <p class="text-xs text-slate-400 leading-relaxed">
+                            Create unlimited categories, dishes, drink variants, modifier addons, and dual USD/KHR pricing with zero restrictions.
+                        </p>
                     </div>
-                @endforeach
+
+                    <div class="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 hover:border-orange-500/50 transition duration-300">
+                        <div class="w-12 h-12 rounded-2xl bg-orange-500/10 text-orange-400 flex items-center justify-center text-2xl mb-4">
+                            🖥️
+                        </div>
+                        <div class="text-emerald-400 font-bold text-xs uppercase tracking-wider mb-1">100% Free</div>
+                        <h3 class="text-lg font-black text-white mb-2">Touch POS & Kitchen Display</h3>
+                        <p class="text-xs text-slate-400 leading-relaxed">
+                            Full-featured fast checkout POS terminal with 80mm receipt printing and real-time live Kitchen Display System (KDS).
+                        </p>
+                    </div>
+
+                    <div class="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 hover:border-orange-500/50 transition duration-300">
+                        <div class="w-12 h-12 rounded-2xl bg-orange-500/10 text-orange-400 flex items-center justify-center text-2xl mb-4">
+                            📱
+                        </div>
+                        <div class="text-emerald-400 font-bold text-xs uppercase tracking-wider mb-1">100% Free</div>
+                        <h3 class="text-lg font-black text-white mb-2">Table QRs & Bakong KHQR</h3>
+                        <p class="text-xs text-slate-400 leading-relaxed">
+                            Printable standee QRs for each dining table and official National Bank of Cambodia EMVCo KHQR payment integration.
+                        </p>
+                    </div>
+
+                    <div class="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 hover:border-orange-500/50 transition duration-300">
+                        <div class="w-12 h-12 rounded-2xl bg-orange-500/10 text-orange-400 flex items-center justify-center text-2xl mb-4">
+                            🏪
+                        </div>
+                        <div class="text-emerald-400 font-bold text-xs uppercase tracking-wider mb-1">100% Free</div>
+                        <h3 class="text-lg font-black text-white mb-2">Multi-Branch & Team Roles</h3>
+                        <p class="text-xs text-slate-400 leading-relaxed">
+                            Manage multiple outlets and invite unlimited managers, cashiers, waitstaff, and inventory operators without paying extra.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="mt-12 text-center">
+                    <a href="{{ route('register') }}"
+                       class="inline-flex items-center gap-2 px-8 py-4 rounded-2xl font-black text-sm uppercase tracking-wider bg-orange-600 hover:bg-orange-500 text-white shadow-xl shadow-orange-600/30 transition transform hover:-translate-y-0.5">
+                        <span>Get Started 100% Free — No Credit Card Required</span>
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+                        </svg>
+                    </a>
+                </div>
             </div>
-        </div>
-    </section>
+        </section>
+    @endif
 
     <!-- Frequently Asked Questions -->
     <section id="faq" class="py-20 bg-slate-900/40 border-t border-slate-800">
@@ -1025,7 +1111,11 @@
             <div class="flex flex-wrap items-center justify-center gap-6 text-slate-400 font-semibold">
                 <a href="#features" class="hover:text-white transition">Features</a>
                 <a href="#businesses" class="hover:text-white transition">Business Types</a>
-                <a href="#pricing" class="hover:text-white transition">Pricing</a>
+                @if (config('subscription.plans_enabled', false))
+                    <a href="#pricing" class="hover:text-white transition">Pricing</a>
+                @else
+                    <a href="#free-access" class="hover:text-white transition text-emerald-400 font-bold">100% Free Access</a>
+                @endif
                 <a href="{{ route('login') }}" class="hover:text-white transition">Merchant Portal</a>
                 <a href="{{ route('register') }}" class="hover:text-white transition">Register</a>
             </div>

@@ -34,6 +34,8 @@ class LandingPageAndKdsTest extends TestCase
 
     public function test_landing_page_renders_successfully_with_plans_and_branding(): void
     {
+        config(['subscription.plans_enabled' => true]);
+
         Plan::create([
             'name' => 'PRO PLAN',
             'slug' => 'pro',
@@ -64,6 +66,37 @@ class LandingPageAndKdsTest extends TestCase
         $response->assertSee('Orders Processed');
         $response->assertSee('sabayra-icon.png');
         $response->assertDontSee('MenuHub Cambodia');
+    }
+
+    public function test_landing_page_renders_free_tier_showcase_when_plans_disabled(): void
+    {
+        config(['subscription.plans_enabled' => false]);
+
+        Plan::create([
+            'name' => 'PRO PLAN',
+            'slug' => 'pro',
+            'description' => 'For fast growing businesses',
+            'monthly_price' => 35.00,
+            'yearly_price' => 350.00,
+            'product_limit' => 500,
+            'branch_limit' => 3,
+            'staff_limit' => 10,
+            'has_pos' => true,
+            'has_inventory' => true,
+            'has_online_ordering' => true,
+            'has_analytics' => true,
+            'is_active' => true,
+            'is_popular' => true,
+            'sort_order' => 1,
+        ]);
+
+        $response = $this->get('/');
+
+        $response->assertStatus(200);
+        $response->assertSee('SABAYRA');
+        $response->assertSee('100% Free for Everyone');
+        $response->assertDontSee('PRO PLAN');
+        $response->assertSee('Touch POS & Kitchen Display', false);
     }
 
     public function test_locale_switcher_route_sets_locale_in_session(): void

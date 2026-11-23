@@ -19,6 +19,10 @@ services:
         generateValue: true
       - key: RUN_MIGRATIONS
         value: "true"
+      - key: SUBSCRIPTION_PLANS_ENABLED
+        value: "false"
+      - key: SESSION_DRIVER
+        value: "file"
       - key: DB_CONNECTION
         value: supabase
       - key: DB_HOST

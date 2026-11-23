@@ -28,7 +28,8 @@ Route::get('/debug-db', function () {
 // Public SaaS Homepage
 Route::get('/', function () {
     try {
-        $plans = Plan::where('is_active', true)->orderBy('sort_order')->get();
+        $plansEnabled = (bool) config('subscription.plans_enabled', false);
+        $plans = $plansEnabled ? Plan::where('is_active', true)->orderBy('sort_order')->get() : collect();
     } catch (\Throwable $e) {
         $plans = collect();
     }
