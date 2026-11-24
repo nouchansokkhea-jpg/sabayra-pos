@@ -223,7 +223,18 @@
         </div>
 
         <div class="qr-frame">
-            {!! SimpleSoftwareIO\QrCode\Facades\QrCode::size(220)->color(15, 23, 42)->generate($targetUrl) !!}
+            @php
+                try {
+                    $standeeQrSvg = SimpleSoftwareIO\QrCode\Facades\QrCode::encoding('UTF-8')->size(220)->color(15, 23, 42)->generate($targetUrl);
+                } catch (\Throwable $e) {
+                    $standeeQrSvg = null;
+                }
+            @endphp
+            @if($standeeQrSvg)
+                {!! $standeeQrSvg !!}
+            @else
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&data={{ urlencode($targetUrl) }}" alt="QR" style="width: 220px; height: 220px; margin: 0 auto; display: block;">
+            @endif
         </div>
 
         <div class="instructions">

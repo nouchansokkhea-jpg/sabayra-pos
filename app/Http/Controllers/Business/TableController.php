@@ -163,7 +163,7 @@ class TableController extends Controller
      */
     protected function generateQrPng(string $url, int $size = 600, array $rgb = [15, 23, 42]): string
     {
-        $qr = Encoder::encode($url, ErrorCorrectionLevel::M());
+        $qr = Encoder::encode($url, ErrorCorrectionLevel::M(), 'UTF-8');
         $matrix = $qr->getMatrix();
         $matrixWidth = $matrix->getWidth();
         $matrixHeight = $matrix->getHeight();

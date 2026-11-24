@@ -87,7 +87,18 @@
 
                 <div class="bg-white p-4 rounded-2xl shadow-2xl flex flex-col items-center gap-2.5 shrink-0 border-4 border-emerald-400/40">
                     <div class="p-2 bg-white rounded-xl" id="qr-master-box">
-                        {!! SimpleSoftwareIO\QrCode\Facades\QrCode::size(140)->color(6, 78, 59)->generate($masterMenuUrl) !!}
+                        @php
+                            try {
+                                $masterQrSvg = SimpleSoftwareIO\QrCode\Facades\QrCode::encoding('UTF-8')->size(140)->color(6, 78, 59)->generate($masterMenuUrl);
+                            } catch (\Throwable $e) {
+                                $masterQrSvg = null;
+                            }
+                        @endphp
+                        @if($masterQrSvg)
+                            {!! $masterQrSvg !!}
+                        @else
+                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=140x140&data={{ urlencode($masterMenuUrl) }}" alt="QR" class="w-28 h-28 mx-auto">
+                        @endif
                     </div>
                     <span class="text-[11px] font-bold text-slate-800 tracking-wide uppercase">{{ __('Scan for Menu') }}</span>
                     <div class="flex items-center gap-2 pt-1 w-full">
@@ -181,7 +192,18 @@
                             <!-- QR Code Preview with Download & Print -->
                             <div class="my-4 py-3 bg-white rounded-xl border border-slate-200/70 flex flex-col items-center justify-center p-3 shadow-inner">
                                 <div class="p-1 bg-white rounded-lg" id="qr-table-{{ $table->id }}">
-                                    {!! SimpleSoftwareIO\QrCode\Facades\QrCode::size(110)->color(15, 23, 42)->generate($targetUrl) !!}
+                                    @php
+                                        try {
+                                            $tableQrSvg = SimpleSoftwareIO\QrCode\Facades\QrCode::encoding('UTF-8')->size(110)->color(15, 23, 42)->generate($targetUrl);
+                                        } catch (\Throwable $e) {
+                                            $tableQrSvg = null;
+                                        }
+                                    @endphp
+                                    @if($tableQrSvg)
+                                        {!! $tableQrSvg !!}
+                                    @else
+                                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=110x110&data={{ urlencode($targetUrl) }}" alt="QR" class="w-24 h-24 mx-auto">
+                                    @endif
                                 </div>
                                 <span class="text-[10px] text-slate-600 font-mono font-bold mt-1.5 truncate max-w-full text-center">
                                     table/{{ $table->table_number }}

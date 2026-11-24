@@ -28,30 +28,35 @@ class PasswordResetLinkController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
-        $request->validate([
-            'email' => ['required', 'email'],
-        ]);
-
-        $email = $request->input('email');
-        $user = User::where('email', $email)->first();
-
-        // 1. Try sending the reset link via Laravel's Password broker
         try {
-            $status = Password::sendResetLink(
-                $request->only('email')
-            );
+            $request->validate([
+                'email' => ['required', 'email'],
+            ]);
 
-            if ($status === Password::RESET_LINK_SENT) {
-                return back()->with('status', __($status));
+            $email = $request->input('email');
+            $user = User::where('email', $email)->first();
+
+            if (!$user) {
+                return back()->withInput($request->only('email'))
+                    ->withErrors(['email' => 'We could not find an account with that email address.']);
             }
 
-            return back()->withInput($request->only('email'))
-                ->withErrors(['email' => __($status)]);
-        } catch (\Throwable $e) {
-            // Handle mail transport or connection failure gracefully without throwing HTTP 500
-            Log::warning('Password reset email dispatch fallback: ' . $e->getMessage());
+            // 1. Try standard Password broker reset link dispatch
+            try {
+                $status = Password::sendResetLink(
+                    $request->only('email')
+                );
 
-            if ($user) {
+                if ($status === Password::RESET_LINK_SENT) {
+                    return back()->with('status', __($status));
+                }
+
+                return back()->withInput($request->only('email'))
+                    ->withErrors(['email' => __($status)]);
+            } catch (\Throwable $mailException) {
+                // If mail sending / SMTP fails on hosting, provide direct self-service reset link
+                Log::warning('Password reset email dispatch fallback: ' . $mailException->getMessage());
+
                 $token = Password::createToken($user);
                 $directResetUrl = route('password.reset', ['token' => $token, 'email' => $email]);
 
@@ -59,9 +64,10 @@ class PasswordResetLinkController extends Controller
                     ->with('status', 'A password recovery link has been prepared for your account.')
                     ->with('direct_reset_url', $directResetUrl);
             }
-
+        } catch (\Throwable $e) {
+            Log::error('Password reset store error: ' . $e->getMessage());
             return back()->withInput($request->only('email'))
-                ->withErrors(['email' => __('passwords.user')]);
+                ->withErrors(['email' => 'Unable to process reset request: ' . $e->getMessage()]);
         }
     }
 }

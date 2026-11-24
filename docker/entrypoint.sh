@@ -35,9 +35,14 @@ php artisan config:clear || true
 if [ "$RUN_MIGRATIONS" = "true" ]; then
     echo "Testing database connectivity..."
     DB_CONNECTED=false
-    if php -r "require 'vendor/autoload.php'; \$app = require_once 'bootstrap/app.php'; \$app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); Illuminate\Support\Facades\DB::connection()->getPdo();" > /dev/null 2>&1; then
-        DB_CONNECTED=true
-    fi
+    for i in 1 2 3 4 5; do
+        if php -r "require 'vendor/autoload.php'; \$app = require_once 'bootstrap/app.php'; \$app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); Illuminate\Support\Facades\DB::connection()->getPdo();" > /dev/null 2>&1; then
+            DB_CONNECTED=true
+            break
+        fi
+        echo "Waiting for primary database connection (attempt $i/5)..."
+        sleep 2
+    done
 
     if [ "$DB_CONNECTED" = "true" ]; then
         echo "Primary database connected successfully. Running migrations..."
