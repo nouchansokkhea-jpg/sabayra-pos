@@ -573,7 +573,7 @@
                 </div>
 
                 <!-- Checkout Form -->
-                <form @submit.prevent="submitOrder" class="space-y-4 pt-4 border-t border-gray-200 dark:border-gray-800 text-xs">
+                <form @submit.prevent="submitOrder" novalidate class="space-y-4 pt-4 border-t border-gray-200 dark:border-gray-800 text-xs">
                     <div>
                         <label class="block font-bold uppercase tracking-wider text-gray-800 dark:text-gray-200 mb-1">Dining Option</label>
                         <div class="grid grid-cols-3 gap-2">
@@ -593,31 +593,31 @@
                     </div>
 
                     <div x-show="orderType === 'dine_in'">
-                        <label class="block font-bold uppercase tracking-wider text-gray-800 dark:text-gray-200 mb-1">Table Number</label>
-                        <input type="text" x-model="tableNumber" required class="w-full rounded-xl border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white px-3 py-2 text-xs">
+                        <label class="block font-bold uppercase tracking-wider text-gray-800 dark:text-gray-200 mb-1">Table Number *</label>
+                        <input type="text" x-model="tableNumber" placeholder="e.g. 1, 2, A5..." class="w-full rounded-xl border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white px-3 py-2 text-xs">
                     </div>
 
                     <div x-show="orderType === 'delivery'" style="display: none;">
-                        <label class="block font-bold uppercase tracking-wider text-gray-800 dark:text-gray-200 mb-1">Delivery Address</label>
+                        <label class="block font-bold uppercase tracking-wider text-gray-800 dark:text-gray-200 mb-1">Delivery Address *</label>
                         <input type="text" x-model="deliveryAddress" placeholder="Street, house number, landmarks..." class="w-full rounded-xl border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white px-3 py-2 text-xs">
                     </div>
 
                     <div class="grid grid-cols-2 gap-2">
                         <div>
                             <label class="block font-bold uppercase tracking-wider text-gray-800 dark:text-gray-200 mb-1">Your Name *</label>
-                            <input type="text" x-model="customerName" required placeholder="Name" class="w-full rounded-xl border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white px-3 py-2 text-xs">
+                            <input type="text" x-model="customerName" placeholder="Name" class="w-full rounded-xl border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white px-3 py-2 text-xs">
                         </div>
                         <div>
                             <label class="block font-bold uppercase tracking-wider text-gray-800 dark:text-gray-200 mb-1">Phone Number *</label>
-                            <input type="text" x-model="customerPhone" required placeholder="012 345 678" class="w-full rounded-xl border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white px-3 py-2 text-xs">
+                            <input type="text" x-model="customerPhone" placeholder="012 345 678" class="w-full rounded-xl border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white px-3 py-2 text-xs">
                         </div>
                     </div>
 
                     <div>
                         <label class="block font-bold uppercase tracking-wider text-gray-800 dark:text-gray-200 mb-1">Payment Method</label>
                         <select x-model="paymentMethod" class="w-full rounded-xl border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white px-3 py-2 text-xs font-medium">
-                            <option value="khqr">Bakong KHQR (Scan to Pay)</option>
                             <option value="cash">Cash at Counter</option>
+                            <option value="khqr">Bakong KHQR (Scan to Pay)</option>
                         </select>
                     </div>
 
@@ -633,11 +633,14 @@
                         </div>
                     </div>
 
-                    <button type="submit" :disabled="isSubmitting"
+                    <button type="submit" :disabled="isSubmitting || cart.length === 0"
                             style="background-color: var(--brand-primary);"
-                            class="w-full py-3 text-white font-bold rounded-xl shadow-md transition disabled:opacity-50 hover:opacity-95">
+                            class="w-full py-3 text-white font-bold rounded-xl shadow-md transition disabled:opacity-50 hover:opacity-95 flex items-center justify-center gap-2">
                         <span x-show="!isSubmitting">{{ __('menu.place_order') }}</span>
-                        <span x-show="isSubmitting" style="display: none;">Processing Order...</span>
+                        <span x-show="isSubmitting" style="display: none;" class="flex items-center gap-2">
+                            <svg class="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+                            <span>Processing Order...</span>
+                        </span>
                     </button>
                 </form>
             </div>
@@ -771,25 +774,53 @@
                 },
 
                 async submitOrder() {
-                    if (this.cart.length === 0) return;
+                    if (this.cart.length === 0) {
+                        alert('Your cart is empty. Please add items to your cart.');
+                        return;
+                    }
+
+                    if (!this.customerName || this.customerName.trim() === '') {
+                        alert('Please enter your name.');
+                        return;
+                    }
+
+                    if (!this.customerPhone || this.customerPhone.trim() === '') {
+                        alert('Please enter your phone number.');
+                        return;
+                    }
+
+                    if (this.orderType === 'dine_in' && (!this.tableNumber || this.tableNumber.trim() === '')) {
+                        alert('Please enter your table number for Dine-In.');
+                        return;
+                    }
+
+                    if (this.orderType === 'delivery' && (!this.deliveryAddress || this.deliveryAddress.trim() === '')) {
+                        alert('Please enter your delivery address.');
+                        return;
+                    }
+
                     this.isSubmitting = true;
 
-                    localStorage.setItem('customer_name', this.customerName);
-                    localStorage.setItem('customer_phone', this.customerPhone);
+                    localStorage.setItem('customer_name', this.customerName.trim());
+                    localStorage.setItem('customer_phone', this.customerPhone.trim());
 
                     try {
-                        const response = await fetch('/{{ $business->slug }}/checkout', {
+                        const checkoutUrl = '{{ route('public.checkout', ['business_slug' => $business->slug]) }}';
+                        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+
+                        const response = await fetch(checkoutUrl, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
-                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                                'Accept': 'application/json',
+                                'X-CSRF-TOKEN': csrfToken,
                             },
                             body: JSON.stringify({
-                                customer_name: this.customerName,
-                                customer_phone: this.customerPhone,
+                                customer_name: this.customerName.trim(),
+                                customer_phone: this.customerPhone.trim(),
                                 order_type: this.orderType,
-                                table_number: this.tableNumber,
-                                delivery_address: this.deliveryAddress,
+                                table_number: this.orderType === 'dine_in' ? this.tableNumber.trim() : null,
+                                delivery_address: this.orderType === 'delivery' ? this.deliveryAddress.trim() : null,
                                 payment_method: this.paymentMethod,
                                 items: this.cart,
                             })
@@ -798,11 +829,13 @@
                         const data = await response.json();
                         if (response.ok && data.success) {
                             localStorage.removeItem('cart_{{ $business->id }}');
+                            this.cart = [];
                             window.location.href = data.redirect_url;
                         } else {
-                            alert(data.error || 'Failed to submit order.');
+                            alert(data.error || data.message || 'Failed to submit order. Please check your details.');
                         }
                     } catch (e) {
+                        console.error('Order submission error:', e);
                         alert('Connection error. Please try again.');
                     } finally {
                         this.isSubmitting = false;

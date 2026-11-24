@@ -27,45 +27,50 @@ class OrderCheckoutController extends Controller
      */
     public function checkout(Request $request, string $business_slug): JsonResponse
     {
-        $business = Business::where('slug', $business_slug)
-            ->where('status', 'active')
-            ->firstOrFail();
+        try {
+            $decodedSlug = urldecode($business_slug);
+            $business = Business::where(function ($query) use ($business_slug, $decodedSlug) {
+                $query->where('slug', $business_slug)
+                    ->orWhere('slug', $decodedSlug);
+            })
+                ->where('status', 'active')
+                ->firstOrFail();
 
-        TenantContext::set($business);
+            TenantContext::set($business);
 
-        $validated = $request->validate([
-            'customer_name' => ['required', 'string', 'max:150'],
-            'customer_phone' => ['required', 'string', 'max:50'],
-            'order_type' => ['required', 'string', 'in:dine_in,takeaway,delivery'],
-            'table_number' => ['nullable', 'string', 'max:50'],
-            'delivery_address' => ['nullable', 'string', 'max:500'],
-            'payment_method' => ['required', 'string', 'in:cash,khqr,card'],
-            'notes' => ['nullable', 'string', 'max:500'],
-            'items' => ['required', 'array', 'min:1'],
-            'items.*.product_id' => ['required', 'exists:products,id'],
-            'items.*.variant_id' => ['nullable', 'exists:product_variants,id'],
-            'items.*.addons' => ['nullable', 'array'],
-            'items.*.addons.*' => ['exists:product_addons,id'],
-            'items.*.quantity' => ['required', 'numeric', 'min:1', 'max:100'],
-            'items.*.notes' => ['nullable', 'string', 'max:255'],
-        ]);
+            $validated = $request->validate([
+                'customer_name' => ['required', 'string', 'max:150'],
+                'customer_phone' => ['required', 'string', 'max:50'],
+                'order_type' => ['required', 'string', 'in:dine_in,takeaway,delivery'],
+                'table_number' => ['nullable', 'string', 'max:50'],
+                'delivery_address' => ['nullable', 'string', 'max:500'],
+                'payment_method' => ['required', 'string', 'in:cash,khqr,card'],
+                'notes' => ['nullable', 'string', 'max:500'],
+                'items' => ['required', 'array', 'min:1'],
+                'items.*.product_id' => ['required', 'exists:products,id'],
+                'items.*.variant_id' => ['nullable', 'exists:product_variants,id'],
+                'items.*.addons' => ['nullable', 'array'],
+                'items.*.addons.*' => ['exists:product_addons,id'],
+                'items.*.quantity' => ['required', 'numeric', 'min:1', 'max:100'],
+                'items.*.notes' => ['nullable', 'string', 'max:255'],
+            ]);
 
-        if ($validated['order_type'] === 'dine_in' && empty($validated['table_number'])) {
-            return response()->json(['error' => 'Please select or enter your table number for dine-in.'], 422);
-        }
+            if ($validated['order_type'] === 'dine_in' && empty($validated['table_number'])) {
+                return response()->json(['success' => false, 'error' => 'Please select or enter your table number for dine-in.'], 422);
+            }
 
-        if ($validated['order_type'] === 'delivery' && empty($validated['delivery_address'])) {
-            return response()->json(['error' => 'Please provide a delivery address.'], 422);
-        }
+            if ($validated['order_type'] === 'delivery' && empty($validated['delivery_address'])) {
+                return response()->json(['success' => false, 'error' => 'Please provide a delivery address.'], 422);
+            }
 
-        // Table resolution
-        $tableId = null;
-        if (!empty($validated['table_number'])) {
-            $table = RestaurantTable::where('business_id', $business->id)
-                ->where('table_number', $validated['table_number'])
-                ->first();
-            $tableId = $table?->id;
-        }
+            // Table resolution
+            $tableId = null;
+            if (!empty($validated['table_number'])) {
+                $table = RestaurantTable::where('business_id', $business->id)
+                    ->where('table_number', $validated['table_number'])
+                    ->first();
+                $tableId = $table?->id;
+            }
 
         $order = DB::transaction(function () use ($business, $validated, $tableId) {
             // 1. Resolve or Create Customer
@@ -214,8 +219,12 @@ class OrderCheckoutController extends Controller
             $customer->increment('total_orders');
             $customer->increment('total_spent', $totalAmount);
 
-            // Deduct recipe ingredients automatically
-            (new \App\Services\Inventory\RecipeDeductionService())->deductOrderIngredients($order);
+            // Deduct recipe ingredients automatically if defined
+            try {
+                (new \App\Services\Inventory\RecipeDeductionService())->deductOrderIngredients($order);
+            } catch (\Throwable $deductionErr) {
+                \Illuminate\Support\Facades\Log::warning('Recipe deduction error: ' . $deductionErr->getMessage());
+            }
 
             return $order;
         });
@@ -226,5 +235,17 @@ class OrderCheckoutController extends Controller
             'redirect_url' => url("/{$business->slug}/order/{$order->order_number}"),
             'message' => 'Your order has been placed successfully!',
         ]);
+    } catch (\Illuminate\Validation\ValidationException $e) {
+        return response()->json([
+            'success' => false,
+            'error' => collect($e->errors())->flatten()->first() ?? 'Invalid input data.',
+        ], 422);
+    } catch (\Throwable $e) {
+        \Illuminate\Support\Facades\Log::error('Order checkout error: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'error' => 'Order processing failed: ' . $e->getMessage(),
+        ], 500);
     }
+}
 }

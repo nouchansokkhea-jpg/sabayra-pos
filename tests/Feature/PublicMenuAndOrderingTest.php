@@ -234,6 +234,118 @@ class PublicMenuAndOrderingTest extends TestCase
         $response->assertSee('Preparing');
     }
 
+    public function test_customer_can_place_takeaway_order_without_table_number(): void
+    {
+        $payload = [
+            'customer_name' => 'Kong Takeaway',
+            'customer_phone' => '098765432',
+            'order_type' => 'takeaway',
+            'payment_method' => 'cash',
+            'items' => [
+                [
+                    'product_id' => $this->product->id,
+                    'quantity' => 1,
+                ],
+            ],
+        ];
+
+        $response = $this->postJson("/{$this->business->slug}/checkout", $payload);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+            ]);
+
+        $this->assertDatabaseHas('orders', [
+            'business_id' => $this->business->id,
+            'customer_name' => 'Kong Takeaway',
+            'order_type' => 'takeaway',
+            'table_id' => null,
+            'payment_method' => 'cash',
+        ]);
+    }
+
+    public function test_customer_can_place_delivery_order_with_address(): void
+    {
+        $payload = [
+            'customer_name' => 'Dara Delivery',
+            'customer_phone' => '012888777',
+            'order_type' => 'delivery',
+            'delivery_address' => '#123 Street 2004, Phnom Penh',
+            'payment_method' => 'cash',
+            'items' => [
+                [
+                    'product_id' => $this->product->id,
+                    'quantity' => 1,
+                ],
+            ],
+        ];
+
+        $response = $this->postJson("/{$this->business->slug}/checkout", $payload);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+            ]);
+
+        $this->assertDatabaseHas('orders', [
+            'business_id' => $this->business->id,
+            'customer_name' => 'Dara Delivery',
+            'order_type' => 'delivery',
+            'delivery_address' => '#123 Street 2004, Phnom Penh',
+        ]);
+    }
+
+    public function test_customer_can_order_from_khmer_slug_business(): void
+    {
+        TenantContext::clear();
+        $khmerBusiness = \App\Models\Business::create([
+            'owner_id' => $this->owner->id,
+            'name' => 'ហាងបាយឆ្ងាញ់',
+            'slug' => 'បាយឆ្ងាញ់',
+            'status' => 'active',
+            'default_currency' => 'USD',
+            'exchange_rate_khr' => 4100,
+            'tax_percent' => 0,
+        ]);
+
+        TenantContext::set($khmerBusiness);
+        $product = \App\Models\Product::create([
+            'business_id' => $khmerBusiness->id,
+            'name_en' => 'Khmer Fried Rice',
+            'slug' => 'khmer-fried-rice',
+            'base_price' => 3.00,
+            'is_available' => true,
+        ]);
+        TenantContext::clear();
+
+        $payload = [
+            'customer_name' => 'Bopha',
+            'customer_phone' => '098111222',
+            'order_type' => 'takeaway',
+            'payment_method' => 'cash',
+            'items' => [
+                [
+                    'product_id' => $product->id,
+                    'quantity' => 1,
+                ],
+            ],
+        ];
+
+        $response = $this->postJson('/' . urlencode('បាយឆ្ងាញ់') . '/checkout', $payload);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+            ]);
+
+        $this->assertDatabaseHas('orders', [
+            'business_id' => $khmerBusiness->id,
+            'customer_name' => 'Bopha',
+            'order_type' => 'takeaway',
+        ]);
+    }
+
     public function test_business_owner_can_manage_orders_and_status(): void
     {
         TenantContext::set($this->business);

@@ -21,7 +21,11 @@ class PublicMenuController extends Controller
      */
     public function show(Request $request, string $business_slug): View
     {
-        $business = Business::where('slug', $business_slug)
+        $decodedSlug = urldecode($business_slug);
+        $business = Business::where(function ($query) use ($business_slug, $decodedSlug) {
+            $query->where('slug', $business_slug)
+                ->orWhere('slug', $decodedSlug);
+        })
             ->where('status', 'active')
             ->firstOrFail();
 
@@ -73,7 +77,11 @@ class PublicMenuController extends Controller
      */
     public function table(Request $request, string $business_slug, string $table_number): View
     {
-        $business = Business::where('slug', $business_slug)
+        $decodedSlug = urldecode($business_slug);
+        $business = Business::where(function ($query) use ($business_slug, $decodedSlug) {
+            $query->where('slug', $business_slug)
+                ->orWhere('slug', $decodedSlug);
+        })
             ->where('status', 'active')
             ->firstOrFail();
 
@@ -131,7 +139,11 @@ class PublicMenuController extends Controller
      */
     public function orderStatus(Request $request, string $business_slug, string $order_number): View
     {
-        $business = Business::where('slug', $business_slug)->firstOrFail();
+        $decodedSlug = urldecode($business_slug);
+        $business = Business::where(function ($query) use ($business_slug, $decodedSlug) {
+            $query->where('slug', $business_slug)
+                ->orWhere('slug', $decodedSlug);
+        })->firstOrFail();
         TenantContext::set($business);
 
         $order = Order::where('business_id', $business->id)
