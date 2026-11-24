@@ -31,11 +31,14 @@ class SettingController extends Controller
     {
         $business = TenantContext::get();
 
-        // Auto-slugify input if provided (e.g. "Bar-Premium" -> "bar-premium")
+        // Auto-slugify input if provided (supporting English, Khmer, and Unicode characters)
         if ($request->filled('slug')) {
-            $cleanedSlug = Str::slug($request->input('slug'));
+            $raw = trim($request->input('slug'));
+            $cleanedSlug = preg_replace('/[\s_]+/u', '-', $raw);
+            $cleanedSlug = preg_replace('/[^\p{L}\p{M}\p{N}\-]+/u', '', $cleanedSlug);
+            $cleanedSlug = trim($cleanedSlug, '-');
             $request->merge([
-                'slug' => !empty($cleanedSlug) ? $cleanedSlug : $business->slug,
+                'slug' => !empty($cleanedSlug) ? mb_strtolower($cleanedSlug, 'UTF-8') : $business->slug,
             ]);
         } else {
             $request->merge(['slug' => $business->slug]);
@@ -43,7 +46,7 @@ class SettingController extends Controller
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'slug' => ['required', 'string', 'max:255', Rule::unique('businesses', 'slug')->ignore($business->id), 'regex:/^[a-z0-9-]+$/'],
+            'slug' => ['required', 'string', 'max:255', Rule::unique('businesses', 'slug')->ignore($business->id), 'regex:/^[\p{L}\p{M}\p{N}\-]+$/u'],
             'tagline' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'business_type' => ['required', 'string', 'in:' . implode(',', array_keys(config('menuhub.business_types')))],

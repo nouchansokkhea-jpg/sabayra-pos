@@ -10,6 +10,10 @@ if [ -n "$PORT" ] && [ "$PORT" != "80" ]; then
     sed -i "s/listen \[::\]:80;/listen \[::\]:$PORT;/g" /etc/nginx/http.d/default.conf
 fi
 
+# Ensure Nginx client_max_body_size is 64M for high-resolution photo uploads
+sed -i '/client_max_body_size/d' /etc/nginx/http.d/default.conf
+sed -i 's/server {/server {\n    client_max_body_size 64M;/g' /etc/nginx/http.d/default.conf
+
 # Ensure storage and database directories exist with proper permissions
 mkdir -p /var/www/html/storage/framework/cache/data \
          /var/www/html/storage/framework/sessions \

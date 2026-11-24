@@ -50,9 +50,10 @@ RUN composer install --no-dev --optimize-autoloader --no-interaction --ignore-pl
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache \
     && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 
-# Copy Nginx, Supervisord, and Entrypoint configurations
+# Copy Nginx, Supervisord, PHP, and Entrypoint configurations
 COPY docker/nginx.conf /etc/nginx/http.d/default.conf
 COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+COPY docker/php.ini $PHP_INI_DIR/conf.d/uploads.ini
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 

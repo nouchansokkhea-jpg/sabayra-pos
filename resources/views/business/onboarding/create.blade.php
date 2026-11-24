@@ -36,9 +36,11 @@
                 slug: '{{ old('slug', '') }}',
                 manuallyEdited: {{ old('slug') ? 'true' : 'false' }},
                 slugify(val) {
+                    if (!val) return '';
                     return val.toLowerCase()
                               .trim()
-                              .replace(/[^a-z0-9]+/g, '-')
+                              .replace(/[\s_]+/g, '-')
+                              .replace(/[^\p{L}\p{M}\p{N}\-]+/gu, '')
                               .replace(/^-+|-+$/g, '');
                 }
               }">
@@ -50,7 +52,7 @@
                         Business Name / ឈ្មោះអាជីវកម្ម *
                     </label>
                     <input type="text" name="name" x-model="name"
-                           @input="if (!manuallyEdited) { let s = slugify(name); if (s.length > 0) { slug = s; } }"
+                           @input="if (!manuallyEdited) { slug = slugify(name); }"
                            required
                            placeholder="e.g. ផ្ទះបាយខ្មែរ រំដួល, Cafe Amazon, Romdoul Kitchen..."
                            class="w-full text-sm rounded-xl border-gray-200 dark:border-gray-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 focus:border-orange-500 focus:ring-orange-500">
@@ -66,13 +68,13 @@
                     <div class="flex rounded-xl shadow-xs">
                         <span class="inline-flex items-center px-3 rounded-l-xl border border-r-0 border-gray-200 bg-gray-50 text-gray-500 text-xs dark:bg-gray-700 dark:border-gray-600 dark:text-gray-400">/</span>
                         <input type="text" name="slug" x-model="slug"
-                               @input="manuallyEdited = true; slug = $event.target.value.toLowerCase().replace(/[^a-z0-9-]+/g, '-');"
+                               @input="manuallyEdited = true; slug = $event.target.value.toLowerCase().replace(/[\s_]+/g, '-').replace(/[^\p{L}\p{M}\p{N}\-]+/gu, '');"
                                placeholder="romdoul-kitchen"
                                class="w-full text-xs rounded-r-xl border-gray-200 dark:border-gray-700 dark:bg-gray-900 dark:text-white px-3 py-2.5 focus:border-orange-500 focus:ring-orange-500 font-mono">
                     </div>
                     <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-1.5 flex items-center gap-1">
                         <span>Link:</span>
-                        <span class="font-mono text-orange-500 font-bold" x-text="'/' + (slug || 'shop-auto')"></span>
+                        <span class="font-mono text-orange-500 font-bold" x-text="'/' + (slug || slugify(name) || 'your-business')"></span>
                     </p>
                 </div>
 

@@ -80,7 +80,32 @@ class BusinessManagementTest extends TestCase
         $this->assertNotNull($business);
         $this->assertEquals($khmerName, $business->name);
         $this->assertNotEmpty($business->slug);
-        $this->assertMatchesRegularExpression('/^shop-[a-z0-9]+$/', $business->slug);
+        $this->assertEquals('ផ្ទះបាយខ្មែរ-រំដួល', $business->slug);
+    }
+
+    public function test_user_can_create_business_with_khmer_name_and_khmer_slug(): void
+    {
+        $user = User::factory()->create();
+
+        $khmerName = 'បាយយយ';
+        $response = $this->actingAs($user)->post(route('business.store'), [
+            'name' => $khmerName,
+            'slug' => 'បាយយយ',
+            'business_type' => 'restaurant',
+            'phone' => '+855 23 999 111',
+            'default_currency' => 'USD',
+            'exchange_rate_khr' => 4100.00,
+        ]);
+
+        $response->assertRedirect(route('business.dashboard'));
+        $business = Business::where('owner_id', $user->id)->first();
+        $this->assertNotNull($business);
+        $this->assertEquals($khmerName, $business->name);
+        $this->assertEquals('បាយយយ', $business->slug);
+
+        // Test public menu route resolves Khmer slug cleanly
+        $menuResponse = $this->get('/' . urlencode('បាយយយ'));
+        $menuResponse->assertOk();
     }
 
     public function test_owner_can_access_dashboard_and_see_catalog_stats(): void

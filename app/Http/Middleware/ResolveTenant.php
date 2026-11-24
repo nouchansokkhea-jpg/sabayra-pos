@@ -30,7 +30,8 @@ class ResolveTenant
             if (Str::isUuid($routeParam)) {
                 $business = Business::find($routeParam);
             } else {
-                $business = Business::where('slug', $routeParam)->first();
+                $decoded = urldecode($routeParam);
+                $business = Business::where('slug', $decoded)->orWhere('slug', $routeParam)->first();
             }
 
             if (!$business) {

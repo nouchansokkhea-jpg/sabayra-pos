@@ -57,7 +57,7 @@
                     <div>
                         <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">Public Menu Slug (URL) *</label>
                         <div class="flex rounded-xl shadow-xs">
-                            <span class="inline-flex items-center px-3 rounded-l-xl border border-r-0 border-gray-200 bg-gray-50 text-gray-700 text-xs font-semibold dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">menuhub.site/</span>
+                            <span class="inline-flex items-center px-3 rounded-l-xl border border-r-0 border-gray-200 bg-gray-50 text-gray-700 text-xs font-semibold dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">{{ rtrim(request()->schemeAndHttpHost(), '/') }}/</span>
                             <input type="text" name="slug" value="{{ old('slug', $business->slug) }}" required
                                    class="w-full text-xs rounded-r-xl border-gray-200 dark:border-gray-700 dark:bg-gray-900 dark:text-white px-3 py-2.5 focus:border-orange-500 focus:ring-orange-500 font-mono font-bold">
                         </div>

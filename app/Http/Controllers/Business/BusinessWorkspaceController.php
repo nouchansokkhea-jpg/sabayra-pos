@@ -33,17 +33,20 @@ class BusinessWorkspaceController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
-        // Auto-slugify input if provided (e.g. "Bar-Premium" -> "bar-premium")
+        // Auto-slugify input if provided (supporting English, Khmer, and Unicode characters)
         if ($request->filled('slug')) {
-            $cleanedSlug = Str::slug($request->input('slug'));
+            $raw = trim($request->input('slug'));
+            $cleanedSlug = preg_replace('/[\s_]+/u', '-', $raw);
+            $cleanedSlug = preg_replace('/[^\p{L}\p{M}\p{N}\-]+/u', '', $cleanedSlug);
+            $cleanedSlug = trim($cleanedSlug, '-');
             $request->merge([
-                'slug' => !empty($cleanedSlug) ? $cleanedSlug : null,
+                'slug' => !empty($cleanedSlug) ? mb_strtolower($cleanedSlug, 'UTF-8') : null,
             ]);
         }
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'slug' => ['nullable', 'string', 'max:255', 'unique:businesses,slug', 'regex:/^[a-z0-9-]+$/'],
+            'slug' => ['nullable', 'string', 'max:255', 'unique:businesses,slug', 'regex:/^[\p{L}\p{M}\p{N}\-]+$/u'],
             'business_type' => ['required', 'string', 'in:' . implode(',', array_keys(config('menuhub.business_types')))],
             'phone' => ['nullable', 'string', 'max:50'],
             'email' => ['nullable', 'email', 'max:255'],
@@ -54,14 +57,18 @@ class BusinessWorkspaceController extends Controller
             'exchange_rate_khr' => ['required', 'numeric', 'min:1000'],
             'tax_percent' => ['nullable', 'numeric', 'min:0', 'max:100'],
         ], [
-            'slug.regex' => 'The public menu slug may only contain lowercase letters, numbers, and dashes (e.g. bar-premium).',
+            'slug.regex' => 'The public menu slug may only contain letters (English/Khmer), numbers, and dashes.',
             'slug.unique' => 'This public menu URL slug is already taken. Please pick another one.',
         ]);
 
         if (empty($validated['slug'])) {
-            $baseSlug = Str::slug($validated['name']);
+            $raw = trim($validated['name']);
+            $baseSlug = preg_replace('/[\s_]+/u', '-', $raw);
+            $baseSlug = preg_replace('/[^\p{L}\p{M}\p{N}\-]+/u', '', $baseSlug);
+            $baseSlug = trim($baseSlug, '-');
+            $baseSlug = mb_strtolower($baseSlug, 'UTF-8');
+
             if (empty($baseSlug)) {
-                // For Khmer or non-Latin business names, generate clean unique URL slug
                 $baseSlug = 'shop-' . Str::lower(Str::random(6));
             }
             $slug = $baseSlug;
