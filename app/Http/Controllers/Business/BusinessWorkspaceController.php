@@ -35,8 +35,9 @@ class BusinessWorkspaceController extends Controller
     {
         // Auto-slugify input if provided (e.g. "Bar-Premium" -> "bar-premium")
         if ($request->filled('slug')) {
+            $cleanedSlug = Str::slug($request->input('slug'));
             $request->merge([
-                'slug' => Str::slug($request->input('slug')),
+                'slug' => !empty($cleanedSlug) ? $cleanedSlug : null,
             ]);
         }
 
@@ -59,6 +60,10 @@ class BusinessWorkspaceController extends Controller
 
         if (empty($validated['slug'])) {
             $baseSlug = Str::slug($validated['name']);
+            if (empty($baseSlug)) {
+                // For Khmer or non-Latin business names, generate clean unique URL slug
+                $baseSlug = 'shop-' . Str::lower(Str::random(6));
+            }
             $slug = $baseSlug;
             $counter = 1;
             while (Business::where('slug', $slug)->exists()) {

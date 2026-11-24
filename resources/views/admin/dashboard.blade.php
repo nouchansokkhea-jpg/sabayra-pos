@@ -113,12 +113,12 @@
         </div>
     </div>
 
-    <!-- Bottom Section: Recent Businesses & Activity Logs -->
+    <!-- Bottom Section: Recent Businesses, Users & Activity Logs -->
     <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <!-- Recent Businesses -->
         <div class="p-6 bg-white border border-gray-100 rounded-2xl shadow-xs dark:bg-gray-800 dark:border-gray-700/60">
             <div class="flex items-center justify-between mb-4">
-                <h3 class="text-base font-extrabold text-slate-900 dark:text-white">Recent Businesses</h3>
+                <h3 class="text-base font-extrabold text-slate-900 dark:text-white">Recent Businesses / អាជីវកម្មថ្មីៗ</h3>
                 <a href="{{ route('admin.businesses.index') }}" class="text-xs font-bold text-orange-600 hover:text-orange-700 dark:text-orange-400 hover:underline">View All &rarr;</a>
             </div>
 
@@ -158,6 +158,54 @@
                         @empty
                             <tr>
                                 <td colspan="5" class="py-6 text-center text-xs font-medium text-slate-500 dark:text-slate-400">No businesses registered yet.</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Recent Registered Users -->
+        <div class="p-6 bg-white border border-gray-100 rounded-2xl shadow-xs dark:bg-gray-800 dark:border-gray-700/60">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-base font-extrabold text-slate-900 dark:text-white">Recent Users / អ្នកប្រើប្រាស់ថ្មីៗ</h3>
+                <a href="{{ route('admin.users.index') }}" class="text-xs font-bold text-orange-600 hover:text-orange-700 dark:text-orange-400 hover:underline">View All &rarr;</a>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-100 dark:divide-gray-700/60">
+                    <thead>
+                        <tr class="text-left text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider bg-slate-50 dark:bg-gray-750/70">
+                            <th class="py-2.5 px-3">User</th>
+                            <th class="py-2.5 px-3">Phone</th>
+                            <th class="py-2.5 px-3">Role</th>
+                            <th class="py-2.5 px-3 text-right">Registered</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100 dark:divide-gray-700/40 text-xs">
+                        @forelse ($recentUsers as $u)
+                            <tr class="hover:bg-slate-50/60 dark:hover:bg-gray-750/50 transition">
+                                <td class="py-3 px-3">
+                                    <p class="font-bold text-slate-900 dark:text-white">{{ $u->name }}</p>
+                                    <p class="text-xs text-slate-500 dark:text-slate-400">{{ $u->email }}</p>
+                                </td>
+                                <td class="py-3 px-3 font-medium text-slate-700 dark:text-slate-300">
+                                    {{ $u->phone ?? '—' }}
+                                </td>
+                                <td class="py-3 px-3">
+                                    @if ($u->is_super_admin)
+                                        <span class="inline-flex px-2 py-0.5 text-[10px] font-bold rounded-full bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300">Super Admin</span>
+                                    @else
+                                        <span class="inline-flex px-2 py-0.5 text-[10px] font-bold rounded-full bg-slate-100 text-slate-800 dark:bg-gray-700 dark:text-slate-200">User</span>
+                                    @endif
+                                </td>
+                                <td class="py-3 px-3 text-right text-slate-500 dark:text-slate-400 font-mono text-[11px]">
+                                    {{ $u->created_at ? $u->created_at->diffForHumans() : 'Recently' }}
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="4" class="py-6 text-center text-xs font-medium text-slate-500 dark:text-slate-400">No users registered yet.</td>
                             </tr>
                         @endforelse
                     </tbody>

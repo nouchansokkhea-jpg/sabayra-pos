@@ -25,6 +25,20 @@
             </div>
         @endif
 
+        @if (session('direct_reset_url'))
+            <div class="mb-4 p-4 rounded-2xl bg-orange-50 border border-orange-200 text-xs text-orange-950 space-y-2">
+                <p class="font-bold text-orange-900 flex items-center gap-1.5">
+                    <span>⚡</span>
+                    <span>Direct Password Reset Link Available:</span>
+                </p>
+                <p class="text-slate-600">You can click below to set your new password immediately:</p>
+                <a href="{{ session('direct_reset_url') }}"
+                   class="inline-flex items-center gap-2 px-4 py-2.5 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-xl transition shadow-sm text-xs">
+                    <span>Reset Password Now &rarr;</span>
+                </a>
+            </div>
+        @endif
+
         @if ($errors->any())
             <div class="mb-4 text-xs font-semibold text-rose-700 bg-rose-50 border border-rose-200 p-3 rounded-xl">
                 {{ $errors->first() }}

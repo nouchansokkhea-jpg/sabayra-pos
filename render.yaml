@@ -19,11 +19,15 @@ services:
       - key: APP_ENV
         value: production
       - key: APP_DEBUG
-        value: "true"
+        value: "false"
       - key: APP_KEY
         generateValue: true
       - key: RUN_MIGRATIONS
         value: "true"
+      - key: MAIL_MAILER
+        value: "log"
+      - key: MAIL_HOST
+        value: "127.0.0.1"
       - key: SESSION_DRIVER
         value: "database"
       - key: CACHE_STORE

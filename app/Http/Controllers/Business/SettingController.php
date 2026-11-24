@@ -33,9 +33,12 @@ class SettingController extends Controller
 
         // Auto-slugify input if provided (e.g. "Bar-Premium" -> "bar-premium")
         if ($request->filled('slug')) {
+            $cleanedSlug = Str::slug($request->input('slug'));
             $request->merge([
-                'slug' => Str::slug($request->input('slug')),
+                'slug' => !empty($cleanedSlug) ? $cleanedSlug : $business->slug,
             ]);
+        } else {
+            $request->merge(['slug' => $business->slug]);
         }
 
         $validated = $request->validate([
@@ -95,7 +98,7 @@ class SettingController extends Controller
             'secondary_color' => $validated['secondary_color'] ?? ($existingTheme['secondary_color'] ?? '#1f2937'),
             'font' => $validated['font'] ?? ($existingTheme['font'] ?? 'Inter, Kantumruy Pro, Battambang, sans-serif'),
             'layout' => $validated['layout'] ?? ($existingTheme['layout'] ?? 'modern'),
-            'public_url' => !empty($validated['public_url']) ? rtrim($validated['public_url'], '/') : ($existingTheme['public_url'] ?? null),
+            'public_url' => (!empty($validated['public_url']) && !Str::contains($validated['public_url'], 'kheatopup.store')) ? rtrim($validated['public_url'], '/') : null,
             'social_links' => $validated['social_links'] ?? ($existingTheme['social_links'] ?? []),
         ]);
 

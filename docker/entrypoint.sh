@@ -30,11 +30,16 @@ php artisan config:clear || true
 # Database Health & Migration check (Quick test with automatic SQLite failover)
 if [ "$RUN_MIGRATIONS" = "true" ]; then
     echo "Testing database connectivity..."
-    if php artisan db:monitor > /dev/null 2>&1; then
-        echo "Database connected successfully. Running migrations..."
+    DB_CONNECTED=false
+    if php -r "require 'vendor/autoload.php'; \$app = require_once 'bootstrap/app.php'; \$app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); Illuminate\Support\Facades\DB::connection()->getPdo();" > /dev/null 2>&1; then
+        DB_CONNECTED=true
+    fi
+
+    if [ "$DB_CONNECTED" = "true" ]; then
+        echo "Primary database connected successfully. Running migrations..."
         php artisan migrate --force || true
     else
-        echo "Configured database is unreachable. Switching to internal SQLite database for 100% uptime..."
+        echo "Primary database is unreachable. Switching to internal SQLite database for 100% uptime..."
         export DB_CONNECTION=sqlite
         export DB_DATABASE=/var/www/html/database/database.sqlite
         php artisan migrate --force || true
@@ -45,6 +50,9 @@ if [ "$RUN_MIGRATIONS" = "true" ]; then
     php artisan db:seed --class=PlansSeeder --force || true
     php artisan db:seed --class=DemoBusinessSeeder --force || true
     php artisan app:create-super-admin || true
+
+    # Clean up any stale/broken domains in business records
+    php artisan tinker --execute="foreach (\App\Models\Business::all() as \$b) { \$t = \$b->theme_settings ?? []; if (!empty(\$t['public_url']) && str_contains(\$t['public_url'], 'kheatopup.store')) { unset(\$t['public_url']); \$b->theme_settings = \$t; \$b->saveQuietly(); } }" || true
 fi
 
 # If APP_KEY is provided, cache optimizations after migrations

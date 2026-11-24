@@ -61,6 +61,28 @@ class BusinessManagementTest extends TestCase
         ]);
     }
 
+    public function test_user_can_create_business_with_khmer_name_and_auto_generate_slug(): void
+    {
+        $user = User::factory()->create();
+
+        $khmerName = 'ផ្ទះបាយខ្មែរ រំដួល';
+        $response = $this->actingAs($user)->post(route('business.store'), [
+            'name' => $khmerName,
+            'slug' => '',
+            'business_type' => 'restaurant',
+            'phone' => '+855 23 999 111',
+            'default_currency' => 'USD',
+            'exchange_rate_khr' => 4100.00,
+        ]);
+
+        $response->assertRedirect(route('business.dashboard'));
+        $business = Business::where('owner_id', $user->id)->first();
+        $this->assertNotNull($business);
+        $this->assertEquals($khmerName, $business->name);
+        $this->assertNotEmpty($business->slug);
+        $this->assertMatchesRegularExpression('/^shop-[a-z0-9]+$/', $business->slug);
+    }
+
     public function test_owner_can_access_dashboard_and_see_catalog_stats(): void
     {
         $user = User::factory()->create();

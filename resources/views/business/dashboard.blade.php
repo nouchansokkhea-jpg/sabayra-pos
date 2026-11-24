@@ -310,21 +310,35 @@
     <div x-show="qrModalOpen" x-cloak class="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
         <div @click.away="qrModalOpen = false" class="bg-gray-800 border border-gray-700 rounded-3xl max-w-lg w-full p-6 text-center space-y-4 shadow-2xl"
              x-data="{
-                 mode: 'cellular',
-                 publicDomain: localStorage.getItem('sabayra_public_url_{{ $business->id }}') || '{{ $business->theme_settings['public_url'] ?? '' }}',
+                 mode: (!['localhost', '127.0.0.1'].includes(window.location.hostname)) ? 'live' : 'cellular',
+                 publicDomain: (function() {
+                     let stored = localStorage.getItem('sabayra_public_url_{{ $business->id }}');
+                     if (stored && stored.includes('kheatopup.store')) {
+                         localStorage.removeItem('sabayra_public_url_{{ $business->id }}');
+                         stored = null;
+                     }
+                     let themeVal = '{{ $business->theme_settings['public_url'] ?? '' }}';
+                     if (themeVal.includes('kheatopup.store')) {
+                         themeVal = '';
+                     }
+                     return stored || themeVal;
+                 })(),
                  lanUrl: 'http://172.20.10.3:8000/{{ $business->slug }}',
-                 localUrl: '{{ rtrim(request()->schemeAndHttpHost(), '/') }}/{{ $business->slug }}',
+                 localUrl: window.location.origin + '/{{ $business->slug }}',
                  tunnelCopied: false,
                  get currentUrl() {
+                     if (!['localhost', '127.0.0.1'].includes(window.location.hostname)) {
+                         return window.location.origin + '/{{ $business->slug }}';
+                     }
                      if (this.mode === 'cellular') {
-                         if (this.publicDomain && this.publicDomain.trim().length > 0) {
+                         if (this.publicDomain && this.publicDomain.trim().length > 0 && !this.publicDomain.includes('kheatopup.store')) {
                              let d = this.publicDomain.trim().replace(/\/+$/, '');
                              if (!d.startsWith('http://') && !d.startsWith('https://')) {
                                  d = 'https://' + d;
                              }
                              return d + '/{{ $business->slug }}';
                          }
-                         return 'https://sabayra.com/{{ $business->slug }}';
+                         return window.location.origin + '/{{ $business->slug }}';
                      } else if (this.mode === 'wifi') {
                          return this.lanUrl;
                      } else {
@@ -332,7 +346,7 @@
                      }
                  },
                  savePublicDomain() {
-                     if (this.publicDomain) {
+                     if (this.publicDomain && !this.publicDomain.includes('kheatopup.store')) {
                          localStorage.setItem('sabayra_public_url_{{ $business->id }}', this.publicDomain);
                      }
                  }

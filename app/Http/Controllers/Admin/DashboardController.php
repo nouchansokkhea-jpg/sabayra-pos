@@ -54,7 +54,12 @@ class DashboardController extends Controller
             ->take(6)
             ->get();
 
-        // 5. Recent Activity Logs
+        // 5. Recent Registered Platform Users
+        $recentUsers = User::latest()
+            ->take(6)
+            ->get();
+
+        // 6. Recent Activity Logs
         $recentActivities = Activity::with('causer')
             ->latest()
             ->take(8)
@@ -72,6 +77,7 @@ class DashboardController extends Controller
             'mrr',
             'businessTypes',
             'recentBusinesses',
+            'recentUsers',
             'recentActivities'
         ));
     }
