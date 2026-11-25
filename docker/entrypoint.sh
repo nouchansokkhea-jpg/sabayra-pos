@@ -71,6 +71,17 @@ if [ -n "$APP_KEY" ]; then
     php artisan view:cache || true
 fi
 
+# Register Official SABAYRA Telegram Bot webhook automatically when HTTPS URL & token exist
+if [ -n "$TELEGRAM_BOT_TOKEN" ]; then
+    PUBLIC_HTTPS_URL="${APP_URL:-$RENDER_EXTERNAL_URL}"
+    case "$PUBLIC_HTTPS_URL" in
+        https://*)
+            echo "Registering Official Telegram Bot webhook..."
+            php artisan sabayra:telegram-webhook --set --url="$PUBLIC_HTTPS_URL" || true
+            ;;
+    esac
+fi
+
 # Start services via supervisord immediately so Render health check passes
 echo "Starting Nginx & PHP-FPM on port ${PORT:-80}..."
 exec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf

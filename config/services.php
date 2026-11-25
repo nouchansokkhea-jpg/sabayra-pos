@@ -26,4 +26,14 @@ return [
         'verify_ssl' => env('SUPABASE_VERIFY_SSL', false),
     ],
 
+    'telegram' => [
+        'bot_token' => env('TELEGRAM_BOT_TOKEN'),
+        'bot_username' => env('TELEGRAM_BOT_USERNAME', 'SabayraBot'),
+        'webhook_secret' => env('TELEGRAM_WEBHOOK_SECRET'),
+        'api_base_url' => env('TELEGRAM_API_BASE_URL', 'https://api.telegram.org'),
+        'verification_ttl_minutes' => (int) env('TELEGRAM_VERIFICATION_TTL_MINUTES', 15),
+        'verify_ssl' => filter_var(env('TELEGRAM_VERIFY_SSL', true), FILTER_VALIDATE_BOOLEAN),
+        'polling_fallback' => filter_var(env('TELEGRAM_POLLING_FALLBACK', false), FILTER_VALIDATE_BOOLEAN),
+    ],
+
 ];

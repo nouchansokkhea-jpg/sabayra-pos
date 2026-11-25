@@ -32,5 +32,10 @@
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>
+        <env name="TELEGRAM_BOT_TOKEN" value=""/>
+        <env name="TELEGRAM_BOT_USERNAME" value="SabayraBot"/>
+        <env name="TELEGRAM_WEBHOOK_SECRET" value=""/>
+        <env name="TELEGRAM_VERIFY_SSL" value="true"/>
+        <env name="TELEGRAM_POLLING_FALLBACK" value="false"/>
     </php>
 </phpunit>

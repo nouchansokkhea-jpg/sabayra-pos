@@ -162,6 +162,16 @@ class Business extends Model
             ->latest('created_at');
     }
 
+    public function telegramConnection(): HasOne
+    {
+        return $this->hasOne(TelegramConnection::class, 'business_id')->withoutGlobalScopes();
+    }
+
+    public function telegramNotificationLogs(): HasMany
+    {
+        return $this->hasMany(TelegramNotificationLog::class, 'business_id')->withoutGlobalScopes();
+    }
+
     /**
      * Calculate Cambodian Riel equivalent based on business exchange rate.
      */

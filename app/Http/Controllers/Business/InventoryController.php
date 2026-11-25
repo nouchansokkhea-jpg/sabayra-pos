@@ -141,7 +141,7 @@ class InventoryController extends Controller
             'reason' => ['nullable', 'string', 'max:255'],
         ]);
 
-        DB::transaction(function () use ($business, $inventory, $validated) {
+        $stockTransition = DB::transaction(function () use ($business, $inventory, $validated): array {
             $qty = (float) $validated['quantity'];
             $current = (float) $inventory->current_stock;
             $newBalance = $current;
@@ -172,7 +172,12 @@ class InventoryController extends Controller
                 'reason' => $validated['reason'] ?? "Stock adjustment ({$validated['type']})",
                 'created_at' => now(),
             ]);
+
+            return [$current, $newBalance];
         });
+
+        app(\App\Services\Notifications\BusinessNotificationService::class)
+            ->notifyInventoryStockTransition($inventory->fresh(), $stockTransition[0], $stockTransition[1]);
 
         return back()->with('success', "Stock updated for '{$inventory->name_en}'.");
     }

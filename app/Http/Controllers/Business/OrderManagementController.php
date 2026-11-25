@@ -90,6 +90,11 @@ class OrderManagementController extends Controller
             'created_at' => now(),
         ]);
 
+        if ($oldStatus !== $newStatus && in_array($newStatus, ['confirmed', 'completed', 'cancelled'], true)) {
+            app(\App\Services\Notifications\BusinessNotificationService::class)
+                ->notifyOrderEvent($order, "order.{$newStatus}", $validated['note'] ?? null);
+        }
+
         return back()->with('success', "Order {$order->order_number} marked as {$newStatus}.");
     }
 
@@ -103,7 +108,13 @@ class OrderManagementController extends Controller
             'payment_method' => ['nullable', 'string', 'in:cash,khqr,card'],
         ]);
 
+        $previousPaymentStatus = $order->payment_status;
         $order->update($validated);
+
+        if ($validated['payment_status'] === 'paid' && $previousPaymentStatus !== 'paid') {
+            app(\App\Services\Notifications\BusinessNotificationService::class)
+                ->notifyOrderEvent($order, 'order.payment_received');
+        }
 
         return back()->with('success', "Payment status updated for order {$order->order_number}.");
     }

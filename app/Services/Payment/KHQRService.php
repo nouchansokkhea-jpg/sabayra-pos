@@ -3,6 +3,7 @@
 namespace App\Services\Payment;
 
 use App\Models\Business;
+use App\Models\BusinessSetting;
 
 class KHQRService
 {
@@ -17,7 +18,10 @@ class KHQRService
             : number_format($amount, 2, '.', '');
 
         // Merchant account identifier (Bakong ID)
-        $bakongId = $business->bakong_account_id ?? 'menuhub_cambodia@nbc';
+        $storedBakongId = BusinessSetting::getValue($business->id, 'payment.bakong_account_id');
+        $storedMerchantName = BusinessSetting::getValue($business->id, 'payment.bakong_merchant_name');
+        $bakongId = $business->bakong_account_id ?? ($storedBakongId ?: 'menuhub_cambodia@nbc');
+        $merchantName = $storedMerchantName ?: $business->name;
         $merchantAccountSub = self::tlv('00', $bakongId) . self::tlv('01', substr($business->slug, 0, 25));
 
         $payload = '';
@@ -28,7 +32,7 @@ class KHQRService
         $payload .= self::tlv('53', $currencyCode); // Transaction Currency
         $payload .= self::tlv('54', $formattedAmount); // Transaction Amount
         $payload .= self::tlv('58', 'KH'); // Country Code
-        $payload .= self::tlv('59', substr($business->name, 0, 25)); // Merchant Name
+        $payload .= self::tlv('59', substr($merchantName, 0, 25)); // Merchant Name
         $payload .= self::tlv('60', 'Phnom Penh'); // City
 
         if ($billNumber) {

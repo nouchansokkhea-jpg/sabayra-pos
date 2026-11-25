@@ -30,6 +30,13 @@ class CustomerReview extends Model
         'responded_at' => 'datetime',
     ];
 
+    protected static function booted(): void
+    {
+        static::created(function (CustomerReview $review): void {
+            app(\App\Services\Notifications\BusinessNotificationService::class)->notifyReviewEvent($review);
+        });
+    }
+
     public function business(): BelongsTo
     {
         return $this->belongsTo(Business::class);

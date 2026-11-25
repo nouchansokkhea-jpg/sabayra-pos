@@ -70,3 +70,15 @@ services:
         value: "https://zdqqrqtujqwvlmbasuqo.supabase.co"
       - key: SUPABASE_STORAGE_BUCKET
         value: "menuhub-assets"
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: TELEGRAM_BOT_USERNAME
+        value: "Sabayrabot"
+      - key: TELEGRAM_WEBHOOK_SECRET
+        generateValue: true
+      - key: TELEGRAM_VERIFICATION_TTL_MINUTES
+        value: "15"
+      - key: TELEGRAM_VERIFY_SSL
+        value: "true"
+      - key: TELEGRAM_POLLING_FALLBACK
+        value: "false"

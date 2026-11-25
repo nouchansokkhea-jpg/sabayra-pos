@@ -375,6 +375,13 @@ class PosController extends Controller
             ];
         });
 
+        $notificationService = app(\App\Services\Notifications\BusinessNotificationService::class);
+        $notificationService->notifyOrderEvent($result['order'], 'order.created');
+
+        if ($result['order']->payment_status === 'paid') {
+            $notificationService->notifyOrderEvent($result['order'], 'order.payment_received');
+        }
+
         return response()->json([
             'success' => true,
             'order_id' => $result['order']->id,

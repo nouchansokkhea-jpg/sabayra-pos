@@ -227,6 +227,8 @@ class OrderCheckoutController extends Controller
             return $order;
         });
 
+        app(\App\Services\Notifications\BusinessNotificationService::class)->notifyOrderEvent($order, 'order.created');
+
         return response()->json([
             'success' => true,
             'order_number' => $order->order_number,

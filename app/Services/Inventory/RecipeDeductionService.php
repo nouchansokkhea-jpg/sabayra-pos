@@ -16,7 +16,9 @@ class RecipeDeductionService
      */
     public function deductOrderIngredients(Order $order): void
     {
-        DB::transaction(function () use ($order) {
+        $transitions = DB::transaction(function () use ($order): array {
+            $recorded = [];
+
             foreach ($order->items as $orderItem) {
                 // Find matching recipe (variant-specific or base product)
                 $recipe = null;
@@ -48,10 +50,14 @@ class RecipeDeductionService
                     }
 
                     $deductQuantity = (float) $recipeItem->quantity * $multiplier;
+                    $previousStock = (float) $inventoryItem->current_stock;
 
                     // Decrement stock
                     $inventoryItem->decrement('current_stock', $deductQuantity);
-                    $balanceAfter = (float) $inventoryItem->fresh()->current_stock;
+                    $freshItem = $inventoryItem->fresh();
+                    $balanceAfter = (float) $freshItem->current_stock;
+
+                    $recorded[] = [$freshItem, $previousStock, $balanceAfter];
 
                     // Record movement
                     InventoryMovement::create([
@@ -67,6 +73,16 @@ class RecipeDeductionService
                         'created_at' => now(),
                     ]);
                 }
+            }
+
+            return $recorded;
+        });
+
+        DB::afterCommit(function () use ($transitions, $order): void {
+            $service = app(\App\Services\Notifications\BusinessNotificationService::class);
+
+            foreach ($transitions as [$freshItem, $previousStock, $balanceAfter]) {
+                $service->notifyInventoryStockTransition($freshItem, $previousStock, $balanceAfter, $order->branch_id);
             }
         });
     }

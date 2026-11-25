@@ -75,6 +75,16 @@ class SubscriptionController extends Controller
 
         $subscription->update($updateData);
 
+        if ($subscription->business) {
+            $expiresNote = $subscription->expires_at ? ' (expires ' . $subscription->expires_at->format('Y-m-d') . ')' : '';
+            app(\App\Services\Notifications\BusinessNotificationService::class)->notifyAccountAlert(
+                $subscription->business,
+                'Subscription Status Updated',
+                "Your business subscription status is now {$subscription->status}{$expiresNote}.",
+                "sub_status:{$subscription->id}:{$subscription->status}:" . ($subscription->expires_at?->timestamp ?? 0),
+            );
+        }
+
         return back()->with('success', "Subscription for '{$subscription->business->name}' updated successfully.");
     }
 }

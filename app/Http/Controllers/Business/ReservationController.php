@@ -66,7 +66,10 @@ class ReservationController extends Controller
         $validated['business_id'] = $business->id;
         $validated['status'] = 'confirmed';
 
-        Reservation::create($validated);
+        $reservation = Reservation::create($validated);
+
+        app(\App\Services\Notifications\BusinessNotificationService::class)
+            ->notifyReservationEvent($reservation, 'reservation.created');
 
         return back()->with('status', 'Reservation successfully booked!');
     }
@@ -83,6 +86,7 @@ class ReservationController extends Controller
             'status' => 'required|in:pending,confirmed,seated,completed,cancelled',
         ]);
 
+        $oldStatus = $reservation->status;
         $reservation->update(['status' => $validated['status']]);
 
         // If seated, optionally mark table as occupied
@@ -90,6 +94,11 @@ class ReservationController extends Controller
             $reservation->table->update(['status' => 'occupied']);
         } elseif (in_array($validated['status'], ['completed', 'cancelled']) && $reservation->table) {
             $reservation->table->update(['status' => 'available']);
+        }
+
+        if ($oldStatus !== $validated['status'] && in_array($validated['status'], ['confirmed', 'cancelled'], true)) {
+            app(\App\Services\Notifications\BusinessNotificationService::class)
+                ->notifyReservationEvent($reservation, "reservation.{$validated['status']}");
         }
 
         return back()->with('status', "Reservation status updated to {$validated['status']}.");

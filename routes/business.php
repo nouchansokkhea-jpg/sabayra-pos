@@ -18,6 +18,7 @@ use App\Http\Controllers\Business\InventoryController;
 use App\Http\Controllers\Business\KitchenController;
 use App\Http\Controllers\Business\LiveOrderController;
 use App\Http\Controllers\Business\LoyaltyController;
+use App\Http\Controllers\Business\NotificationPreferencesController;
 use App\Http\Controllers\Business\OrderManagementController;
 use App\Http\Controllers\Business\PosController;
 use App\Http\Controllers\Business\PrinterController;
@@ -33,9 +34,11 @@ use App\Http\Controllers\Business\SecurityCenterController;
 use App\Http\Controllers\Business\SettingController;
 use App\Http\Controllers\Business\StaffController;
 use App\Http\Controllers\Business\StorefrontTemplateController;
+use App\Http\Controllers\Business\TwoFactorController;
 use App\Http\Controllers\Business\SubscriptionController;
 use App\Http\Controllers\Business\SupplierController;
 use App\Http\Controllers\Business\TableController;
+use App\Http\Controllers\Business\TelegramSettingsController;
 use App\Http\Controllers\Business\TranslationController;
 use App\Http\Controllers\Business\WaitlistController;
 use Illuminate\Support\Facades\Route;
@@ -219,6 +222,27 @@ Route::get('/subscription', [SubscriptionController::class, 'index'])->name('sub
 
 Route::get('/settings', [SettingController::class, 'index'])->name('settings.index');
 Route::put('/settings', [SettingController::class, 'update'])->name('settings.update');
+Route::put('/settings/general', [SettingController::class, 'updateGeneral'])->name('settings.general.update');
+Route::put('/settings/business', [SettingController::class, 'updateBusinessInfo'])->name('settings.business.update');
+Route::put('/settings/payment', [SettingController::class, 'updatePaymentTax'])->name('settings.payment.update');
+Route::put('/settings/account', [SettingController::class, 'updateAccount'])->name('settings.account.update');
+Route::put('/settings/account/password', [SettingController::class, 'updatePassword'])->name('settings.account.password');
+
+Route::post('/settings/telegram/connect', [TelegramSettingsController::class, 'connect'])->name('settings.telegram.connect');
+Route::post('/settings/telegram/custom', [TelegramSettingsController::class, 'saveCustomBot'])->name('settings.telegram.custom');
+Route::patch('/settings/telegram/toggle', [TelegramSettingsController::class, 'toggle'])->name('settings.telegram.toggle');
+Route::post('/settings/telegram/test', [TelegramSettingsController::class, 'test'])->name('settings.telegram.test');
+Route::post('/settings/telegram/disconnect', [TelegramSettingsController::class, 'disconnect'])->name('settings.telegram.disconnect');
+Route::get('/settings/telegram/status', [TelegramSettingsController::class, 'status'])->name('settings.telegram.status');
+
+Route::put('/settings/notifications', [NotificationPreferencesController::class, 'update'])->name('settings.notifications.update');
+Route::post('/notifications/{notificationId}/read', [NotificationPreferencesController::class, 'markAsRead'])->name('notifications.read');
+Route::post('/notifications/read-all', [NotificationPreferencesController::class, 'markAllRead'])->name('notifications.read-all');
 
 Route::get('/security', [SecurityCenterController::class, 'index'])->name('security.index');
 Route::post('/security/2fa', [SecurityCenterController::class, 'toggleTwoFactor'])->name('security.2fa');
+Route::post('/security/2fa/setup', [TwoFactorController::class, 'setup'])->name('security.2fa.setup');
+Route::post('/security/2fa/confirm', [TwoFactorController::class, 'confirm'])->name('security.2fa.confirm');
+Route::post('/security/2fa/cancel', [TwoFactorController::class, 'cancel'])->name('security.2fa.cancel');
+Route::post('/security/2fa/recovery-codes', [TwoFactorController::class, 'regenerateRecoveryCodes'])->name('security.2fa.recovery-codes');
+Route::delete('/security/2fa', [TwoFactorController::class, 'disable'])->name('security.2fa.disable');

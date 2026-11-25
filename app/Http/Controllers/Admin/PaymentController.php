@@ -70,6 +70,17 @@ class PaymentController extends Controller
             $payment->subscription->update(['status' => 'active']);
         }
 
+        $business = $payment->business ?? $payment->subscription?->business;
+        if ($business && in_array($validated['status'], ['completed', 'failed', 'refunded'], true)) {
+            $statusLabel = ucfirst($validated['status']);
+            app(\App\Services\Notifications\BusinessNotificationService::class)->notifyAccountAlert(
+                $business,
+                "Subscription Payment {$statusLabel}",
+                "Subscription payment #{$payment->transaction_reference} has been marked {$validated['status']}.",
+                "sub_pay:{$payment->id}:{$validated['status']}",
+            );
+        }
+
         return back()->with('success', "Payment #{$payment->transaction_reference} marked as {$validated['status']}.");
     }
 }

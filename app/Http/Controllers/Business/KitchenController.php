@@ -147,6 +147,11 @@ class KitchenController extends Controller
             app(RecipeDeductionService::class)->deductOrderIngredients($order);
         }
 
+        if ($oldStatus !== $nextStatus && in_array($nextStatus, ['confirmed', 'completed', 'cancelled'], true)) {
+            app(\App\Services\Notifications\BusinessNotificationService::class)
+                ->notifyOrderEvent($order, "order.{$nextStatus}");
+        }
+
         if ($request->wantsJson() || $request->ajax()) {
             return response()->json([
                 'success' => true,

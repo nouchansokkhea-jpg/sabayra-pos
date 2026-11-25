@@ -184,6 +184,84 @@
                         </a>
                     @endif
 
+                    <!-- In-App Notifications Bell -->
+                    @if ($currentBusiness && Auth::check() && \Illuminate\Support\Facades\Schema::hasTable('notifications'))
+                        @php
+                            $businessNotifs = Auth::user()->notifications()
+                                ->latest()
+                                ->take(35)
+                                ->get()
+                                ->filter(fn ($n) => ($n->data['business_id'] ?? null) === $currentBusiness->id)
+                                ->take(8);
+                            $unreadNotifsCount = $businessNotifs->whereNull('read_at')->count();
+                        @endphp
+                        <div class="relative" x-data="{ notifOpen: false }">
+                            <button @click="notifOpen = !notifOpen"
+                                    type="button"
+                                    aria-label="In-app notifications"
+                                    class="relative p-2 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/70 transition">
+                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                                </svg>
+                                @if ($unreadNotifsCount > 0)
+                                    <span class="absolute -top-1 -right-1 min-w-[1.1rem] h-[1.1rem] px-1 rounded-full bg-orange-600 text-white text-[10px] font-black flex items-center justify-center">
+                                        {{ $unreadNotifsCount > 9 ? '9+' : $unreadNotifsCount }}
+                                    </span>
+                                @endif
+                            </button>
+
+                            <div x-show="notifOpen" @click.away="notifOpen = false" style="display: none;"
+                                 class="absolute right-0 mt-2 w-80 sm:w-96 rounded-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-xl z-50 overflow-hidden">
+                                <div class="px-4 py-3 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
+                                    <div>
+                                        <p class="text-xs font-black text-slate-900 dark:text-white">Notifications</p>
+                                        <p class="text-[11px] text-slate-500 dark:text-slate-400">{{ $currentBusiness->name }}</p>
+                                    </div>
+                                    @if ($unreadNotifsCount > 0)
+                                        <form method="POST" action="{{ route('business.notifications.read-all') }}">
+                                            @csrf
+                                            <button type="submit" class="text-[11px] font-bold text-orange-600 dark:text-orange-400 hover:underline">
+                                                Mark all read
+                                            </button>
+                                        </form>
+                                    @endif
+                                </div>
+
+                                <div class="max-h-80 overflow-y-auto divide-y divide-gray-100 dark:divide-gray-700/60">
+                                    @forelse ($businessNotifs as $item)
+                                        <div class="p-3.5 text-xs {{ is_null($item->read_at) ? 'bg-orange-50/50 dark:bg-orange-950/15' : '' }}">
+                                            <div class="flex items-start justify-between gap-2">
+                                                <div class="min-w-0">
+                                                    <p class="font-bold text-slate-900 dark:text-white truncate">{{ $item->data['title'] ?? 'Business Alert' }}</p>
+                                                    <p class="text-[11px] text-slate-600 dark:text-slate-300 mt-0.5 line-clamp-2">{{ $item->data['message'] ?? '' }}</p>
+                                                    <p class="text-[10px] text-slate-400 mt-1">{{ $item->created_at?->diffForHumans() }}</p>
+                                                </div>
+                                                @if (is_null($item->read_at))
+                                                    <form method="POST" action="{{ route('business.notifications.read', $item->id) }}">
+                                                        @csrf
+                                                        <button type="submit" class="text-[10px] font-bold text-orange-600 dark:text-orange-400 hover:underline shrink-0">
+                                                            Read
+                                                        </button>
+                                                    </form>
+                                                @endif
+                                            </div>
+                                        </div>
+                                    @empty
+                                        <p class="px-4 py-8 text-center text-xs text-slate-500 dark:text-slate-400">
+                                            No notifications yet for this workspace.
+                                        </p>
+                                    @endforelse
+                                </div>
+
+                                <div class="px-4 py-2.5 bg-slate-50 dark:bg-gray-900/50 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between">
+                                    <a href="{{ route('business.settings.index', ['section' => 'notifications']) }}" class="text-[11px] font-bold text-slate-700 dark:text-slate-200 hover:text-orange-500">
+                                        Notification Settings &rarr;
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    @endif
+
                     <!-- User Profile Dropdown -->
                     <div class="relative" x-data="{ open: false }">
                         <button @click="open = !open" class="flex items-center space-x-2 text-sm focus:outline-none">
@@ -199,8 +277,11 @@
                                 <p class="text-xs text-gray-600 dark:text-gray-300 font-medium">Signed in as</p>
                                 <p class="text-sm font-bold truncate text-gray-900 dark:text-white">{{ Auth::user()->email }}</p>
                             </div>
-                            <a href="{{ route('profile.edit') }}" class="block px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-700">
-                                Profile Settings
+                            <a href="{{ route('business.settings.index', ['section' => 'account']) }}" class="block px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-700">
+                                Account &amp; Security
+                            </a>
+                            <a href="{{ route('profile.edit') }}" class="block px-4 py-2 text-xs font-medium text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-700">
+                                Classic Profile View
                             </a>
                             <form method="POST" action="{{ route('logout') }}">
                                 @csrf
@@ -222,12 +303,12 @@
 
             <!-- Notifications -->
             <div class="px-4 sm:px-6 lg:px-8 mt-4">
-                @if (session('success'))
+                @if (session('success') || session('status'))
                     <div class="p-4 mb-4 text-sm text-emerald-800 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/50 flex items-center">
                         <svg class="w-5 h-5 mr-2 text-emerald-600 dark:text-emerald-400 shrink-0" fill="currentColor" viewBox="0 0 20 20">
                             <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
                         </svg>
-                        <span>{{ session('success') }}</span>
+                        <span>{{ session('success') ?? session('status') }}</span>
                     </div>
                 @endif
                 @if (session('error'))

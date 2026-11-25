@@ -82,6 +82,13 @@ class BusinessController extends Controller
             ? "Business '{$business->name}' has been activated."
             : "Business '{$business->name}' has been suspended.";
 
+        app(\App\Services\Notifications\BusinessNotificationService::class)->notifyAccountAlert(
+            $business,
+            'Account Status Changed: ' . ucfirst($newStatus),
+            $msg,
+            "business_status:{$business->id}:{$newStatus}",
+        );
+
         return back()->with('success', $msg);
     }
 

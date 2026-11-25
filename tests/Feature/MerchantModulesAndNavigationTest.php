@@ -229,16 +229,28 @@ class MerchantModulesAndNavigationTest extends TestCase
 
     public function test_merchant_can_toggle_two_factor_auth(): void
     {
-        $this->assertFalse((bool) $this->user->two_factor_enabled);
+        $this->assertFalse($this->user->hasEnabledTwoFactorAuthentication());
 
-        $response = $this->actingAs($this->user)
+        $setupResponse = $this->actingAs($this->user)
             ->withSession(['active_business_id' => $this->business->id])
-            ->post(route('business.security.2fa'));
+            ->post(route('business.security.2fa.setup'));
 
-        $response->assertSessionHas('status');
+        $setupResponse->assertRedirect(route('business.settings.index', ['section' => 'security']));
         $this->user->refresh();
-        $this->assertTrue((bool) $this->user->two_factor_enabled);
-        $this->assertNotNull($this->user->two_factor_secret);
+        $this->assertTrue($this->user->hasPendingTwoFactorSetup());
+        $this->assertFalse($this->user->hasEnabledTwoFactorAuthentication());
+
+        $code = app(\App\Services\Security\TwoFactorAuthenticationService::class)
+            ->getCurrentCode((string) $this->user->two_factor_secret);
+
+        $confirmResponse = $this->actingAs($this->user)
+            ->withSession(['active_business_id' => $this->business->id])
+            ->post(route('business.security.2fa.confirm'), ['code' => $code]);
+
+        $confirmResponse->assertRedirect(route('business.settings.index', ['section' => 'security']));
+        $this->user->refresh();
+        $this->assertTrue($this->user->hasEnabledTwoFactorAuthentication());
+        $this->assertNotNull($this->user->two_factor_confirmed_at);
 
         $this->assertDatabaseHas('security_logs', [
             'user_id' => $this->user->id,

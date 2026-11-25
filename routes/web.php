@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Public\TelegramWebhookController;
 use App\Models\Business;
 use App\Models\Plan;
 use Illuminate\Http\Request;
@@ -99,8 +100,14 @@ Route::middleware('auth')->group(function () {
 });
 
 // Backward compatibility redirect for /business/* -> /app/*
-Route::get('/business/{path}', function (string $path) {
-    return redirect('/app/' . $path);
+Route::get('/business/{path}', function (Request $request, string $path) {
+    $query = $request->getQueryString();
+    return redirect('/app/' . $path . ($query ? '?' . $query : ''));
 })->where('path', '.*');
+
+// Telegram Official Bot Webhook
+Route::post('/webhooks/telegram', [TelegramWebhookController::class, 'handle'])
+    ->middleware('throttle:60,1')
+    ->name('webhooks.telegram');
 
 require __DIR__.'/auth.php';

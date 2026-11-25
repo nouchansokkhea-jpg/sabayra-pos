@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Business;
 
 use App\Http\Controllers\Controller;
-use App\Models\SecurityLog;
-use App\Services\Tenant\TenantContext;
+use App\Models\User;
+use App\Services\Security\TwoFactorAuthenticationService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -13,42 +13,39 @@ use Illuminate\Support\Facades\Auth;
 class SecurityCenterController extends Controller
 {
     /**
-     * Display Security Center overview, 2FA status, and login audit logs.
+     * Display Security Center overview inside the unified Settings & Security workspace.
      */
-    public function index(): View
+    public function index(Request $request): View
     {
-        $business = TenantContext::get();
-        $user = Auth::user();
+        $viewData = SettingController::buildViewData($request, 'security');
 
-        $logs = SecurityLog::where('user_id', $user->id)
-            ->latest('created_at')
-            ->take(15)
-            ->get();
-
-        return view('business.security.index', compact('business', 'user', 'logs'));
+        return view('business.security.index', $viewData);
     }
 
     /**
-     * Toggle two-factor authentication flag for current user account.
+     * Legacy 2FA toggle endpoint upgraded to initiate verified setup (never bypassing TOTP confirmation).
      */
-    public function toggleTwoFactor(Request $request): RedirectResponse
+    public function toggleTwoFactor(Request $request, TwoFactorAuthenticationService $twoFactorService): RedirectResponse
     {
+        /** @var User $user */
         $user = Auth::user();
-        $enabled = !$user->two_factor_enabled;
 
-        $user->update([
-            'two_factor_enabled' => $enabled,
-            'two_factor_secret' => $enabled ? bin2hex(random_bytes(16)) : null,
+        if (! $user->hasEnabledTwoFactorAuthentication()) {
+            $twoFactorService->beginSetup($user);
+
+            return redirect()
+                ->route('business.settings.index', ['section' => 'security'])
+                ->with('status', 'Scan the QR code with your authenticator app and confirm your 6-digit code to activate 2FA.');
+        }
+
+        $request->validateWithBag('twoFactorDisable', [
+            'current_password' => ['required', 'current_password:web'],
         ]);
 
-        SecurityLog::create([
-            'user_id' => $user->id,
-            'business_id' => TenantContext::get()?->id,
-            'event_type' => $enabled ? '2fa_enabled' : '2fa_disabled',
-            'ip_address' => $request->ip(),
-            'user_agent' => $request->userAgent(),
-        ]);
+        $twoFactorService->disable($user);
 
-        return back()->with('status', 'Two-Factor Authentication (2FA) status updated successfully.');
+        return redirect()
+            ->route('business.settings.index', ['section' => 'security'])
+            ->with('status', 'Two-Factor Authentication disabled successfully.');
     }
 }

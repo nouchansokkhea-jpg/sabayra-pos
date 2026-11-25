@@ -26,6 +26,8 @@ class User extends Authenticatable
         'preferred_locale',
         'two_factor_enabled',
         'two_factor_secret',
+        'two_factor_recovery_codes',
+        'two_factor_confirmed_at',
         'last_login_at',
         'failed_login_attempts',
     ];
@@ -33,6 +35,8 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'two_factor_secret',
+        'two_factor_recovery_codes',
     ];
 
     protected static function booted(): void
@@ -57,9 +61,30 @@ class User extends Authenticatable
             'password' => 'hashed',
             'is_super_admin' => 'boolean',
             'two_factor_enabled' => 'boolean',
+            'two_factor_secret' => 'encrypted',
+            'two_factor_recovery_codes' => 'encrypted:array',
+            'two_factor_confirmed_at' => 'datetime',
             'last_login_at' => 'datetime',
             'failed_login_attempts' => 'integer',
         ];
+    }
+
+    /**
+     * Determine whether two-factor authentication is fully configured and confirmed for sign-in challenges.
+     */
+    public function hasEnabledTwoFactorAuthentication(): bool
+    {
+        return (bool) $this->two_factor_enabled
+            && ! empty($this->two_factor_secret)
+            && $this->two_factor_confirmed_at !== null;
+    }
+
+    /**
+     * Determine whether a TOTP secret has been generated awaiting initial user verification.
+     */
+    public function hasPendingTwoFactorSetup(): bool
+    {
+        return ! $this->hasEnabledTwoFactorAuthentication() && ! empty($this->two_factor_secret);
     }
 
     /**
@@ -143,5 +168,21 @@ class User extends Authenticatable
             ->value('role');
 
         return $role === 'owner' ? 'manager' : $role;
+    }
+
+    /**
+     * Determine whether the user is authorized to manage business-level settings.
+     */
+    public function canManageBusinessSettings(Business|string $business): bool
+    {
+        if ($this->isSuperAdmin() || $this->isOwnerOf($business)) {
+            return true;
+        }
+
+        if ($this->roleInBusiness($business) === 'owner') {
+            return true;
+        }
+
+        return $this->belongsToBusiness($business) && $this->checkPermissionTo('manage_settings');
     }
 }
