@@ -333,4 +333,84 @@ class PosAndInventoryTest extends TestCase
         $this->assertStringContainsString('5802KH', $khqr); // KH Country
         $this->assertStringContainsString('6304', $khqr); // Tag 63 Checksum length 4
     }
+
+    public function test_multiple_businesses_can_complete_pos_checkouts_on_same_day(): void
+    {
+        $today = now()->format('Ymd');
+
+        TenantContext::set($this->business);
+        PosSession::create([
+            'business_id' => $this->business->id,
+            'user_id' => $this->owner->id,
+            'opening_cash' => 50.00,
+            'status' => 'open',
+            'opened_at' => now(),
+        ]);
+        TenantContext::clear();
+
+        $firstResponse = $this->actingAs($this->owner)
+            ->withSession(['active_business_id' => $this->business->id])
+            ->postJson('/app/pos/checkout', [
+                'order_type' => 'takeaway',
+                'payment_method' => 'cash',
+                'amount_tendered' => 10.00,
+                'items' => [
+                    ['product_id' => $this->product->id, 'quantity' => 1],
+                ],
+            ]);
+
+        $firstResponse->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'order_number' => "POS-{$today}-0001",
+                'receipt_number' => "REC-{$today}-00001",
+            ]);
+
+        // Second independent business performs POS checkout on same day
+        $otherOwner = User::factory()->create();
+        $otherBusiness = Business::create([
+            'owner_id' => $otherOwner->id,
+            'name' => 'Mekong Bakery',
+            'slug' => 'mekong-bakery',
+            'status' => 'active',
+            'default_currency' => 'USD',
+            'exchange_rate_khr' => 4100,
+            'tax_percent' => 0,
+        ]);
+
+        TenantContext::set($otherBusiness);
+        PosSession::create([
+            'business_id' => $otherBusiness->id,
+            'user_id' => $otherOwner->id,
+            'opening_cash' => 25.00,
+            'status' => 'open',
+            'opened_at' => now(),
+        ]);
+        $otherProduct = Product::create([
+            'business_id' => $otherBusiness->id,
+            'name_en' => 'Croissant',
+            'slug' => 'croissant',
+            'base_price' => 2.00,
+            'is_available' => true,
+        ]);
+        TenantContext::clear();
+
+        $secondResponse = $this->actingAs($otherOwner)
+            ->withSession(['active_business_id' => $otherBusiness->id])
+            ->postJson('/app/pos/checkout', [
+                'order_type' => 'takeaway',
+                'payment_method' => 'cash',
+                'amount_tendered' => 5.00,
+                'items' => [
+                    ['product_id' => $otherProduct->id, 'quantity' => 1],
+                ],
+            ]);
+
+        $secondResponse->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'order_number' => "POS-{$today}-0001",
+                'receipt_number' => "REC-{$today}-00001",
+            ]);
+    }
 }

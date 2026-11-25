@@ -444,4 +444,135 @@ class PublicMenuAndOrderingTest extends TestCase
             'code' => "QR-TBL-{$this->business->slug}-VIP-1",
         ]);
     }
+
+    public function test_multiple_businesses_can_place_orders_on_same_day_without_order_number_collision(): void
+    {
+        $today = now()->format('Ymd');
+        $expectedOrderNumber = "ORD-{$today}-0001";
+
+        // First business places first takeaway order today
+        $firstResponse = $this->postJson("/{$this->business->slug}/checkout", [
+            'customer_name' => 'First Merchant Customer',
+            'customer_phone' => '012111111',
+            'order_type' => 'takeaway',
+            'payment_method' => 'cash',
+            'items' => [
+                [
+                    'product_id' => $this->product->id,
+                    'quantity' => 1,
+                ],
+            ],
+        ]);
+
+        $firstResponse->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'order_number' => $expectedOrderNumber,
+            ]);
+
+        // Second independent business places its first takeaway order today
+        $otherOwner = User::factory()->create();
+        $otherBusiness = Business::create([
+            'owner_id' => $otherOwner->id,
+            'name' => 'Second Cafe',
+            'slug' => 'second-cafe',
+            'status' => 'active',
+            'default_currency' => 'USD',
+            'exchange_rate_khr' => 4100,
+            'tax_percent' => 0,
+        ]);
+
+        TenantContext::set($otherBusiness);
+        $otherProduct = Product::create([
+            'business_id' => $otherBusiness->id,
+            'name_en' => 'Iced Latte',
+            'slug' => 'iced-latte',
+            'base_price' => 2.50,
+            'is_available' => true,
+        ]);
+        TenantContext::clear();
+
+        $secondResponse = $this->postJson("/{$otherBusiness->slug}/checkout", [
+            'customer_name' => 'Second Merchant Customer',
+            'customer_phone' => '0986544',
+            'order_type' => 'takeaway',
+            'payment_method' => 'cash',
+            'items' => [
+                [
+                    'product_id' => $otherProduct->id,
+                    'quantity' => 1,
+                ],
+            ],
+        ]);
+
+        $secondResponse->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'order_number' => $expectedOrderNumber,
+            ]);
+
+        $this->assertEquals(
+            2,
+            Order::withoutGlobalScopes()->where('order_number', $expectedOrderNumber)->count()
+        );
+    }
+
+    public function test_sequential_orders_in_same_business_avoid_collisions_when_gaps_exist(): void
+    {
+        $today = now()->format('Ymd');
+
+        TenantContext::set($this->business);
+        Order::create([
+            'business_id' => $this->business->id,
+            'order_number' => "ORD-{$today}-0001",
+            'order_type' => 'takeaway',
+            'customer_name' => 'Early Guest',
+            'customer_phone' => '011000111',
+            'subtotal' => 5.00,
+            'total_amount' => 5.00,
+            'total_khr' => 20500,
+            'currency' => 'USD',
+            'exchange_rate_khr' => 4100,
+            'status' => 'pending',
+            'payment_status' => 'unpaid',
+            'payment_method' => 'cash',
+        ]);
+        Order::create([
+            'business_id' => $this->business->id,
+            'order_number' => "ORD-{$today}-0003",
+            'order_type' => 'takeaway',
+            'customer_name' => 'Third Guest',
+            'customer_phone' => '011000333',
+            'subtotal' => 5.00,
+            'total_amount' => 5.00,
+            'total_khr' => 20500,
+            'currency' => 'USD',
+            'exchange_rate_khr' => 4100,
+            'status' => 'pending',
+            'payment_status' => 'unpaid',
+            'payment_method' => 'cash',
+        ]);
+        TenantContext::clear();
+
+        // Notice count() + 1 would wrongly produce 0003 and collide!
+        $response = $this->postJson("/{$this->business->slug}/checkout", [
+            'customer_name' => 'Next Guest',
+            'customer_phone' => '099887766',
+            'order_type' => 'delivery',
+            'delivery_address' => 'Phnom Penh',
+            'payment_method' => 'cash',
+            'items' => [
+                [
+                    'product_id' => $this->product->id,
+                    'quantity' => 1,
+                ],
+            ],
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'order_number' => "ORD-{$today}-0004",
+            ]);
+    }
 }

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Business;
 
 use App\Http\Controllers\Controller;
+use App\Models\Business;
 use App\Models\BusinessBranch;
 use App\Models\Category;
 use App\Models\Customer;
@@ -192,6 +193,8 @@ class PosController extends Controller
         }
 
         $result = DB::transaction(function () use ($business, $activeSession, $user, $validated, $customerName, $customerPhone, $tableId) {
+            Business::whereKey($business->id)->lockForUpdate()->first();
+
             // Customer
             $customerId = null;
             if ($customerPhone) {
@@ -207,12 +210,8 @@ class PosController extends Controller
                 $customerId = $customer->id;
             }
 
-            // Sequential Order Number
-            $todayDate = Carbon::now()->format('Ymd');
-            $dailyCount = Order::where('business_id', $business->id)
-                ->whereDate('created_at', Carbon::today())
-                ->count() + 1;
-            $orderNumber = sprintf('POS-%s-%04d', $todayDate, $dailyCount);
+            // Sequential Order Number scoped to this business
+            $orderNumber = Order::generateDailySequenceNumber($business->id, 'order_number', 'POS', 4);
 
             // Calculate item totals
             $subtotal = 0.00;
@@ -342,9 +341,8 @@ class PosController extends Controller
                 'created_at' => now(),
             ]);
 
-            // Sequential Receipt Number
-            $receiptCount = PosTransaction::where('business_id', $business->id)->count() + 1;
-            $receiptNumber = sprintf('REC-%s-%05d', $todayDate, $receiptCount);
+            // Sequential Receipt Number scoped to this business
+            $receiptNumber = PosTransaction::generateDailySequenceNumber($business->id, 'receipt_number', 'REC', 5);
 
             // Create POS Transaction
             $posTransaction = PosTransaction::create([

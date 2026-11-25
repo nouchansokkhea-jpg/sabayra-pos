@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Business;
 
 use App\Http\Controllers\Controller;
+use App\Models\Business;
 use App\Models\InventoryItem;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderItem;
@@ -71,10 +72,11 @@ class SupplierController extends Controller
             'items.*.unit_cost' => 'required|numeric|min:0',
         ]);
 
-        $poCount = PurchaseOrder::where('business_id', $business->id)->count();
-        $poNumber = 'PO-' . date('Ymd') . '-' . str_pad($poCount + 1, 3, '0', STR_PAD_LEFT);
+        $poNumber = DB::transaction(function () use ($business, $validated) {
+            Business::whereKey($business->id)->lockForUpdate()->first();
 
-        DB::transaction(function () use ($business, $validated, $poNumber) {
+            $poNumber = PurchaseOrder::generateDailySequenceNumber($business->id, 'po_number', 'PO', 3);
+
             $totalCost = 0.0;
             foreach ($validated['items'] as $item) {
                 $totalCost += (float) $item['quantity'] * (float) $item['unit_cost'];
@@ -98,6 +100,8 @@ class SupplierController extends Controller
                     'total_cost' => (float) $item['quantity'] * (float) $item['unit_cost'],
                 ]);
             }
+
+            return $poNumber;
         });
 
         return back()->with('status', "Purchase Order {$poNumber} created successfully!");

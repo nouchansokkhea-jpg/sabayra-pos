@@ -73,6 +73,8 @@ class OrderCheckoutController extends Controller
             }
 
         $order = DB::transaction(function () use ($business, $validated, $tableId) {
+            Business::whereKey($business->id)->lockForUpdate()->first();
+
             // 1. Resolve or Create Customer
             $customer = Customer::firstOrCreate(
                 [
@@ -84,12 +86,8 @@ class OrderCheckoutController extends Controller
                 ]
             );
 
-            // 2. Generate Sequential Order Number
-            $todayDate = Carbon::now()->format('Ymd');
-            $dailyCount = Order::where('business_id', $business->id)
-                ->whereDate('created_at', Carbon::today())
-                ->count() + 1;
-            $orderNumber = sprintf('ORD-%s-%04d', $todayDate, $dailyCount);
+            // 2. Generate Sequential Order Number scoped to this business
+            $orderNumber = Order::generateDailySequenceNumber($business->id, 'order_number', 'ORD', 4);
 
             // 3. Calculate Accurate Prices from Database
             $subtotal = 0.00;
