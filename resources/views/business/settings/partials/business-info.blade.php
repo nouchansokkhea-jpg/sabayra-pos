@@ -88,7 +88,7 @@
                             <p class="text-[11px] text-slate-500">Square ratio (1:1), PNG/JPG up to 5MB</p>
                         </div>
                     </div>
-                    <input type="file" name="logo_file" accept="image/*" class="w-full text-xs text-gray-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100">
+                    <input type="file" name="logo_file" accept="image/*" class="w-full text-xs text-gray-600 dark:text-slate-300 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100">
                     <input type="url" name="logo_url" value="{{ old('logo_url', $business->logo_url) }}" placeholder="Or paste image URL (https://...)"
                            class="w-full text-xs rounded-lg border-gray-200 dark:border-gray-700 dark:bg-gray-900 dark:text-white px-3 py-2">
                 </div>
@@ -107,7 +107,7 @@
                             <p class="text-[11px] text-slate-500">Wide banner (16:9), up to 10MB</p>
                         </div>
                     </div>
-                    <input type="file" name="cover_file" accept="image/*" class="w-full text-xs text-gray-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100">
+                    <input type="file" name="cover_file" accept="image/*" class="w-full text-xs text-gray-600 dark:text-slate-300 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100">
                     <input type="url" name="cover_url" value="{{ old('cover_url', $business->cover_url) }}" placeholder="Or paste cover URL (https://...)"
                            class="w-full text-xs rounded-lg border-gray-200 dark:border-gray-700 dark:bg-gray-900 dark:text-white px-3 py-2">
                 </div>
@@ -154,7 +154,7 @@
                 <div>
                     <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">Storefront Telegram Link</label>
                     <div class="flex rounded-xl shadow-xs">
-                        <span class="inline-flex items-center px-3 rounded-l-xl border border-r-0 border-gray-200 bg-gray-50 text-gray-500 text-xs dark:bg-gray-700 dark:border-gray-600">t.me/</span>
+                        <span class="inline-flex items-center px-3 rounded-l-xl border border-r-0 border-gray-200 bg-gray-50 text-gray-600 text-xs font-semibold dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">t.me/</span>
                         <input type="text" name="social_links[telegram]" value="{{ old('social_links.telegram', $social['telegram'] ?? $business->telegram_handle) }}" placeholder="channel_or_username"
                                class="w-full text-xs rounded-r-xl border-gray-200 dark:border-gray-700 dark:bg-gray-900 dark:text-white px-3 py-2.5 focus:border-orange-500 focus:ring-orange-500">
                     </div>
