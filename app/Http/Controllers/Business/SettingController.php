@@ -11,6 +11,8 @@ use App\Models\TelegramConnection;
 use App\Models\TelegramNotificationLog;
 use App\Models\User;
 use App\Services\Storage\SupabaseStorageService;
+use App\Services\Security\SecurityActivityService;
+use App\Services\Security\SessionManagementService;
 use App\Services\Security\TwoFactorAuthenticationService;
 use App\Services\Telegram\TelegramConnectionService;
 use App\Services\Tenant\TenantContext;
@@ -67,6 +69,22 @@ class SettingController extends Controller
 
         $requestedSection = $forcedSection ?? $request->query('section', session('active_section'));
 
+        if (! $requestedSection && $request->hasSession()) {
+            $viewErrors = $request->session()->get('errors');
+            if ($viewErrors) {
+                if ($viewErrors->getBag('updatePassword')->any()) {
+                    $requestedSection = 'account';
+                } elseif (
+                    $viewErrors->getBag('twoFactorConfirm')->any()
+                    || $viewErrors->getBag('twoFactorRecovery')->any()
+                    || $viewErrors->getBag('twoFactorDisable')->any()
+                    || $viewErrors->getBag('revokeSessions')->any()
+                ) {
+                    $requestedSection = 'security';
+                }
+            }
+        }
+
         if ($requestedSection && !in_array($requestedSection, self::ALL_SECTIONS, true)) {
             $requestedSection = null;
         }
@@ -79,20 +97,62 @@ class SettingController extends Controller
 
         $storedSettings = $business ? BusinessSetting::getAllForBusiness($business->id) : [];
 
-        $securityLogs = SecurityLog::where('user_id', $user->id)
-            ->latest('created_at')
-            ->take(15)
-            ->get();
-
-        $activeSessionCount = 1;
-        if (config('session.driver') === 'database' && Schema::hasTable(config('session.table', 'sessions'))) {
-            $activeSessionCount = max(
-                1,
-                DB::table(config('session.table', 'sessions'))
-                    ->where('user_id', $user->id)
-                    ->count()
-            );
+        $activityFilter = (string) $request->query('activity_filter', 'all');
+        if (! in_array($activityFilter, ['all', 'logins', 'failed', '2fa', 'account'], true)) {
+            $activityFilter = 'all';
         }
+
+        $activityService = app(SecurityActivityService::class);
+        $filterEventTypes = SecurityActivityService::eventTypesForFilter($activityFilter);
+
+        $securityLogsQuery = SecurityLog::where('user_id', $user->id)
+            ->latest('created_at');
+
+        if ($filterEventTypes !== null) {
+            $securityLogsQuery->whereIn('event_type', $filterEventTypes);
+        }
+
+        $securityLogs = $securityLogsQuery->take(25)->get()->map(function (SecurityLog $log) use ($activityService): SecurityLog {
+            $parsedUa = $activityService->parseUserAgent($log->user_agent);
+            $meta = is_array($log->metadata) ? $log->metadata : [];
+            $descriptor = $activityService->describeEvent($log->event_type);
+
+            $log->setAttribute('event_label', $descriptor['label']);
+            $log->setAttribute('event_status_text', $descriptor['status_text']);
+            $log->setAttribute('event_badge_class', $descriptor['badge_class']);
+            $log->setAttribute('parsed_device', $meta['device_label'] ?? $parsedUa['label']);
+            $log->setAttribute('is_new_device_ip', (bool) ($meta['new_device_ip'] ?? false));
+
+            return $log;
+        });
+
+        $recentWindowStart = now()->subDays(30);
+        $recentLoginCount = SecurityLog::where('user_id', $user->id)
+            ->where('event_type', 'login_success')
+            ->where('created_at', '>=', $recentWindowStart)
+            ->count();
+        $recentFailureCount = SecurityLog::where('user_id', $user->id)
+            ->whereIn('event_type', ['login_failed', 'login_locked', '2fa_failed'])
+            ->where('created_at', '>=', $recentWindowStart)
+            ->count();
+        $lastLoginEntry = SecurityLog::where('user_id', $user->id)
+            ->where('event_type', 'login_success')
+            ->latest('created_at')
+            ->first();
+        $lastLoginDevice = $lastLoginEntry
+            ? (($lastLoginEntry->metadata['device_label'] ?? null) ?: $activityService->parseUserAgent($lastLoginEntry->user_agent)['label'])
+            : null;
+
+        $sessionOverview = app(SessionManagementService::class)->getActiveSessions($user, $request);
+        $activeSessions = $sessionOverview['sessions'];
+        $sessionManagementSupported = $sessionOverview['supported'];
+        $activeSessionCount = max(1, $activeSessions->count());
+
+        $securitySettings = [
+            'session_timeout_minutes' => $business ? (int) ($storedSettings['security.session_timeout_minutes'] ?? 0) : 0,
+            'alert_unfamiliar_login' => $business ? (bool) ($storedSettings['security.alert_unfamiliar_login'] ?? true) : true,
+            'alert_failed_logins' => $business ? (bool) ($storedSettings['security.alert_failed_logins'] ?? true) : true,
+        ];
 
         $telegramConnection = null;
         $telegramLogs = collect();
@@ -160,6 +220,9 @@ class SettingController extends Controller
             'securityLogs' => $securityLogs,
             'logs' => $securityLogs,
             'activeSessionCount' => $activeSessionCount,
+            'activeSessions' => $activeSessions,
+            'sessionManagementSupported' => $sessionManagementSupported,
+            'securitySettings' => $securitySettings,
             'telegramConnection' => $telegramConnection,
             'telegramLogs' => $telegramLogs,
             'telegramPendingLink' => $telegramPendingLink,
@@ -177,6 +240,11 @@ class SettingController extends Controller
             'twoFactorSetupPayload' => app(TwoFactorAuthenticationService::class)->getPendingSetupPayload($user),
             'twoFactorRecoveryCodesPlain' => session('two_factor_recovery_codes_plain'),
             'remainingRecoveryCodesCount' => is_array($user->two_factor_recovery_codes) ? count($user->two_factor_recovery_codes) : 0,
+            'activityFilter' => $activityFilter,
+            'recentLoginCount' => $recentLoginCount,
+            'recentFailureCount' => $recentFailureCount,
+            'lastLoginEntry' => $lastLoginEntry,
+            'lastLoginDevice' => $lastLoginDevice,
         ];
     }
 

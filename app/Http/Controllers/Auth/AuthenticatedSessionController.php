@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Models\User;
+use App\Services\Security\SecurityActivityService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -46,6 +48,10 @@ class AuthenticatedSessionController extends Controller
             'failed_login_attempts' => 0,
         ])->saveQuietly();
 
+        app(SecurityActivityService::class)->record($user, 'login_success', $request, [
+            'two_factor_method' => 'none',
+        ]);
+
         return redirect()->intended(route('dashboard', absolute: false));
     }
 
@@ -54,6 +60,12 @@ class AuthenticatedSessionController extends Controller
      */
     public function destroy(Request $request): RedirectResponse
     {
+        $user = Auth::user();
+
+        if ($user instanceof User) {
+            app(SecurityActivityService::class)->record($user, 'logout', $request);
+        }
+
         Auth::guard('web')->logout();
 
         $request->session()->invalidate();

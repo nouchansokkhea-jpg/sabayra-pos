@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Auth;
 
 use App\Models\User;
+use App\Services\Security\SecurityActivityService;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -62,6 +63,16 @@ class LoginRequest extends FormRequest
         if (! $user instanceof User || ! $provider->validateCredentials($user, $credentials)) {
             RateLimiter::hit($this->throttleKey());
 
+            if ($user instanceof User) {
+                $user->increment('failed_login_attempts');
+                app(SecurityActivityService::class)->record(
+                    $user,
+                    'login_failed',
+                    $this,
+                    ['attempt_number' => (int) $user->fresh()->failed_login_attempts]
+                );
+            }
+
             throw ValidationException::withMessages([
                 'email' => trans('auth.failed'),
             ]);
@@ -86,6 +97,15 @@ class LoginRequest extends FormRequest
         event(new Lockout($this));
 
         $seconds = RateLimiter::availableIn($this->throttleKey());
+        $lockedUser = User::where('email', Str::lower((string) $this->input('email')))->first();
+        if ($lockedUser instanceof User) {
+            app(SecurityActivityService::class)->record(
+                $lockedUser,
+                'login_locked',
+                $this,
+                ['retry_after_seconds' => $seconds]
+            );
+        }
 
         throw ValidationException::withMessages([
             'email' => trans('auth.throttle', [

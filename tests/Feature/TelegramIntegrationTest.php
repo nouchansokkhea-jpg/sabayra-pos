@@ -377,6 +377,25 @@ class TelegramIntegrationTest extends TestCase
     public function test_notifications_view_renders_bot_usernames_without_literal_blade_braces_and_respects_verify_ssl(): void
     {
         config(['services.telegram.bot_username' => 'Sabayrabot']);
+        $this->business->update(['name' => "Sokha's Kampuchea Grill"]);
+
+        TelegramConnection::withoutGlobalScopes()->create([
+            'business_id' => $this->business->id,
+            'user_id' => $this->owner->id,
+            'connection_mode' => 'official_bot',
+            'chat_id' => '99887766',
+            'is_active' => true,
+            'notifications_enabled' => true,
+        ]);
+
+        $connectedView = $this->actingAs($this->owner)
+            ->withSession(['active_business_id' => $this->business->id])
+            ->get(route('business.settings.index', ['section' => 'notifications']));
+
+        $connectedView->assertStatus(200)
+            ->assertDontSee("for Sokha's Kampuchea Grill", false);
+
+        TelegramConnection::withoutGlobalScopes()->where('business_id', $this->business->id)->delete();
 
         $disconnectedView = $this->actingAs($this->owner)
             ->withSession(['active_business_id' => $this->business->id])

@@ -26,6 +26,9 @@ The SABAYRA Settings Hub consolidates storefront configuration, business identit
 | `POST` | `/app/security/2fa/cancel` | `business.security.2fa.cancel` | Any authenticated user (cancels unconfirmed setup) |
 | `POST` | `/app/security/2fa/recovery-codes` | `business.security.2fa.recovery-codes` | Any authenticated user (`current_password` required) |
 | `DELETE` | `/app/security/2fa` | `business.security.2fa.disable` | Any authenticated user (`current_password` required) |
+| `DELETE` | `/app/security/sessions/{sessionRef}` | `business.security.sessions.destroy` | Authenticated user (revokes specific non-current session by HMAC ref) |
+| `POST` | `/app/security/sessions/revoke-others` | `business.security.sessions.revoke-others` | Authenticated user (`current_password` required; rotates `remember_token`) |
+| `PUT` | `/app/settings/security` | `business.settings.security.update` | Owner / Super Admin / `manage_settings` |
 | `GET`/`POST` | `/two-factor-challenge` | `two-factor.login` / `.store` | Guest middleware (`auth.two_factor_pending` + rate limiting + TOTP/recovery verify) |
 
 ## Navigation & Sections
@@ -34,7 +37,7 @@ The SABAYRA Settings Hub consolidates storefront configuration, business identit
 2. **Business Information** (`section=business`): Business profile, category, location, Supabase logo/cover media upload, opening hours, and social links.
 3. **Payment & Tax** (`section=payment`): Primary currency (`USD`/`KHR`), USD-to-KHR exchange rate, VAT percentage, Bakong KHQR Account ID & display merchant name (consumed dynamically by `App\Services\Payment\KHQRService`), channel toggles, and thermal receipt footer.
 4. **Notifications** (`section=notifications`): Telegram bot connection (one-click official bot deep link + custom business bot), branch-filtered multi-channel Notification Preferences matrix (`Telegram`, `Email`, `In-App`, `Browser` across all 14 Order, Reservation, Review, Inventory & Business events), accurate channel readiness badges, and recent Telegram delivery audit log.
-5. **Security** (`section=security`): RFC 6238 TOTP Two-Factor Authentication (QR code + manual key setup, 6-digit verification, 8 single-use SHA-256 hashed backup recovery codes, password-protected regeneration/disable, and real login challenge flow), `SecurityLog` events, and current session diagnostics ahead of Phases 5–6.
+5. **Security** (`section=security`): RFC 6238 TOTP Two-Factor Authentication (QR code + manual key setup, 6-digit verification, 8 single-use SHA-256 hashed backup recovery codes, password-protected regeneration/disable, and real login challenge flow), `Active Devices & Sessions` (HMAC-signed session tracking, single-device revocation, password-confirmed "Sign Out Other Devices" with remember token rotation), `Workspace Security Settings` (idle timeout enforced in `ResolveTenant`, unfamiliar-IP & failed-attempt alert toggles), and `Recent Login Activity` (filterable 30-day audit feed with browser/OS/device parsing, new-IP detection, failed attempt counters, and logout/password/reset/role change tracking).
 6. **Account Settings** (`section=account`): Personal profile (`name`, `email`, `phone`, `preferred_locale`) and password update with `current_password` verification and `SecurityLog` audit entry.
 
 ## Database & Models
@@ -52,5 +55,9 @@ The SABAYRA Settings Hub consolidates storefront configuration, business identit
 
 ## Automated Tests
 
-- `tests/Feature/SettingsModuleTest.php`: Covers Settings Hub navigation, legacy `/business/settings` query-preserving redirect, General/Business/Payment updates, `KHQRService` integration, role restrictions (`403` for cashier), cross-tenant isolation, and personal account/password updates.
-- Verified full suite (`php artisan test`): **112 passed, 519 assertions**.
+- `tests/Feature/SettingsModuleTest.php`: Settings Hub navigation, legacy `/business/settings` query-preserving redirect, General/Business/Payment updates, `KHQRService` integration, role restrictions (`403` for cashier), cross-tenant isolation, and personal account/password updates.
+- `tests/Feature/TelegramIntegrationTest.php`: One-click official bot linking, webhook secret & replay protection, custom bot verification & encryption, polling fallback, and multi-tenant isolation.
+- `tests/Feature/NotificationPreferencesAndDeliveryTest.php`: Multi-channel preferences, branch scope filtering, queued Telegram/Email/In-App dispatch, PII minimization, and daily sales summary generation.
+- `tests/Feature/TwoFactorAuthenticationTest.php`: TOTP setup/confirmation, recovery code single-use login, challenge rate limiting, and password-verified disable/regeneration.
+- `tests/Feature/LoginActivityAndSecurityAuditTest.php`: Sign-in/logout/failed-attempt/lockout audit trail, user-agent parsing, new-IP detection, role change logs, and filter tabs.
+- `tests/Feature/SessionManagementAndSecuritySettingsTest.php`: Active devices listing, raw session ID masking, remote session revocation, `remember_token` rotation, workspace idle timeout, and unfamiliar-IP alert policies.

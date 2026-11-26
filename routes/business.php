@@ -31,6 +31,7 @@ use App\Http\Controllers\Business\ReportController;
 use App\Http\Controllers\Business\ReservationController;
 use App\Http\Controllers\Business\ReviewController;
 use App\Http\Controllers\Business\SecurityCenterController;
+use App\Http\Controllers\Business\SessionSecurityController;
 use App\Http\Controllers\Business\SettingController;
 use App\Http\Controllers\Business\StaffController;
 use App\Http\Controllers\Business\StorefrontTemplateController;
@@ -246,3 +247,6 @@ Route::post('/security/2fa/confirm', [TwoFactorController::class, 'confirm'])->n
 Route::post('/security/2fa/cancel', [TwoFactorController::class, 'cancel'])->name('security.2fa.cancel');
 Route::post('/security/2fa/recovery-codes', [TwoFactorController::class, 'regenerateRecoveryCodes'])->name('security.2fa.recovery-codes');
 Route::delete('/security/2fa', [TwoFactorController::class, 'disable'])->name('security.2fa.disable');
+Route::delete('/security/sessions/{sessionRef}', [SessionSecurityController::class, 'destroy'])->name('security.sessions.destroy');
+Route::post('/security/sessions/revoke-others', [SessionSecurityController::class, 'destroyOthers'])->name('security.sessions.revoke-others');
+Route::put('/settings/security', [SessionSecurityController::class, 'updateSecuritySettings'])->name('settings.security.update');

@@ -4,6 +4,7 @@
          copiedCodes: false,
          showRegenerateForm: {{ $errors->twoFactorRecovery->any() ? 'true' : 'false' }},
          showDisableForm: {{ $errors->twoFactorDisable->any() ? 'true' : 'false' }},
+         showRevokeSessionsForm: {{ $errors->revokeSessions->any() ? 'true' : 'false' }},
          copyText(value, flag) {
              if (navigator.clipboard) {
                  navigator.clipboard.writeText(value);
@@ -285,53 +286,227 @@
         </div>
     </div>
 
-    <!-- Active Devices & Current Session Card -->
-    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700/70 rounded-2xl p-6 shadow-xs space-y-4">
-        <div class="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-gray-100 dark:border-gray-700">
+    <!-- Active Devices & Sessions Card -->
+    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700/70 rounded-2xl p-6 shadow-xs space-y-5">
+        <div class="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-gray-100 dark:border-gray-700">
             <div>
                 <h3 class="text-base font-black text-slate-900 dark:text-white">Active Devices &amp; Sessions</h3>
                 <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                    Inspect sessions signed into your SABAYRA account. Full multi-device revocation arrives in Phase 6.
+                    Review active browser sessions signed into {{ $user->email }} and revoke unrecognized devices.
                 </p>
             </div>
-            <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-300 border border-emerald-500/30">
-                Current Session Active
-            </span>
+            <div class="flex flex-wrap items-center gap-2">
+                <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-300 border border-emerald-500/30">
+                    {{ ($activeSessions ?? collect())->count() }} Active Session{{ ($activeSessions ?? collect())->count() === 1 ? '' : 's' }}
+                </span>
+
+                @if ($sessionManagementSupported ?? false)
+                    <button type="button"
+                            @click="showRevokeSessionsForm = !showRevokeSessionsForm"
+                            class="px-3.5 py-1.5 rounded-xl text-xs font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/30 hover:bg-rose-100 dark:hover:bg-rose-950/50 border border-rose-200 dark:border-rose-800/50 transition">
+                        Sign Out Other Devices
+                    </button>
+                @endif
+            </div>
         </div>
 
-        <div class="p-4 rounded-xl bg-slate-50 dark:bg-gray-900/50 border border-slate-200 dark:border-gray-700 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div class="space-y-1">
-                <div class="flex items-center gap-2">
-                    <span class="text-xs font-bold text-slate-900 dark:text-white">This Browser Session</span>
-                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-orange-500/15 text-orange-600 dark:text-orange-400 border border-orange-500/30">Current Device</span>
-                </div>
-                <p class="text-[11px] font-mono text-slate-500 dark:text-slate-400">
-                    IP: {{ request()->ip() ?? 'Unavailable' }} &bull; Driver: {{ config('session.driver') }}
-                </p>
-                <p class="text-[11px] text-slate-500 dark:text-slate-400 truncate max-w-xl">
-                    {{ request()->userAgent() ?: 'Browser agent not supplied' }}
-                </p>
+        @if (!($sessionManagementSupported ?? false))
+            <div class="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-700 dark:text-amber-300">
+                Multi-device session enumeration requires <code class="font-mono">SESSION_DRIVER=database</code>. Currently showing your active request session (<code class="font-mono">{{ config('session.driver') }}</code> driver).
             </div>
+        @endif
+
+        <div x-show="showRevokeSessionsForm" style="display: none;"
+             class="p-4 rounded-xl bg-rose-50/70 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-800/60">
+            <form method="POST" action="{{ route('business.security.sessions.revoke-others') }}" class="flex flex-col sm:flex-row sm:items-end gap-3">
+                @csrf
+                <div class="flex-1">
+                    <label class="block text-xs font-bold text-rose-700 dark:text-rose-300 mb-1">
+                        Confirm Password to Sign Out All Other Devices *
+                    </label>
+                    <input type="password" name="current_password" required autocomplete="current-password"
+                           placeholder="Enter your password"
+                           class="w-full text-xs rounded-xl border-rose-200 dark:border-rose-800 dark:bg-gray-900 dark:text-white px-3.5 py-2 focus:border-rose-500 focus:ring-rose-500">
+                    @error('current_password', 'revokeSessions')
+                        <p class="text-[11px] font-semibold text-rose-500 mt-1">{{ $message }}</p>
+                    @enderror
+                </div>
+                <button type="submit" class="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shrink-0">
+                    Confirm Sign Out Others
+                </button>
+            </form>
+        </div>
+
+        <div class="space-y-3">
+            @forelse (($activeSessions ?? collect()) as $session)
+                <div class="p-4 rounded-xl {{ $session['is_current'] ? 'bg-emerald-500/5 border-emerald-500/30' : 'bg-slate-50 dark:bg-gray-900/50 border-slate-200 dark:border-gray-700' }} border flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div class="space-y-1 min-w-0">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <span class="text-xs font-bold text-slate-900 dark:text-white">{{ $session['device_label'] }}</span>
+                            @if ($session['is_current'])
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-300 border border-emerald-500/30">
+                                    Current Device
+                                </span>
+                            @endif
+                        </div>
+                        <p class="text-[11px] font-mono text-slate-500 dark:text-slate-400">
+                            IP: {{ $session['ip_address'] ?? 'Unavailable' }} &bull; Last active: {{ $session['last_active_human'] }}
+                        </p>
+                        @if (!empty($session['user_agent']))
+                            <p class="text-[11px] text-slate-400 truncate max-w-xl" title="{{ $session['user_agent'] }}">
+                                {{ $session['user_agent'] }}
+                            </p>
+                        @endif
+                    </div>
+
+                    @if (!$session['is_current'] && ($sessionManagementSupported ?? false))
+                        <form method="POST" action="{{ route('business.security.sessions.destroy', $session['session_ref']) }}" class="shrink-0">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit"
+                                    class="px-3.5 py-1.5 rounded-xl text-xs font-bold text-rose-600 dark:text-rose-400 bg-white dark:bg-gray-800 hover:bg-rose-50 dark:hover:bg-rose-950/30 border border-rose-200 dark:border-rose-800/50 transition">
+                                Revoke
+                            </button>
+                        </form>
+                    @endif
+                </div>
+            @empty
+                <p class="text-xs text-slate-500 dark:text-slate-400 text-center py-6">
+                    No active sessions found.
+                </p>
+            @endforelse
         </div>
     </div>
 
+    @if ($canManageBusinessSettings)
+        <!-- Workspace Security Settings Card -->
+        <form method="POST" action="{{ route('business.settings.security.update') }}"
+              class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700/70 rounded-2xl p-6 shadow-xs space-y-5">
+            @csrf
+            @method('PUT')
+
+            <div class="pb-3 border-b border-gray-100 dark:border-gray-700">
+                <h3 class="text-base font-black text-slate-900 dark:text-white">Workspace Security Settings</h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    Configure real backend session timeout enforcement and suspicious sign-in alerting for {{ $business->name }}.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
+                <div>
+                    <label for="session_timeout_minutes" class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+                        Idle Session Timeout
+                    </label>
+                    <select id="session_timeout_minutes" name="session_timeout_minutes"
+                            class="w-full text-xs rounded-xl border-gray-200 dark:border-gray-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 focus:border-orange-500 focus:ring-orange-500">
+                        @php $currentTimeout = (int) ($securitySettings['session_timeout_minutes'] ?? 0); @endphp
+                        <option value="0" @selected($currentTimeout === 0)>Platform Default ({{ config('session.lifetime', 120) }} min)</option>
+                        <option value="15" @selected($currentTimeout === 15)>15 minutes</option>
+                        <option value="30" @selected($currentTimeout === 30)>30 minutes</option>
+                        <option value="60" @selected($currentTimeout === 60)>60 minutes</option>
+                        <option value="120" @selected($currentTimeout === 120)>2 hours (120 min)</option>
+                        <option value="480" @selected($currentTimeout === 480)>8 hours (480 min)</option>
+                    </select>
+                </div>
+
+                <label class="p-3.5 rounded-xl bg-slate-50 dark:bg-gray-900/50 border border-slate-200 dark:border-gray-700 flex items-start gap-2.5 cursor-pointer">
+                    <input type="checkbox" name="alert_unfamiliar_login" value="1"
+                           @checked($securitySettings['alert_unfamiliar_login'] ?? true)
+                           class="mt-0.5 rounded border-gray-300 dark:border-gray-600 text-orange-600 focus:ring-orange-500">
+                    <span class="text-xs">
+                        <span class="font-bold text-slate-900 dark:text-white block">Alert on New IP Sign-In</span>
+                        <span class="text-[11px] text-slate-500 dark:text-slate-400">Notify owner channels when signing in from an unseen IP.</span>
+                    </span>
+                </label>
+
+                <label class="p-3.5 rounded-xl bg-slate-50 dark:bg-gray-900/50 border border-slate-200 dark:border-gray-700 flex items-start gap-2.5 cursor-pointer">
+                    <input type="checkbox" name="alert_failed_logins" value="1"
+                           @checked($securitySettings['alert_failed_logins'] ?? true)
+                           class="mt-0.5 rounded border-gray-300 dark:border-gray-600 text-orange-600 focus:ring-orange-500">
+                    <span class="text-xs">
+                        <span class="font-bold text-slate-900 dark:text-white block">Alert on Failed Attempts</span>
+                        <span class="text-[11px] text-slate-500 dark:text-slate-400">Send security alerts after 3+ wrong passwords or lockouts.</span>
+                    </span>
+                </label>
+            </div>
+
+            <div class="flex justify-end pt-3 border-t border-gray-100 dark:border-gray-700">
+                <button type="submit"
+                        class="px-5 py-2.5 bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs rounded-xl shadow-xs transition">
+                    Save Security Policy
+                </button>
+            </div>
+        </form>
+    @endif
+
     <!-- Recent Login & Security Activity -->
-    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700/70 rounded-2xl p-6 shadow-xs">
-        <div class="flex flex-wrap items-center justify-between gap-2 pb-4 mb-4 border-b border-gray-100 dark:border-gray-700">
+    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700/70 rounded-2xl p-6 shadow-xs space-y-5">
+        <div class="flex flex-wrap items-start justify-between gap-3 pb-4 border-b border-gray-100 dark:border-gray-700">
             <div>
                 <h3 class="text-base font-black text-slate-900 dark:text-white">Recent Login Activity</h3>
                 <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                    Review recent sign-in attempts and security events for your personal account ({{ $user->email }}).
+                    Review recent sign-in attempts, device activity, and security audit events for {{ $user->email }}.
                 </p>
             </div>
-            <span class="text-xs font-semibold text-slate-400">Last 15 records</span>
+            <span class="text-xs font-semibold text-slate-400">Showing up to 25 latest records</span>
+        </div>
+
+        <!-- 30-Day Sign-In Summary -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-gray-900/50 border border-slate-200 dark:border-gray-700">
+                <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Successful Sign-Ins (30d)</p>
+                <p class="text-lg font-black text-slate-900 dark:text-white mt-0.5">{{ $recentLoginCount ?? 0 }}</p>
+            </div>
+            <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-gray-900/50 border border-slate-200 dark:border-gray-700">
+                <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Failed Attempts (30d)</p>
+                <p class="text-lg font-black {{ ($recentFailureCount ?? 0) > 0 ? 'text-rose-500' : 'text-emerald-500' }} mt-0.5">
+                    {{ $recentFailureCount ?? 0 }}
+                </p>
+            </div>
+            <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-gray-900/50 border border-slate-200 dark:border-gray-700">
+                <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Last Verified Device / IP</p>
+                <p class="text-xs font-bold text-slate-900 dark:text-white mt-1 truncate">
+                    {{ $lastLoginDevice ?? 'Not recorded yet' }}
+                </p>
+                @if (!empty($lastLoginEntry?->ip_address))
+                    <p class="text-[11px] font-mono text-slate-500 dark:text-slate-400 truncate">{{ $lastLoginEntry->ip_address }}</p>
+                @endif
+            </div>
+        </div>
+
+        @if (($user->failed_login_attempts ?? 0) >= 3)
+            <div class="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-xs text-rose-700 dark:text-rose-300">
+                <span class="font-bold">Security Notice:</span> {{ $user->failed_login_attempts }} consecutive failed sign-in attempt(s) were recorded since your last successful login. Review your recent IP activity below and rotate your password if unfamiliar.
+            </div>
+        @endif
+
+        <!-- Activity Filter Pills -->
+        <div class="flex flex-wrap items-center gap-2">
+            @php
+                $filters = [
+                    'all' => 'All Activity',
+                    'logins' => 'Sign-Ins & Logouts',
+                    'failed' => 'Failed Attempts',
+                    '2fa' => '2FA Events',
+                    'account' => 'Account & Keys',
+                ];
+                $currentFilter = $activityFilter ?? 'all';
+            @endphp
+            @foreach ($filters as $filterKey => $filterLabel)
+                <a href="{{ request()->fullUrlWithQuery(['section' => 'security', 'activity_filter' => $filterKey]) }}"
+                   class="px-3 py-1.5 rounded-xl text-xs font-bold border transition {{ $currentFilter === $filterKey
+                       ? 'bg-orange-600 text-white border-orange-600 shadow-xs'
+                       : 'bg-slate-50 dark:bg-gray-900/60 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-gray-700 hover:border-orange-400' }}">
+                    {{ $filterLabel }}
+                </a>
+            @endforeach
         </div>
 
         @if ($securityLogs->isEmpty())
             <div class="py-10 text-center space-y-1">
-                <p class="text-xs font-bold text-slate-700 dark:text-slate-300">No login or security events recorded yet</p>
+                <p class="text-xs font-bold text-slate-700 dark:text-slate-300">No matching security events found</p>
                 <p class="text-[11px] text-slate-500 dark:text-slate-400">
-                    Password updates, 2FA events, and authentication activity for your account will appear here as they occur.
+                    Sign-ins, failed login attempts, 2FA changes, password updates, and role updates for your account appear here.
                 </p>
             </div>
         @else
@@ -339,25 +514,39 @@
                 <table class="w-full text-left text-xs text-slate-600 dark:text-slate-300">
                     <thead class="border-b border-gray-200 dark:border-gray-700 text-slate-400 uppercase font-bold text-[11px]">
                         <tr>
-                            <th class="pb-3">Event Type</th>
-                            <th class="pb-3">IP Address</th>
-                            <th class="pb-3">Device / Agent</th>
+                            <th class="pb-3 pr-3">Event</th>
+                            <th class="pb-3 pr-3">Status</th>
+                            <th class="pb-3 pr-3">Device &amp; Browser</th>
+                            <th class="pb-3 pr-3">IP Address</th>
                             <th class="pb-3">Time</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100 dark:divide-gray-700/60">
                         @foreach ($securityLogs as $log)
                             <tr>
-                                <td class="py-3 font-medium">
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-lg text-[11px] font-mono font-bold bg-slate-100 dark:bg-gray-900 text-slate-800 dark:text-slate-200">
-                                        {{ $log->event_type }}
+                                <td class="py-3 pr-3">
+                                    <div class="flex flex-wrap items-center gap-1.5">
+                                        <span class="font-bold text-slate-900 dark:text-white">{{ $log->event_label ?? $log->event_type }}</span>
+                                        @if (!empty($log->is_new_device_ip))
+                                            <span class="px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-amber-500/15 text-amber-600 dark:text-amber-300 border border-amber-500/30">
+                                                New IP
+                                            </span>
+                                        @endif
+                                    </div>
+                                    <span class="text-[10px] font-mono text-slate-400">{{ $log->event_type }}</span>
+                                </td>
+                                <td class="py-3 pr-3">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold {{ $log->event_badge_class ?? 'bg-slate-100 text-slate-700' }}">
+                                        {{ $log->event_status_text ?? 'Recorded' }}
                                     </span>
                                 </td>
-                                <td class="py-3 font-mono text-[11px]">{{ $log->ip_address ?? '—' }}</td>
-                                <td class="py-3 text-[11px] text-slate-500 dark:text-slate-400 max-w-xs truncate">
-                                    {{ $log->user_agent ?? '—' }}
+                                <td class="py-3 pr-3 text-[11px] text-slate-600 dark:text-slate-300 max-w-xs truncate" title="{{ $log->user_agent ?? 'Unavailable' }}">
+                                    {{ $log->parsed_device ?? 'Unknown Device' }}
                                 </td>
-                                <td class="py-3 text-slate-400 whitespace-nowrap">{{ $log->created_at?->diffForHumans() ?? '—' }}</td>
+                                <td class="py-3 pr-3 font-mono text-[11px]">{{ $log->ip_address ?? '—' }}</td>
+                                <td class="py-3 text-slate-400 whitespace-nowrap" title="{{ $log->created_at?->toDateTimeString() }}">
+                                    {{ $log->created_at?->diffForHumans() ?? '—' }}
+                                </td>
                             </tr>
                         @endforeach
                     </tbody>

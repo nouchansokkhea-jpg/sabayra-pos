@@ -28,6 +28,15 @@ class SecurityLog extends Model
         'created_at' => 'datetime',
     ];
 
+    protected static function booted(): void
+    {
+        static::creating(function (SecurityLog $log): void {
+            if ($log->created_at === null) {
+                $log->created_at = now();
+            }
+        });
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

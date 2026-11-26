@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Models\SecurityLog;
 use App\Models\User;
+use App\Services\Security\SecurityActivityService;
 use App\Services\Security\TwoFactorAuthenticationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -96,13 +96,8 @@ class TwoFactorChallengeController extends Controller
             'failed_login_attempts' => 0,
         ])->saveQuietly();
 
-        SecurityLog::create([
-            'user_id' => $user->id,
-            'business_id' => $request->session()->get('active_business_id'),
-            'event_type' => 'login_success',
-            'ip_address' => $request->ip(),
-            'user_agent' => $request->userAgent(),
-            'metadata' => ['two_factor_method' => $verification['method'] ?? 'totp'],
+        app(SecurityActivityService::class)->record($user, 'login_success', $request, [
+            'two_factor_method' => $verification['method'] ?? 'totp',
         ]);
 
         if (($verification['method'] ?? null) === 'recovery_code') {

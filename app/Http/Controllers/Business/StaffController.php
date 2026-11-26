@@ -158,7 +158,22 @@ class StaffController extends Controller
             $validated['is_active'] = $request->boolean('is_active');
         }
 
+        $previousRole = $member->role;
         $member->update($validated);
+
+        if ($previousRole !== $validated['role'] && $member->user) {
+            app(\App\Services\Security\SecurityActivityService::class)->record(
+                $member->user,
+                'role_changed',
+                $request,
+                [
+                    'from_role' => $previousRole,
+                    'to_role' => $validated['role'],
+                    'changed_by_user_id' => $currentUser->id,
+                ],
+                $business->id
+            );
+        }
 
         return back()->with('success', "Staff permissions updated for '{$member->user->name}'.");
     }

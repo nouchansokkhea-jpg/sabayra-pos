@@ -173,7 +173,9 @@ class SettingsModuleTest extends TestCase
         $defaultResponse = $this->actingAs($this->staff)
             ->withSession(['active_business_id' => $this->business->id])
             ->get(route('business.settings.index'));
-        $defaultResponse->assertOk()->assertSee('Two-Factor Authentication');
+        $defaultResponse->assertOk()
+            ->assertSee('Two-Factor Authentication')
+            ->assertDontSee('Telegram &amp; Alerts', false);
 
         // Direct access to owner-only business tabs is forbidden
         foreach (['general', 'business', 'payment', 'notifications'] as $restrictedSection) {
