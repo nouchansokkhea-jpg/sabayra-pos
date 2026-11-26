@@ -15,9 +15,15 @@
         text-rendering: optimizeLegibility;
     }
 
+    input:not([type='checkbox']):not([type='radio']):not([type='color']):not([type='file']):not([type='range']),
+    select,
+    textarea {
+        color: #0f172a;
+    }
+
     /* Input placeholders high clarity */
     ::placeholder {
-        color: #94a3b8 !important;
+        color: #64748b !important;
         opacity: 1;
     }
 }

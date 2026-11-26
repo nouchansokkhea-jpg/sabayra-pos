@@ -232,4 +232,31 @@ class OrderFlowAndPrinterTest extends TestCase
         $response->assertStatus(403);
         $this->assertEquals('Secret Printer', $otherPrinter->fresh()->name);
     }
+
+    public function test_order_detail_view_renders_high_contrast_status_and_payment_controls(): void
+    {
+        $order = Order::create([
+            'business_id' => $this->business->id,
+            'order_number' => 'ORD-7744',
+            'order_type' => 'dine_in',
+            'status' => 'completed',
+            'payment_status' => 'paid',
+            'payment_method' => 'cash',
+            'currency' => 'USD',
+            'subtotal' => 12.00,
+            'total_amount' => 12.00,
+            'total_khr' => 49200,
+        ]);
+
+        \App\Services\Tenant\TenantContext::clear();
+
+        $response = $this->actingAs($this->user)
+            ->withSession(['active_business_id' => $this->business->id])
+            ->get(route('business.orders.show', $order));
+
+        $response->assertStatus(200)
+            ->assertSee('Update Order Status')
+            ->assertSee('Payment Settlement')
+            ->assertSee('text-slate-900 dark:text-white bg-white dark:bg-gray-900', false);
+    }
 }
