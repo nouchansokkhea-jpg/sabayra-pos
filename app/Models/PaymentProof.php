@@ -52,8 +52,19 @@ class PaymentProof extends Model
         return $this->belongsTo(PaymentTransaction::class, 'payment_transaction_id');
     }
 
-    public function reviewer(): BelongsTo
+    /**
+     * Staff user who reviewed this uploaded payment proof.
+     */
+    public function reviewedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'reviewed_by');
+    }
+
+    /**
+     * Alias for reviewedBy relationship.
+     */
+    public function reviewer(): BelongsTo
+    {
+        return $this->reviewedBy();
     }
 }

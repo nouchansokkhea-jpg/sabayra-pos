@@ -319,7 +319,15 @@ class PaymentAndTaxUpgradeTest extends TestCase
 
         TenantContext::clear();
 
-        // Authorized staff can view proof privately
+        // Authorized staff can view order details page & private proof image without 500 errors
+        $this->actingAs($this->owner)
+            ->withSession(['active_business_id' => $this->business->id])
+            ->get(route('business.orders.show', $order))
+            ->assertOk()
+            ->assertSee('Customer Payment Proofs')
+            ->assertSee('ABA-REF-991')
+            ->assertSee('Approve Payment Proof');
+
         $this->actingAs($this->owner)
             ->withSession(['active_business_id' => $this->business->id])
             ->get(route('business.orders.payment-proof.show', [$order, $proof]))
@@ -346,6 +354,13 @@ class PaymentAndTaxUpgradeTest extends TestCase
         $this->assertSame('paid', $order->payment_status);
         $this->assertSame($this->owner->id, $order->payment_verified_by);
         $this->assertNotNull($order->paid_at);
+
+        // Order details view also renders reviewedBy and verification timestamp cleanly after approval
+        $this->actingAs($this->owner)
+            ->withSession(['active_business_id' => $this->business->id])
+            ->get(route('business.orders.show', $order))
+            ->assertOk()
+            ->assertSee('Verified in ABA merchant portal.');
     }
 
     public function test_static_qr_image_lifecycle_and_cod_collection_flow(): void

@@ -136,8 +136,8 @@
                     <div class="flex justify-between text-lg font-black text-slate-900 dark:text-white border-t border-slate-200/80 dark:border-gray-700 pt-3">
                         <span>{{ __('Grand Total') }}</span>
                         <div class="text-right">
-                            <div class="font-mono text-emerald-700 dark:text-emerald-400">${{ number_format($order->total_amount, 2) }}</div>
-                            <div class="text-xs font-semibold text-slate-600 dark:text-slate-300 font-mono">{{ number_format($order->total_khr) }} ៛</div>
+                            <div class="font-mono text-emerald-700 dark:text-emerald-400">${{ number_format((float) $order->total_amount, 2) }}</div>
+                            <div class="text-xs font-semibold text-slate-600 dark:text-slate-300 font-mono">{{ number_format((float) $order->total_khr) }} ៛</div>
                         </div>
                     </div>
                 </div>
@@ -164,7 +164,7 @@
                                     <div class="text-xs text-slate-700 dark:text-slate-300 mt-0.5">{{ $history->note }}</div>
                                 @endif
                                 <div class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                                    {{ $history->created_at->format('M d, Y h:i A') }}
+                                    {{ $history->created_at?->format('M d, Y h:i A') ?? '—' }}
                                     @if($history->user) • {{ $history->user->name }} @endif
                                 </div>
                             </div>
@@ -245,7 +245,13 @@
                         @foreach($order->proofs as $proof)
                             <div class="rounded-xl border border-slate-200 dark:border-gray-700 p-3 space-y-2 text-xs">
                                 <a href="{{ route('business.orders.payment-proof.show', [$order, $proof]) }}" target="_blank" class="block">
-                                    <img src="{{ route('business.orders.payment-proof.show', [$order, $proof]) }}" alt="Payment proof" class="max-h-44 w-full object-contain rounded-lg bg-slate-100 dark:bg-gray-900">
+                                    <img src="{{ route('business.orders.payment-proof.show', [$order, $proof]) }}"
+                                         alt="Payment proof"
+                                         onerror="this.style.display='none'; this.nextElementSibling.classList.remove('hidden');"
+                                         class="max-h-44 w-full object-contain rounded-lg bg-slate-100 dark:bg-gray-900">
+                                    <div class="hidden rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-800/60 dark:bg-amber-950/30 p-3 text-[11px] text-amber-800 dark:text-amber-300 text-center">
+                                        Proof image preview unavailable on disk (reference and metadata remain stored).
+                                    </div>
                                 </a>
                                 <div class="flex justify-between items-center">
                                     <span class="font-mono text-[11px]">{{ $proof->customer_reference ?: $proof->original_filename }}</span>
@@ -255,6 +261,13 @@
                                 </div>
                                 @if($proof->customer_note)
                                     <p class="text-[11px] text-slate-600 dark:text-slate-300">Customer note: {{ $proof->customer_note }}</p>
+                                @endif
+                                @if($proof->reviewedBy || $proof->review_note)
+                                    <p class="text-[11px] text-slate-500 dark:text-slate-400">
+                                        @if($proof->reviewedBy) Reviewed by {{ $proof->reviewedBy->name }} @endif
+                                        @if($proof->reviewed_at) on {{ $proof->reviewed_at->format('M d, h:i A') }} @endif
+                                        @if($proof->review_note) — {{ $proof->review_note }} @endif
+                                    </p>
                                 @endif
                             </div>
                         @endforeach
