@@ -118,11 +118,15 @@
                                         <div class="mt-2 flex items-center gap-1.5">
                                             @if($order->payment_status === 'paid')
                                                 <span class="px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300 border border-emerald-300/40">
-                                                    Paid ({{ strtoupper($order->payment_method) }})
+                                                    Paid ({{ strtoupper((string) $order->payment_method) }})
+                                                </span>
+                                            @elseif(in_array($order->payment_status, ['rejected', 'failed'], true))
+                                                <span class="px-2 py-0.5 rounded text-[11px] font-bold bg-rose-100 text-rose-800 dark:bg-rose-950/50 dark:text-rose-300 border border-rose-300/40">
+                                                    {{ $order->paymentStatusLabel() }} ({{ strtoupper((string) $order->payment_method) }})
                                                 </span>
                                             @else
                                                 <span class="px-2 py-0.5 rounded text-[11px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-300 border border-amber-300/40">
-                                                    Unpaid ({{ strtoupper($order->payment_method) }})
+                                                    {{ $order->paymentStatusLabel() }} ({{ strtoupper((string) $order->payment_method) }})
                                                 </span>
                                             @endif
                                         </div>

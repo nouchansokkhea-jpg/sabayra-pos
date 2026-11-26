@@ -244,15 +244,34 @@
                         <div class="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">Customer Payment Proofs</div>
                         @foreach($order->proofs as $proof)
                             <div class="rounded-xl border border-slate-200 dark:border-gray-700 p-3 space-y-2 text-xs">
-                                <a href="{{ route('business.orders.payment-proof.show', [$order, $proof]) }}" target="_blank" class="block">
-                                    <img src="{{ route('business.orders.payment-proof.show', [$order, $proof]) }}"
-                                         alt="Payment proof"
-                                         onerror="this.style.display='none'; this.nextElementSibling.classList.remove('hidden');"
-                                         class="max-h-44 w-full object-contain rounded-lg bg-slate-100 dark:bg-gray-900">
-                                    <div class="hidden rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-800/60 dark:bg-amber-950/30 p-3 text-[11px] text-amber-800 dark:text-amber-300 text-center">
-                                        Proof image preview unavailable on disk (reference and metadata remain stored).
+                                @if($proof->hasStoredBinary())
+                                    <a href="{{ route('business.orders.payment-proof.show', [$order, $proof]) }}" target="_blank" class="block">
+                                        <img src="{{ route('business.orders.payment-proof.show', [$order, $proof]) }}"
+                                             alt="Payment proof"
+                                             onerror="this.style.display='none'; this.nextElementSibling.classList.remove('hidden');"
+                                             class="max-h-44 w-full object-contain rounded-lg bg-slate-100 dark:bg-gray-900">
+                                        <div class="hidden rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-800/60 dark:bg-amber-950/30 p-3 text-[11px] text-amber-800 dark:text-amber-300 text-center">
+                                            Proof image preview unavailable on disk (reference and metadata remain stored).
+                                        </div>
+                                    </a>
+                                @else
+                                    <div class="rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-800/60 dark:bg-amber-950/30 p-3 space-y-1.5 text-[11px] text-amber-900 dark:text-amber-200">
+                                        <div class="font-bold">Screenshot expired on temporary container storage (pre-upgrade upload)</div>
+                                        <p class="text-amber-800/90 dark:text-amber-300/90">
+                                            Reference &amp; audit details are preserved below. Future uploads are stored persistently in PostgreSQL.
+                                        </p>
+                                        <div class="flex flex-wrap items-center gap-3 pt-1">
+                                            <a href="{{ route('business.orders.payment-proof.show', [$order, $proof]) }}" class="font-bold underline hover:no-underline">
+                                                View Proof Record
+                                            </a>
+                                            @if(!empty($customerTrackingUrl) && $order->payment_status !== 'paid')
+                                                <a href="{{ $customerTrackingUrl }}" target="_blank" rel="noopener noreferrer" class="font-bold text-emerald-700 dark:text-emerald-400 underline hover:no-underline">
+                                                    Customer Re-upload Link &rarr;
+                                                </a>
+                                            @endif
+                                        </div>
                                     </div>
-                                </a>
+                                @endif
                                 <div class="flex justify-between items-center">
                                     <span class="font-mono text-[11px]">{{ $proof->customer_reference ?: $proof->original_filename }}</span>
                                     <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase {{ $proof->status === 'approved' ? 'bg-emerald-100 text-emerald-800' : ($proof->status === 'rejected' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800') }}">

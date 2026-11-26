@@ -17,7 +17,7 @@
 ## 3. File Upload Hardening & Private Storage
 
 - Payment proofs (`PaymentProofService::storeCustomerProof()`) and static QR uploads (`PaymentSettingsController::storeStaticQrImage()`) restrict file size to 5MB and validate true image headers via `\finfo(FILEINFO_MIME_TYPE)` and `getimagesizefromstring()` (`image/png`, `image/jpeg`, `image/webp`), blocking disguised PHP/text/executable uploads.
-- Customer payment proofs are written only to the private `local` disk (`payment-proofs/{business_id}/{order_id}/...`) using UUID filenames and streamed exclusively via tenant-authorized `OrderManagementController@showProof` with `X-Content-Type-Options: nosniff` and `Cache-Control: private, no-store`.
+- Customer payment proofs are written to the private `local` disk (`payment-proofs/{business_id}/{order_id}/...`) using UUID filenames AND backed up in `payment_proofs.encoded_content` (`$hidden` from serialization) so proofs survive ephemeral container restarts on cloud PaaS without ever using a public bucket. Proofs stream exclusively via tenant-authorized `OrderManagementController@showProof` with `X-Content-Type-Options: nosniff` and `Cache-Control: private, no-store`.
 - Public customer proof uploads and payment verification endpoints require a constant-time HMAC order token (`hash_hmac('sha256', ...)` + `hash_equals()`) and route throttling.
 
 ## 4. Multi-Tenant Isolation & Audit Trail

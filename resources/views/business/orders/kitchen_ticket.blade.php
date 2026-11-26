@@ -158,7 +158,7 @@
                         @if ($item->addons && $item->addons->count() > 0)
                             <div style="font-size: 11px; color: #444; padding-left: 4px;">
                                 @foreach ($item->addons as $addon)
-                                    <div>+ {{ (int) $addon->quantity }}x {{ $addon->addon_name }}</div>
+                                    <div>+ {{ max(1, (int) ($addon->quantity ?? 1)) }}x {{ $addon->name ?? $addon->addon_name }}</div>
                                 @endforeach
                             </div>
                         @endif

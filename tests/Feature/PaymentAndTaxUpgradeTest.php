@@ -301,6 +301,8 @@ class PaymentAndTaxUpgradeTest extends TestCase
 
         $proof = PaymentProof::withoutGlobalScopes()->where('order_id', $order->id)->firstOrFail();
         Storage::disk('local')->assertExists($proof->file_path);
+        $this->assertNotEmpty($proof->encoded_content);
+        $this->assertArrayNotHasKey('encoded_content', $proof->toArray());
 
         // Cross-tenant staff cannot view proof or approve payment in another workspace
         TenantContext::clear();
@@ -333,6 +335,19 @@ class PaymentAndTaxUpgradeTest extends TestCase
             ->get(route('business.orders.payment-proof.show', [$order, $proof]))
             ->assertOk();
 
+        // Simulate ephemeral container restart wiping local disk; PostgreSQL backup must still stream 200 PNG and re-hydrate local disk
+        Storage::disk('local')->delete($proof->file_path);
+        Storage::disk('local')->assertMissing($proof->file_path);
+
+        $rehydratedResponse = $this->actingAs($this->owner)
+            ->withSession(['active_business_id' => $this->business->id])
+            ->get(route('business.orders.payment-proof.show', [$order, $proof]))
+            ->assertOk()
+            ->assertHeader('Content-Type', 'image/png');
+
+        $this->assertStringStartsWith("\x89PNG", (string) $rehydratedResponse->getContent());
+        Storage::disk('local')->assertExists($proof->file_path);
+
         // Staff rejects first, then customer/admin approves after review
         $this->actingAs($this->owner)
             ->withSession(['active_business_id' => $this->business->id])
@@ -354,6 +369,7 @@ class PaymentAndTaxUpgradeTest extends TestCase
         $this->assertSame('paid', $order->payment_status);
         $this->assertSame($this->owner->id, $order->payment_verified_by);
         $this->assertNotNull($order->paid_at);
+        $this->assertSame('approved', $proof->fresh()->status);
 
         // Order details view also renders reviewedBy and verification timestamp cleanly after approval
         $this->actingAs($this->owner)
@@ -361,6 +377,25 @@ class PaymentAndTaxUpgradeTest extends TestCase
             ->get(route('business.orders.show', $order))
             ->assertOk()
             ->assertSee('Verified in ABA merchant portal.');
+
+        // Legacy pre-upgrade proofs missing both disk file and encoded_content render clean fallback HTML/SVG instead of 404
+        Storage::disk('local')->delete($proof->file_path);
+        PaymentProof::withoutGlobalScopes()->whereKey($proof->id)->update(['encoded_content' => null]);
+
+        $this->actingAs($this->owner)
+            ->withSession(['active_business_id' => $this->business->id])
+            ->withHeaders(['Accept' => 'text/html,application/xhtml+xml'])
+            ->get(route('business.orders.payment-proof.show', [$order, $proof]))
+            ->assertOk()
+            ->assertSee('Original Screenshot Expired on Temporary Container Storage')
+            ->assertSee('ABA-REF-991');
+
+        $this->actingAs($this->owner)
+            ->withSession(['active_business_id' => $this->business->id])
+            ->withHeaders(['Accept' => 'image/avif,image/webp,image/png,*/*;q=0.8'])
+            ->get(route('business.orders.payment-proof.show', [$order, $proof]))
+            ->assertOk()
+            ->assertHeader('Content-Type', 'image/svg+xml; charset=utf-8');
     }
 
     public function test_static_qr_image_lifecycle_and_cod_collection_flow(): void

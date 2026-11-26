@@ -6,6 +6,7 @@ use App\Traits\BelongsToTenant;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Storage;
 
 class PaymentProof extends Model
 {
@@ -20,6 +21,7 @@ class PaymentProof extends Model
         'original_filename',
         'mime_type',
         'file_size',
+        'encoded_content',
         'customer_reference',
         'customer_note',
         'status',
@@ -27,6 +29,10 @@ class PaymentProof extends Model
         'reviewed_at',
         'review_note',
         'uploaded_ip',
+    ];
+
+    protected $hidden = [
+        'encoded_content',
     ];
 
     protected function casts(): array
@@ -66,5 +72,48 @@ class PaymentProof extends Model
     public function reviewer(): BelongsTo
     {
         return $this->reviewedBy();
+    }
+
+    /**
+     * Determine whether raw proof image bytes exist on private local disk or in persistent database storage.
+     */
+    public function hasStoredBinary(): bool
+    {
+        if (filled($this->encoded_content)) {
+            return true;
+        }
+
+        return filled($this->file_path) && Storage::disk('local')->exists($this->file_path);
+    }
+
+    /**
+     * Resolve raw proof image bytes from private local disk or persistent database backup,
+     * re-hydrating the local disk cache automatically after ephemeral container restarts.
+     */
+    public function resolveBinaryContents(): ?string
+    {
+        if (filled($this->file_path) && Storage::disk('local')->exists($this->file_path)) {
+            $diskBytes = Storage::disk('local')->get($this->file_path);
+            if (is_string($diskBytes) && $diskBytes !== '') {
+                return $diskBytes;
+            }
+        }
+
+        if (filled($this->encoded_content)) {
+            $decoded = base64_decode((string) $this->encoded_content, true);
+            if (is_string($decoded) && $decoded !== '') {
+                if (filled($this->file_path)) {
+                    try {
+                        Storage::disk('local')->put($this->file_path, $decoded);
+                    } catch (\Throwable) {
+                        // Best-effort local disk cache hydration on ephemeral containers.
+                    }
+                }
+
+                return $decoded;
+            }
+        }
+
+        return null;
     }
 }

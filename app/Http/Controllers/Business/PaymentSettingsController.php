@@ -481,17 +481,17 @@ class PaymentSettingsController extends Controller
         $folder = "businesses/{$business->id}/payment-qr";
         try {
             $remoteUrl = (new SupabaseStorageService())->upload($file, $folder);
-            if (is_string($remoteUrl) && $remoteUrl !== '') {
+            if (is_string($remoteUrl) && str_starts_with($remoteUrl, 'https://')) {
                 return $remoteUrl;
             }
         } catch (\Throwable $e) {
-            // Fall back to local public disk when remote object storage is unreachable.
+            // Fall back to persistent inline data URI + local disk cache when remote object storage is unavailable.
         }
 
         $relativePath = "{$folder}/" . Str::uuid() . ".{$ext}";
         Storage::disk('public')->put($relativePath, $bytes);
 
-        return "/storage/{$relativePath}";
+        return 'data:' . $detectedMime . ';base64,' . base64_encode($bytes);
     }
 
     /**

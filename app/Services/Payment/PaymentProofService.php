@@ -54,10 +54,11 @@ class PaymentProofService
 
         $safeExt = self::ALLOWED_MIME_MAP[$detectedMime];
         $relativePath = "payment-proofs/{$order->business_id}/{$order->id}/" . Str::uuid() . ".{$safeExt}";
+        $encodedContent = base64_encode($bytes);
 
         Storage::disk('local')->put($relativePath, $bytes);
 
-        return DB::transaction(function () use ($order, $file, $detectedMime, $relativePath, $customerReference, $customerNote, $ipAddress): PaymentProof {
+        return DB::transaction(function () use ($order, $file, $detectedMime, $relativePath, $encodedContent, $customerReference, $customerNote, $ipAddress): PaymentProof {
             $tx = PaymentTransaction::withoutGlobalScopes()->create([
                 'business_id' => $order->business_id,
                 'order_id' => $order->id,
@@ -79,6 +80,7 @@ class PaymentProofService
                 'original_filename' => Str::limit(basename((string) $file->getClientOriginalName()), 240),
                 'mime_type' => $detectedMime,
                 'file_size' => (int) $file->getSize(),
+                'encoded_content' => $encodedContent,
                 'customer_reference' => $customerReference ? trim($customerReference) : null,
                 'customer_note' => $customerNote ? trim($customerNote) : null,
                 'status' => 'pending',
@@ -113,15 +115,36 @@ class PaymentProofService
             $lockedOrder = Order::withoutGlobalScopes()->whereKey($order->id)->lockForUpdate()->firstOrFail();
             $now = now();
 
-            $lockedOrder->proofs()->where('status', 'pending')->update([
-                'status' => 'approved',
-                'reviewed_by' => $staff->id,
-                'reviewed_at' => $now,
-                'review_note' => $reviewNote,
-            ]);
+            $pendingProofs = PaymentProof::withoutGlobalScopes()
+                ->where('order_id', $lockedOrder->id)
+                ->where('status', 'pending');
 
-            $lockedOrder->paymentTransactions()
-                ->whereIn('status', ['pending', 'pending_verification'])
+            if ($pendingProofs->exists()) {
+                $pendingProofs->update([
+                    'status' => 'approved',
+                    'reviewed_by' => $staff->id,
+                    'reviewed_at' => $now,
+                    'review_note' => $reviewNote,
+                ]);
+            } else {
+                $latestProof = PaymentProof::withoutGlobalScopes()
+                    ->where('order_id', $lockedOrder->id)
+                    ->latest('created_at')
+                    ->first();
+
+                if ($latestProof && $latestProof->status !== 'approved') {
+                    $latestProof->update([
+                        'status' => 'approved',
+                        'reviewed_by' => $staff->id,
+                        'reviewed_at' => $now,
+                        'review_note' => $reviewNote,
+                    ]);
+                }
+            }
+
+            PaymentTransaction::withoutGlobalScopes()
+                ->where('order_id', $lockedOrder->id)
+                ->whereIn('status', ['pending', 'pending_verification', 'rejected'])
                 ->update([
                     'status' => 'paid',
                     'verified_at' => $now,
@@ -170,14 +193,18 @@ class PaymentProofService
             $lockedOrder = Order::withoutGlobalScopes()->whereKey($order->id)->lockForUpdate()->firstOrFail();
             $now = now();
 
-            $lockedOrder->proofs()->where('status', 'pending')->update([
-                'status' => 'rejected',
-                'reviewed_by' => $staff->id,
-                'reviewed_at' => $now,
-                'review_note' => $reason,
-            ]);
+            PaymentProof::withoutGlobalScopes()
+                ->where('order_id', $lockedOrder->id)
+                ->where('status', 'pending')
+                ->update([
+                    'status' => 'rejected',
+                    'reviewed_by' => $staff->id,
+                    'reviewed_at' => $now,
+                    'review_note' => $reason,
+                ]);
 
-            $lockedOrder->paymentTransactions()
+            PaymentTransaction::withoutGlobalScopes()
+                ->where('order_id', $lockedOrder->id)
                 ->whereIn('status', ['pending', 'pending_verification'])
                 ->update([
                     'status' => 'rejected',
@@ -225,7 +252,8 @@ class PaymentProofService
             $lockedOrder = Order::withoutGlobalScopes()->whereKey($order->id)->lockForUpdate()->firstOrFail();
             $now = now();
 
-            $lockedOrder->paymentTransactions()
+            PaymentTransaction::withoutGlobalScopes()
+                ->where('order_id', $lockedOrder->id)
                 ->whereIn('status', ['pending', 'pending_collection'])
                 ->update([
                     'status' => 'paid',
