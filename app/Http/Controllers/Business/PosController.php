@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Business;
 use App\Http\Controllers\Controller;
 use App\Models\Business;
 use App\Models\BusinessBranch;
+use App\Models\BusinessPaymentConfig;
 use App\Models\Category;
 use App\Models\Customer;
 use App\Models\Order;
@@ -17,8 +18,11 @@ use App\Models\Product;
 use App\Models\ProductAddon;
 use App\Models\ProductVariant;
 use App\Models\RestaurantTable;
+use App\Services\Inventory\RecipeDeductionService;
+use App\Services\Notifications\BusinessNotificationService;
+use App\Services\Payment\PaymentGatewayVisibilityService;
+use App\Services\Pricing\OrderPricingCalculator;
 use App\Services\Tenant\TenantContext;
-use Carbon\Carbon;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -28,6 +32,12 @@ use Illuminate\Support\Facades\DB;
 
 class PosController extends Controller
 {
+    public function __construct(
+        private OrderPricingCalculator $pricingCalculator,
+        private PaymentGatewayVisibilityService $visibilityService,
+    ) {
+    }
+
     /**
      * Display the Touch POS Terminal interface.
      */
@@ -37,7 +47,6 @@ class PosController extends Controller
         /** @var \App\Models\User $user */
         $user = $request->user() ?? Auth::user();
 
-        // Check for active open session
         $activeSession = PosSession::where('business_id', $business->id)
             ->where('user_id', $user->id)
             ->where('status', 'open')
@@ -63,13 +72,18 @@ class PosController extends Controller
                 ->get();
         }
 
+        $paymentConfig = BusinessPaymentConfig::resolveForBusiness($business);
+        $paymentMethods = $this->visibilityService->resolveCheckoutMethods($business);
+
         return view('business.pos.index', compact(
             'business',
             'activeSession',
             'branches',
             'tables',
             'categories',
-            'recentTransactions'
+            'recentTransactions',
+            'paymentConfig',
+            'paymentMethods'
         ));
     }
 
@@ -82,7 +96,6 @@ class PosController extends Controller
         /** @var \App\Models\User $user */
         $user = $request->user() ?? Auth::user();
 
-        // Ensure no active open session already exists
         $existing = PosSession::where('business_id', $business->id)
             ->where('user_id', $user->id)
             ->where('status', 'open')
@@ -137,13 +150,13 @@ class PosController extends Controller
         $difference = (float) $validated['closing_cash'] - $expectedCash;
         $diffMessage = $difference === 0.0
             ? 'Cash drawer matched exactly!'
-            : ($difference > 0 ? "Cash over by $" . number_format($difference, 2) : "Cash short by $" . number_format(abs($difference), 2));
+            : ($difference > 0 ? 'Cash over by $' . number_format($difference, 2) : 'Cash short by $' . number_format(abs($difference), 2));
 
         return redirect()->route('business.pos.index')->with('success', "POS register closed. {$diffMessage}");
     }
 
     /**
-     * Immediate in-person checkout from the Touch POS Terminal.
+     * Immediate in-person checkout from the Touch POS Terminal using unified pricing rules.
      */
     public function checkout(Request $request): JsonResponse
     {
@@ -151,14 +164,13 @@ class PosController extends Controller
         /** @var \App\Models\User $user */
         $user = $request->user() ?? Auth::user();
 
-        // 1. Verify active POS session
         $activeSession = PosSession::where('business_id', $business->id)
             ->where('user_id', $user->id)
             ->where('status', 'open')
             ->latest()
             ->first();
 
-        if (!$activeSession) {
+        if (! $activeSession) {
             return response()->json(['error' => 'No active POS register session is open. Please open a shift first.'], 422);
         }
 
@@ -167,7 +179,7 @@ class PosController extends Controller
             'table_number' => ['nullable', 'string', 'max:50'],
             'customer_name' => ['nullable', 'string', 'max:150'],
             'customer_phone' => ['nullable', 'string', 'max:50'],
-            'payment_method' => ['required', 'string', 'in:cash,khqr,card'],
+            'payment_method' => ['required', 'string', 'in:cash,cod,khqr,bakong_khqr,aba_payway,bank_transfer,static_qr,card'],
             'amount_tendered' => ['nullable', 'numeric', 'min:0'],
             'discount_amount' => ['nullable', 'numeric', 'min:0'],
             'notes' => ['nullable', 'string', 'max:500'],
@@ -180,23 +192,23 @@ class PosController extends Controller
             'items.*.notes' => ['nullable', 'string', 'max:255'],
         ]);
 
-        $customerName = !empty($validated['customer_name']) ? $validated['customer_name'] : 'Walk-in Guest';
-        $customerPhone = !empty($validated['customer_phone']) ? $validated['customer_phone'] : null;
+        $paymentMethod = $validated['payment_method'] === 'bakong_khqr' ? 'khqr' : $validated['payment_method'];
+        $customerName = ! empty($validated['customer_name']) ? $validated['customer_name'] : 'Walk-in Guest';
+        $customerPhone = ! empty($validated['customer_phone']) ? $validated['customer_phone'] : null;
 
-        // Table resolution
         $tableId = null;
-        if ($validated['order_type'] === 'dine_in' && !empty($validated['table_number'])) {
+        if ($validated['order_type'] === 'dine_in' && ! empty($validated['table_number'])) {
             $table = RestaurantTable::where('business_id', $business->id)
                 ->where('table_number', $validated['table_number'])
                 ->first();
             $tableId = $table?->id;
         }
 
-        $result = DB::transaction(function () use ($business, $activeSession, $user, $validated, $customerName, $customerPhone, $tableId) {
+        $result = DB::transaction(function () use ($business, $activeSession, $user, $validated, $paymentMethod, $customerName, $customerPhone, $tableId): array {
             Business::whereKey($business->id)->lockForUpdate()->first();
 
-            // Customer
             $customerId = null;
+            $customer = null;
             if ($customerPhone) {
                 $customer = Customer::firstOrCreate(
                     [
@@ -210,22 +222,20 @@ class PosController extends Controller
                 $customerId = $customer->id;
             }
 
-            // Sequential Order Number scoped to this business
             $orderNumber = Order::generateDailySequenceNumber($business->id, 'order_number', 'POS', 4);
 
-            // Calculate item totals
             $subtotal = 0.00;
             $preparedItems = [];
 
             foreach ($validated['items'] as $itemData) {
-                $product = Product::findOrFail($itemData['product_id']);
+                $product = Product::where('business_id', $business->id)->findOrFail($itemData['product_id']);
                 $quantity = (float) $itemData['quantity'];
 
-                $unitPrice = $product->effective_price;
+                $unitPrice = (float) $product->effective_price;
                 $variantName = null;
 
-                if (!empty($itemData['variant_id'])) {
-                    $variant = ProductVariant::find($itemData['variant_id']);
+                if (! empty($itemData['variant_id'])) {
+                    $variant = ProductVariant::where('product_id', $product->id)->find($itemData['variant_id']);
                     if ($variant) {
                         $unitPrice += (float) $variant->price_adjustment;
                         $variantName = $variant->name_en;
@@ -233,11 +243,10 @@ class PosController extends Controller
                 }
 
                 $itemSubtotal = $unitPrice * $quantity;
-
                 $itemAddons = [];
-                if (!empty($itemData['addons'])) {
+                if (! empty($itemData['addons'])) {
                     foreach ($itemData['addons'] as $addonId) {
-                        $addon = ProductAddon::find($addonId);
+                        $addon = ProductAddon::where('business_id', $business->id)->find($addonId);
                         if ($addon) {
                             $addonPrice = (float) $addon->price;
                             $itemSubtotal += ($addonPrice * $quantity);
@@ -265,25 +274,22 @@ class PosController extends Controller
                     'addons' => $itemAddons,
                 ];
 
-                // Deduct inventory if tracked
                 if ($product->track_inventory) {
                     $product->decrement('stock_quantity', $quantity);
                 }
             }
 
-            // Discounts and Tax
-            $discount = (float) ($validated['discount_amount'] ?? 0.00);
-            $taxable = max(0, $subtotal - $discount);
-            $taxRate = (float) ($business->tax_percent ?? 0.00);
-            $taxAmount = round($taxable * ($taxRate / 100), 2);
-            $totalAmount = $taxable + $taxAmount;
-            $totalKhr = $business->khrEquivalent($totalAmount);
+            $discountInput = (float) ($validated['discount_amount'] ?? 0.00);
+            $pricing = $this->pricingCalculator->calculate($business, $subtotal, $discountInput);
 
-            // Change calculation
-            $amountTendered = (float) ($validated['amount_tendered'] ?? $totalAmount);
-            $changeGiven = max(0.00, round($amountTendered - $totalAmount, 2));
+            $amountTendered = (float) ($validated['amount_tendered'] ?? $pricing['total_amount']);
+            $changeGiven = max(0.00, round($amountTendered - $pricing['total_amount'], 2));
+            $now = now();
 
-            // Create Order
+            $isCodDeferred = $paymentMethod === 'cod';
+            $orderStatus = $isCodDeferred ? 'confirmed' : 'completed';
+            $paymentStatus = $isCodDeferred ? 'pending_collection' : 'paid';
+
             $order = Order::create([
                 'business_id' => $business->id,
                 'branch_id' => $activeSession->branch_id,
@@ -293,20 +299,28 @@ class PosController extends Controller
                 'customer_id' => $customerId,
                 'customer_name' => $customerName,
                 'customer_phone' => $customerPhone,
-                'subtotal' => $subtotal,
-                'discount_amount' => $discount,
-                'tax_amount' => $taxAmount,
-                'total_amount' => $totalAmount,
-                'total_khr' => $totalKhr,
-                'currency' => $business->default_currency,
-                'exchange_rate_khr' => $business->exchange_rate_khr,
-                'status' => 'completed',
-                'payment_status' => 'paid',
-                'payment_method' => $validated['payment_method'],
+                'subtotal' => $pricing['gross_subtotal'],
+                'discount_amount' => $pricing['discount_amount'],
+                'service_charge_enabled' => $pricing['service_charge_enabled'],
+                'service_charge_rate' => $pricing['service_charge_rate'],
+                'service_charge_amount' => $pricing['service_charge_amount'],
+                'tax_name' => $pricing['tax_name'],
+                'tax_rate' => $pricing['tax_rate'],
+                'tax_inclusive' => $pricing['tax_inclusive'],
+                'tax_amount' => $pricing['tax_amount'],
+                'total_amount' => $pricing['total_amount'],
+                'total_khr' => $pricing['total_khr'],
+                'currency' => $pricing['currency'],
+                'exchange_rate_khr' => $pricing['exchange_rate_khr'],
+                'status' => $orderStatus,
+                'payment_status' => $paymentStatus,
+                'payment_method' => $paymentMethod,
+                'payment_verified_at' => $isCodDeferred ? null : $now,
+                'payment_verified_by' => $isCodDeferred ? null : $user->id,
+                'paid_at' => $isCodDeferred ? null : $now,
                 'notes' => $validated['notes'] ?? null,
             ]);
 
-            // Create Order Items
             foreach ($preparedItems as $prepItem) {
                 $orderItem = OrderItem::create([
                     'order_id' => $order->id,
@@ -331,51 +345,47 @@ class PosController extends Controller
                 }
             }
 
-            // Initial status audit
             OrderStatusHistory::create([
                 'order_id' => $order->id,
                 'user_id' => $user->id,
                 'from_status' => null,
-                'to_status' => 'completed',
-                'note' => 'POS direct sale completed and paid.',
-                'created_at' => now(),
+                'to_status' => $orderStatus,
+                'note' => $isCodDeferred ? 'POS delivery order recorded with COD pending collection.' : 'POS direct sale completed and paid.',
+                'created_at' => $now,
             ]);
 
-            // Sequential Receipt Number scoped to this business
             $receiptNumber = PosTransaction::generateDailySequenceNumber($business->id, 'receipt_number', 'REC', 5);
 
-            // Create POS Transaction
             $posTransaction = PosTransaction::create([
                 'pos_session_id' => $activeSession->id,
                 'business_id' => $business->id,
                 'order_id' => $order->id,
-                'amount' => $totalAmount,
-                'amount_khr' => $totalKhr,
-                'payment_method' => $validated['payment_method'],
+                'amount' => $pricing['total_amount'],
+                'amount_khr' => $pricing['total_khr'],
+                'payment_method' => $paymentMethod,
                 'amount_tendered' => $amountTendered,
                 'change_given' => $changeGiven,
                 'receipt_number' => $receiptNumber,
             ]);
 
-            if (isset($customer)) {
+            if ($customer) {
                 $customer->increment('total_orders');
-                $customer->increment('total_spent', $totalAmount);
+                $customer->increment('total_spent', $pricing['total_amount']);
             }
 
-            // Deduct recipe ingredients automatically
-            (new \App\Services\Inventory\RecipeDeductionService())->deductOrderIngredients($order);
+            (new RecipeDeductionService())->deductOrderIngredients($order);
 
             return [
                 'order' => $order,
                 'transaction' => $posTransaction,
                 'change_usd' => $changeGiven,
                 'change_khr' => $business->khrEquivalent($changeGiven),
-                'total_usd' => $totalAmount,
-                'total_khr' => $totalKhr,
+                'total_usd' => $pricing['total_amount'],
+                'total_khr' => $pricing['total_khr'],
             ];
         });
 
-        $notificationService = app(\App\Services\Notifications\BusinessNotificationService::class);
+        $notificationService = app(BusinessNotificationService::class);
         $notificationService->notifyOrderEvent($result['order'], 'order.created');
 
         if ($result['order']->payment_status === 'paid') {

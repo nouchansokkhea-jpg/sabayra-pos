@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Business;
+use App\Models\BusinessPaymentConfig;
 use App\Models\Category;
 use App\Models\Order;
 use App\Models\Product;
@@ -104,6 +105,16 @@ class PublicMenuAndOrderingTest extends TestCase
 
     public function test_customer_can_place_dine_in_order_via_checkout_api(): void
     {
+        BusinessPaymentConfig::withoutGlobalScopes()->create([
+            'business_id' => $this->business->id,
+            'bakong_enabled' => true,
+            'bakong_account_id' => 'angkor_bistro@aclb',
+            'bakong_merchant_name' => 'Angkor Bistro',
+            'bakong_verified' => true,
+            'bakong_verified_at' => now(),
+            'bakong_verification_status' => 'verified',
+        ]);
+
         $payload = [
             'customer_name' => 'Sokha Meng',
             'customer_phone' => '012999888',

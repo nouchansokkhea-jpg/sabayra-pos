@@ -31,6 +31,10 @@ class Business extends Model
         'default_currency',
         'exchange_rate_khr',
         'tax_percent',
+        'tax_name',
+        'tax_inclusive',
+        'service_charge_enabled',
+        'service_charge_rate',
         'status',
         'theme_settings',
         'opening_hours',
@@ -43,6 +47,9 @@ class Business extends Model
             'opening_hours' => 'array',
             'exchange_rate_khr' => 'decimal:2',
             'tax_percent' => 'decimal:2',
+            'tax_inclusive' => 'boolean',
+            'service_charge_enabled' => 'boolean',
+            'service_charge_rate' => 'decimal:2',
         ];
     }
 
@@ -170,6 +177,21 @@ class Business extends Model
     public function telegramNotificationLogs(): HasMany
     {
         return $this->hasMany(TelegramNotificationLog::class, 'business_id')->withoutGlobalScopes();
+    }
+
+    public function paymentConfig(): HasOne
+    {
+        return $this->hasOne(BusinessPaymentConfig::class, 'business_id')->withoutGlobalScopes();
+    }
+
+    public function paymentTransactions(): HasMany
+    {
+        return $this->hasMany(PaymentTransaction::class, 'business_id')->withoutGlobalScopes();
+    }
+
+    public function paymentProofs(): HasMany
+    {
+        return $this->hasMany(PaymentProof::class, 'business_id')->withoutGlobalScopes();
     }
 
     /**

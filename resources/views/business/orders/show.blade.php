@@ -108,7 +108,7 @@
                 <!-- Financial Calculation Section -->
                 <div class="border-t border-slate-200/80 dark:border-gray-700 pt-4 mt-4 space-y-2 text-sm text-slate-700 dark:text-slate-300">
                     <div class="flex justify-between">
-                        <span>{{ __('Subtotal') }}</span>
+                        <span>{{ $order->tax_inclusive ? __('Subtotal (Tax Inclusive)') : __('Subtotal') }}</span>
                         <span class="font-mono font-semibold text-slate-900 dark:text-white">${{ number_format($order->subtotal, 2) }}</span>
                     </div>
 
@@ -119,9 +119,16 @@
                         </div>
                     @endif
 
+                    @if(($order->service_charge_amount ?? 0) > 0)
+                        <div class="flex justify-between">
+                            <span>{{ __('Service Charge') }} ({{ number_format((float) $order->service_charge_rate, 2) }}%)</span>
+                            <span class="font-mono font-semibold text-slate-900 dark:text-white">${{ number_format($order->service_charge_amount, 2) }}</span>
+                        </div>
+                    @endif
+
                     @if($order->tax_amount > 0)
                         <div class="flex justify-between">
-                            <span>{{ __('Tax / VAT') }}</span>
+                            <span>{{ $order->tax_name ?: 'VAT' }} ({{ number_format((float) $order->tax_rate, 2) }}%{{ $order->tax_inclusive ? ' included' : '' }})</span>
                             <span class="font-mono font-semibold text-slate-900 dark:text-white">${{ number_format($order->tax_amount, 2) }}</span>
                         </div>
                     @endif
@@ -198,30 +205,122 @@
                 </form>
             </div>
 
-            <!-- Payment Management -->
-            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-slate-200/80 dark:border-gray-700/70 p-6">
-                <h3 class="font-bold text-base text-slate-900 dark:text-white mb-4">{{ __('Payment Settlement') }}</h3>
-                <form method="POST" action="{{ route('business.orders.update-payment', $order) }}" class="space-y-3">
+            <!-- Payment Verification & Settlement -->
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-slate-200/80 dark:border-gray-700/70 p-6 space-y-4">
+                <div class="flex items-center justify-between gap-2">
+                    <h3 class="font-bold text-base text-slate-900 dark:text-white">{{ __('Payment Settlement') }}</h3>
+                    <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold {{ $order->payment_status === 'paid' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300' : ($order->payment_status === 'pending_verification' ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300' : 'bg-slate-100 text-slate-800 dark:bg-gray-700 dark:text-slate-200') }}">
+                        {{ $order->paymentStatusLabel() }}
+                    </span>
+                </div>
+
+                <div class="rounded-xl bg-slate-50 dark:bg-gray-900/60 border border-slate-200 dark:border-gray-700 p-3 text-xs space-y-1 text-slate-700 dark:text-slate-300">
+                    <div class="flex justify-between">
+                        <span>Method:</span>
+                        <span class="font-bold text-slate-900 dark:text-white">{{ $order->paymentMethodLabel() }}</span>
+                    </div>
+                    @if($order->payment_reference)
+                        <div class="flex justify-between">
+                            <span>Reference:</span>
+                            <span class="font-mono text-slate-900 dark:text-white">{{ $order->payment_reference }}</span>
+                        </div>
+                    @endif
+                    @if($order->payment_verified_at)
+                        <div class="flex justify-between">
+                            <span>Verified:</span>
+                            <span>{{ $order->payment_verified_at->format('M d, h:i A') }} @if($order->paymentVerifiedBy) by {{ $order->paymentVerifiedBy->name }} @endif</span>
+                        </div>
+                    @endif
+                    @if($order->payment_collected_at)
+                        <div class="flex justify-between">
+                            <span>COD Collected:</span>
+                            <span>{{ $order->payment_collected_at->format('M d, h:i A') }} @if($order->paymentCollectedBy) by {{ $order->paymentCollectedBy->name }} @endif</span>
+                        </div>
+                    @endif
+                </div>
+
+                @if($order->proofs->isNotEmpty())
+                    <div class="space-y-3 border-t border-slate-100 dark:border-gray-700 pt-3">
+                        <div class="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">Customer Payment Proofs</div>
+                        @foreach($order->proofs as $proof)
+                            <div class="rounded-xl border border-slate-200 dark:border-gray-700 p-3 space-y-2 text-xs">
+                                <a href="{{ route('business.orders.payment-proof.show', [$order, $proof]) }}" target="_blank" class="block">
+                                    <img src="{{ route('business.orders.payment-proof.show', [$order, $proof]) }}" alt="Payment proof" class="max-h-44 w-full object-contain rounded-lg bg-slate-100 dark:bg-gray-900">
+                                </a>
+                                <div class="flex justify-between items-center">
+                                    <span class="font-mono text-[11px]">{{ $proof->customer_reference ?: $proof->original_filename }}</span>
+                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase {{ $proof->status === 'approved' ? 'bg-emerald-100 text-emerald-800' : ($proof->status === 'rejected' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800') }}">
+                                        {{ $proof->status }}
+                                    </span>
+                                </div>
+                                @if($proof->customer_note)
+                                    <p class="text-[11px] text-slate-600 dark:text-slate-300">Customer note: {{ $proof->customer_note }}</p>
+                                @endif
+                            </div>
+                        @endforeach
+
+                        @if($order->payment_status !== 'paid')
+                            <form method="POST" action="{{ route('business.orders.payment.approve', $order) }}" class="space-y-2">
+                                @csrf
+                                <input type="text" name="review_note" placeholder="Approval note (optional)"
+                                       class="w-full text-xs rounded-xl border border-slate-300 bg-white text-slate-900 dark:border-gray-700 dark:bg-gray-900 dark:text-white px-3 py-2">
+                                <button type="submit" class="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition cursor-pointer">
+                                    Approve Payment Proof
+                                </button>
+                            </form>
+
+                            <form method="POST" action="{{ route('business.orders.payment.reject', $order) }}" class="space-y-2">
+                                @csrf
+                                <input type="text" name="review_note" required placeholder="Rejection reason (required)"
+                                       class="w-full text-xs rounded-xl border border-slate-300 bg-white text-slate-900 dark:border-gray-700 dark:bg-gray-900 dark:text-white px-3 py-2">
+                                <button type="submit" class="w-full py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition cursor-pointer">
+                                    Reject Payment Proof
+                                </button>
+                            </form>
+                        @endif
+                    </div>
+                @endif
+
+                @if($order->payment_method === 'cod' && $order->payment_status !== 'paid')
+                    <form method="POST" action="{{ route('business.orders.payment.collect-cod', $order) }}" class="space-y-2 border-t border-slate-100 dark:border-gray-700 pt-3">
+                        @csrf
+                        <input type="text" name="collection_note" placeholder="Delivery collection note (optional)"
+                               class="w-full text-xs rounded-xl border border-slate-300 bg-white text-slate-900 dark:border-gray-700 dark:bg-gray-900 dark:text-white px-3 py-2">
+                        <button type="submit" class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition cursor-pointer">
+                            Mark Cash on Delivery Collected
+                        </button>
+                    </form>
+                @endif
+
+                <form method="POST" action="{{ route('business.orders.update-payment', $order) }}" class="space-y-3 border-t border-slate-100 dark:border-gray-700 pt-3">
                     @csrf
                     <div>
                         <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">{{ __('Payment Status') }}</label>
-                        <select name="payment_status" class="w-full text-sm font-semibold text-slate-900 dark:text-white bg-white dark:bg-gray-900 border-slate-300 dark:border-gray-700 rounded-xl py-2 px-3 focus:ring-emerald-500 focus:border-emerald-500">
+                        <select name="payment_status" class="w-full text-sm font-semibold text-slate-900 dark:text-white bg-white dark:bg-gray-900 border border-slate-300 dark:border-gray-700 rounded-xl py-2 px-3 focus:ring-emerald-500 focus:border-emerald-500">
                             <option value="unpaid" {{ $order->payment_status === 'unpaid' ? 'selected' : '' }}>Unpaid</option>
+                            <option value="pending_verification" {{ $order->payment_status === 'pending_verification' ? 'selected' : '' }}>Pending Verification</option>
+                            <option value="pending_collection" {{ $order->payment_status === 'pending_collection' ? 'selected' : '' }}>Pending Collection</option>
                             <option value="paid" {{ $order->payment_status === 'paid' ? 'selected' : '' }}>Paid</option>
+                            <option value="rejected" {{ $order->payment_status === 'rejected' ? 'selected' : '' }}>Rejected</option>
+                            <option value="failed" {{ $order->payment_status === 'failed' ? 'selected' : '' }}>Failed</option>
                             <option value="refunded" {{ $order->payment_status === 'refunded' ? 'selected' : '' }}>Refunded</option>
                         </select>
                     </div>
 
                     <div>
                         <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">{{ __('Payment Method') }}</label>
-                        <select name="payment_method" class="w-full text-sm font-semibold text-slate-900 dark:text-white bg-white dark:bg-gray-900 border-slate-300 dark:border-gray-700 rounded-xl py-2 px-3 focus:ring-emerald-500 focus:border-emerald-500">
+                        <select name="payment_method" class="w-full text-sm font-semibold text-slate-900 dark:text-white bg-white dark:bg-gray-900 border border-slate-300 dark:border-gray-700 rounded-xl py-2 px-3 focus:ring-emerald-500 focus:border-emerald-500">
                             <option value="cash" {{ $order->payment_method === 'cash' ? 'selected' : '' }}>Cash</option>
+                            <option value="cod" {{ $order->payment_method === 'cod' ? 'selected' : '' }}>Cash on Delivery</option>
                             <option value="khqr" {{ $order->payment_method === 'khqr' ? 'selected' : '' }}>Bakong KHQR</option>
+                            <option value="aba_payway" {{ $order->payment_method === 'aba_payway' ? 'selected' : '' }}>ABA PayWay</option>
+                            <option value="bank_transfer" {{ $order->payment_method === 'bank_transfer' ? 'selected' : '' }}>Bank Transfer</option>
+                            <option value="static_qr" {{ $order->payment_method === 'static_qr' ? 'selected' : '' }}>Static QR</option>
                             <option value="card" {{ $order->payment_method === 'card' ? 'selected' : '' }}>Credit / Debit Card</option>
                         </select>
                     </div>
 
-                    <button type="submit" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-bold shadow-sm transition">
+                    <button type="submit" class="w-full py-2.5 bg-[#0F1E3A] hover:bg-[#192F59] text-white rounded-xl text-sm font-bold shadow-sm transition cursor-pointer">
                         {{ __('Update Payment') }}
                     </button>
                 </form>

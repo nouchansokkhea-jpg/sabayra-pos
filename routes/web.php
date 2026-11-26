@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Public\PaymentWebhookController;
 use App\Http\Controllers\Public\TelegramWebhookController;
 use App\Models\Business;
 use App\Models\Plan;
@@ -109,5 +110,10 @@ Route::get('/business/{path}', function (Request $request, string $path) {
 Route::post('/webhooks/telegram', [TelegramWebhookController::class, 'handle'])
     ->middleware('throttle:60,1')
     ->name('webhooks.telegram');
+
+// ABA PayWay Official Webhook Callback
+Route::post('/webhooks/aba-payway/{reference}', [PaymentWebhookController::class, 'abaPayWay'])
+    ->middleware('throttle:120,1')
+    ->name('webhooks.aba-payway');
 
 require __DIR__.'/auth.php';

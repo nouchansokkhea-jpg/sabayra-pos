@@ -3,6 +3,7 @@
 namespace App\Services\Payment;
 
 use App\Models\Business;
+use App\Models\BusinessPaymentConfig;
 use App\Models\BusinessSetting;
 
 class KHQRService
@@ -17,9 +18,12 @@ class KHQRService
             ? (string) round($amount)
             : number_format($amount, 2, '.', '');
 
-        // Merchant account identifier (Bakong ID)
-        $storedBakongId = BusinessSetting::getValue($business->id, 'payment.bakong_account_id');
-        $storedMerchantName = BusinessSetting::getValue($business->id, 'payment.bakong_merchant_name');
+        // Resolve merchant account identifier from BusinessPaymentConfig first, then legacy BusinessSetting.
+        $paymentConfig = BusinessPaymentConfig::resolveForBusiness($business);
+        $storedBakongId = $paymentConfig->bakong_account_id
+            ?: BusinessSetting::getValue($business->id, 'payment.bakong_account_id');
+        $storedMerchantName = $paymentConfig->bakong_merchant_name
+            ?: BusinessSetting::getValue($business->id, 'payment.bakong_merchant_name');
         $bakongId = $business->bakong_account_id ?? ($storedBakongId ?: 'menuhub_cambodia@nbc');
         $merchantName = $storedMerchantName ?: $business->name;
         $merchantAccountSub = self::tlv('00', $bakongId) . self::tlv('01', substr($business->slug, 0, 25));

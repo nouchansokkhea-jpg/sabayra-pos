@@ -119,9 +119,13 @@
 
     <div class="double-divider"></div>
 
+    @php
+        $receiptFooter = \App\Models\BusinessSetting::getValue($business->id, 'payment.receipt_footer')
+            ?: 'សូមអរគុណ! Thank you for your visit!';
+    @endphp
     <table>
         <tr>
-            <td>Subtotal:</td>
+            <td>{{ $order->tax_inclusive ? 'Subtotal (Incl. Tax):' : 'Subtotal:' }}</td>
             <td class="text-right">${{ number_format($order->subtotal, 2) }}</td>
         </tr>
         @if($order->discount_amount > 0)
@@ -130,9 +134,15 @@
                 <td class="text-right">-${{ number_format($order->discount_amount, 2) }}</td>
             </tr>
         @endif
+        @if(($order->service_charge_amount ?? 0) > 0)
+            <tr>
+                <td>Service Charge ({{ number_format((float) $order->service_charge_rate, 2) }}%):</td>
+                <td class="text-right">${{ number_format($order->service_charge_amount, 2) }}</td>
+            </tr>
+        @endif
         @if($order->tax_amount > 0)
             <tr>
-                <td>Tax ({{ $business->tax_percent }}%):</td>
+                <td>{{ $order->tax_name ?: 'VAT' }} ({{ number_format((float) ($order->tax_rate ?? $business->tax_percent), 2) }}%{{ $order->tax_inclusive ? ' incl.' : '' }}):</td>
                 <td class="text-right">${{ number_format($order->tax_amount, 2) }}</td>
             </tr>
         @endif
@@ -149,14 +159,17 @@
     <div class="divider"></div>
 
     <div style="font-size: 11px;">
-        <div><strong>{{ __('Payment') }}:</strong> {{ strtoupper($order->payment_method) }} ({{ strtoupper($order->payment_status) }})</div>
+        <div><strong>{{ __('Payment') }}:</strong> {{ $order->paymentMethodLabel() }} ({{ $order->paymentStatusLabel() }})</div>
+        @if($order->payment_reference)
+            <div><strong>Ref:</strong> {{ $order->payment_reference }}</div>
+        @endif
         <div><strong>Rate:</strong> 1 USD = {{ number_format($order->exchange_rate_khr) }} KHR</div>
     </div>
 
     <div class="divider"></div>
 
     <div class="text-center" style="font-size: 11px; margin-top: 8px;">
-        <div>សូមអរគុណ! Thank you for your visit!</div>
+        <div>{{ $receiptFooter }}</div>
         <div style="margin-top: 4px; font-size: 9px; color: #555;">Powered by SABAYRA Cambodia</div>
     </div>
 

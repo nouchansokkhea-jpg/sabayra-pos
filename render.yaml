@@ -82,3 +82,11 @@ services:
         value: "true"
       - key: TELEGRAM_POLLING_FALLBACK
         value: "false"
+      - key: BAKONG_ENABLED
+        value: "true"
+      - key: BAKONG_API_BASE_URL
+        value: "https://api-bakong.nbc.gov.kh"
+      - key: BAKONG_OPEN_API_TOKEN
+        sync: false
+      - key: ABA_PAYWAY_ENABLED
+        value: "true"

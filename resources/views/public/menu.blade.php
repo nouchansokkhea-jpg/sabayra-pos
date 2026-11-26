@@ -614,26 +614,55 @@
                     </div>
 
                     <div>
-                        <label class="block font-bold uppercase tracking-wider text-gray-800 dark:text-gray-200 mb-1">Payment Method</label>
-                        <select x-model="paymentMethod" class="w-full rounded-xl border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white px-3 py-2 text-xs font-medium">
-                            <option value="cash">Cash at Counter</option>
-                            <option value="khqr">Bakong KHQR (Scan to Pay)</option>
-                        </select>
+                        <label class="block font-bold uppercase tracking-wider text-gray-800 dark:text-gray-200 mb-1.5">Payment Method</label>
+                        <div class="space-y-2" x-show="availablePaymentMethods().length > 0">
+                            <template x-for="method in availablePaymentMethods()" :key="method.code">
+                                <label class="flex items-start gap-2.5 p-2.5 rounded-xl border cursor-pointer transition"
+                                       :class="paymentMethod === method.code ? 'border-orange-500 bg-orange-50/60 dark:bg-orange-950/30' : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800'">
+                                    <input type="radio" name="checkout_payment_method" :value="method.code" x-model="paymentMethod"
+                                           class="mt-0.5 text-orange-600 focus:ring-orange-500">
+                                    <div class="flex-1 min-w-0">
+                                        <div class="flex items-center gap-2">
+                                            <template x-if="method.logo">
+                                                <img :src="method.logo" :alt="method.label" class="h-4 w-4 object-contain rounded bg-white">
+                                            </template>
+                                            <span class="font-bold text-gray-900 dark:text-white text-xs" x-text="method.label"></span>
+                                        </div>
+                                        <p class="text-[11px] text-gray-600 dark:text-gray-300 mt-0.5 leading-snug" x-text="method.description"></p>
+                                    </div>
+                                </label>
+                            </template>
+                        </div>
+                        <div x-show="availablePaymentMethods().length === 0" class="p-3 rounded-xl border border-amber-200 bg-amber-50 text-xs text-amber-900 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
+                            No online payment method is currently enabled for this order channel.
+                        </div>
                     </div>
 
                     <!-- Total Calculation -->
-                    <div class="pt-3 border-t border-gray-100 dark:border-gray-800 space-y-1">
-                        <div class="flex justify-between font-bold text-sm text-gray-900 dark:text-white">
+                    <div class="pt-3 border-t border-gray-100 dark:border-gray-800 space-y-1.5">
+                        <div class="flex justify-between text-xs text-gray-700 dark:text-gray-300">
+                            <span x-text="pricingConfig.tax_inclusive ? 'Subtotal (Incl. Tax)' : 'Subtotal'"></span>
+                            <span class="font-mono font-semibold" x-text="'$' + cartSubtotalAmount.toFixed(2)"></span>
+                        </div>
+                        <div class="flex justify-between text-xs text-gray-700 dark:text-gray-300" x-show="cartServiceChargeAmount > 0">
+                            <span x-text="'Service Charge (' + Number(pricingConfig.service_charge_rate).toFixed(2) + '%)'"></span>
+                            <span class="font-mono font-semibold" x-text="'$' + cartServiceChargeAmount.toFixed(2)"></span>
+                        </div>
+                        <div class="flex justify-between text-xs text-gray-700 dark:text-gray-300" x-show="cartTaxAmount > 0">
+                            <span x-text="(pricingConfig.tax_name || 'VAT') + ' (' + Number(pricingConfig.tax_rate).toFixed(2) + '%' + (pricingConfig.tax_inclusive ? ' included' : '') + ')'"></span>
+                            <span class="font-mono font-semibold" x-text="'$' + cartTaxAmount.toFixed(2)"></span>
+                        </div>
+                        <div class="flex justify-between font-bold text-sm text-gray-900 dark:text-white pt-1.5 border-t border-gray-100 dark:border-gray-800">
                             <span>Total (USD)</span>
                             <span class="font-black" style="color: var(--brand-primary);" x-text="'$' + cartTotalAmount.toFixed(2)"></span>
                         </div>
                         <div class="flex justify-between text-xs text-gray-600 dark:text-gray-300 font-medium">
                             <span>Khmer Riel Equivalent</span>
-                            <span class="font-bold text-gray-900 dark:text-white" x-text="Math.round(cartTotalAmount * {{ $business->exchange_rate_khr }}).toLocaleString() + ' ៛'"></span>
+                            <span class="font-bold text-gray-900 dark:text-white" x-text="(Math.round((cartTotalAmount * Number(pricingConfig.exchange_rate_khr || 4100)) / 100) * 100).toLocaleString() + ' ៛'"></span>
                         </div>
                     </div>
 
-                    <button type="submit" :disabled="isSubmitting || cart.length === 0"
+                    <button type="submit" :disabled="isSubmitting || cart.length === 0 || availablePaymentMethods().length === 0"
                             style="background-color: var(--brand-primary);"
                             class="w-full py-3 text-white font-bold rounded-xl shadow-md transition disabled:opacity-50 hover:opacity-95 flex items-center justify-center gap-2">
                         <span x-show="!isSubmitting">{{ __('menu.place_order') }}</span>
@@ -694,6 +723,17 @@
     </div>
 
     <!-- Alpine.js Store Script -->
+    @php
+        $menuPaymentMethodsJson = array_values($paymentMethods ?? []);
+        $menuPricingConfigJson = $pricingConfig ?? [
+            'tax_name' => $business->tax_name ?: 'VAT',
+            'tax_rate' => (float) ($business->tax_percent ?? 0),
+            'tax_inclusive' => (bool) ($business->tax_inclusive ?? false),
+            'service_charge_enabled' => (bool) ($business->service_charge_enabled ?? false),
+            'service_charge_rate' => (float) ($business->service_charge_rate ?? 0),
+            'exchange_rate_khr' => (float) ($business->exchange_rate_khr ?: 4100),
+        ];
+    @endphp
     <script>
         function menuCartApp() {
             return {
@@ -712,8 +752,28 @@
                 deliveryAddress: '',
                 customerName: localStorage.getItem('customer_name') || '',
                 customerPhone: localStorage.getItem('customer_phone') || '',
-                paymentMethod: 'khqr',
+                paymentMethodConfig: @json($menuPaymentMethodsJson),
+                pricingConfig: @json($menuPricingConfigJson),
+                paymentMethod: '',
                 isSubmitting: false,
+
+                init() {
+                    this.syncSelectedPaymentMethod();
+                    this.$watch('orderType', () => this.syncSelectedPaymentMethod());
+                },
+
+                availablePaymentMethods() {
+                    return (this.paymentMethodConfig || []).filter(m =>
+                        m.enabled && (!m.order_types || m.order_types.includes(this.orderType))
+                    );
+                },
+
+                syncSelectedPaymentMethod() {
+                    const available = this.availablePaymentMethods();
+                    if (!available.some(m => m.code === this.paymentMethod)) {
+                        this.paymentMethod = available.length > 0 ? available[0].code : '';
+                    }
+                },
 
                 matchesSearch(haystack) {
                     if (!this.searchQuery || this.searchQuery.trim() === '') return true;
@@ -724,8 +784,32 @@
                     return this.cart.reduce((total, item) => total + item.quantity, 0);
                 },
 
+                get cartSubtotalAmount() {
+                    return Math.round(this.cart.reduce((total, item) => total + (item.unit_price * item.quantity), 0) * 100) / 100;
+                },
+
+                get cartServiceChargeAmount() {
+                    if (!this.pricingConfig.service_charge_enabled || Number(this.pricingConfig.service_charge_rate || 0) <= 0) {
+                        return 0;
+                    }
+                    return Math.round((this.cartSubtotalAmount * (Number(this.pricingConfig.service_charge_rate) / 100)) * 100) / 100;
+                },
+
+                get cartTaxAmount() {
+                    const rate = Number(this.pricingConfig.tax_rate || 0);
+                    if (rate <= 0) return 0;
+                    if (this.pricingConfig.tax_inclusive) {
+                        return Math.round((this.cartSubtotalAmount * (rate / (100 + rate))) * 100) / 100;
+                    }
+                    return Math.round((this.cartSubtotalAmount * (rate / 100)) * 100) / 100;
+                },
+
                 get cartTotalAmount() {
-                    return this.cart.reduce((total, item) => total + (item.unit_price * item.quantity), 0);
+                    const svc = this.cartServiceChargeAmount;
+                    if (this.pricingConfig.tax_inclusive) {
+                        return Math.round((this.cartSubtotalAmount + svc) * 100) / 100;
+                    }
+                    return Math.round((this.cartSubtotalAmount + svc + this.cartTaxAmount) * 100) / 100;
                 },
 
                 saveCart() {

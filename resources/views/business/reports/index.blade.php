@@ -95,6 +95,46 @@
             </div>
         </div>
 
+        <!-- Tax, Service Charge & Settlement Summary -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            <div class="bg-white dark:bg-gray-800 p-4 rounded-2xl border border-slate-200/80 dark:border-gray-700 shadow-xs">
+                <span class="text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">Gross Sales (Paid)</span>
+                <div class="text-lg font-black text-slate-900 dark:text-white mt-1 font-mono">${{ number_format($totalGrossSales ?? 0, 2) }}</div>
+                <div class="text-[11px] text-slate-500 dark:text-slate-400">Discounts: -${{ number_format($totalDiscounts ?? 0, 2) }}</div>
+            </div>
+
+            <div class="bg-white dark:bg-gray-800 p-4 rounded-2xl border border-slate-200/80 dark:border-gray-700 shadow-xs">
+                <span class="text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">Tax Collected</span>
+                <div class="text-lg font-black text-orange-600 dark:text-orange-400 mt-1 font-mono">${{ number_format($totalTaxCollected ?? 0, 2) }}</div>
+                <div class="text-[11px] text-slate-500 dark:text-slate-400">From paid orders</div>
+            </div>
+
+            <div class="bg-white dark:bg-gray-800 p-4 rounded-2xl border border-slate-200/80 dark:border-gray-700 shadow-xs">
+                <span class="text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">Service Charges</span>
+                <div class="text-lg font-black text-slate-900 dark:text-white mt-1 font-mono">${{ number_format($totalServiceCharges ?? 0, 2) }}</div>
+                <div class="text-[11px] text-slate-500 dark:text-slate-400">Settled service fees</div>
+            </div>
+
+            <div class="bg-white dark:bg-gray-800 p-4 rounded-2xl border border-slate-200/80 dark:border-gray-700 shadow-xs">
+                <span class="text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">Net Revenue (Ex-Tax)</span>
+                <div class="text-lg font-black text-emerald-700 dark:text-emerald-400 mt-1 font-mono">${{ number_format($netRevenue ?? 0, 2) }}</div>
+                <div class="text-[11px] text-slate-500 dark:text-slate-400">{{ $paidOrdersCount ?? 0 }} paid orders</div>
+            </div>
+
+            <div class="bg-white dark:bg-gray-800 p-4 rounded-2xl border border-slate-200/80 dark:border-gray-700 shadow-xs">
+                <span class="text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">Pending Settlement</span>
+                <div class="text-xs font-semibold text-amber-700 dark:text-amber-300 mt-1">
+                    Verification: {{ $pendingVerificationCount ?? 0 }} (${{ number_format($pendingVerificationAmount ?? 0, 2) }})
+                </div>
+                <div class="text-xs font-semibold text-blue-700 dark:text-blue-300">
+                    COD Collection: {{ $pendingCollectionCount ?? 0 }} (${{ number_format($pendingCollectionAmount ?? 0, 2) }})
+                </div>
+                <div class="text-xs text-slate-600 dark:text-slate-300">
+                    Unpaid: {{ $unpaidCount ?? 0 }} (${{ number_format($unpaidAmount ?? 0, 2) }})
+                </div>
+            </div>
+        </div>
+
         <!-- 14-Day Sales Trend Chart -->
         <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-slate-200/80 dark:border-gray-700 p-6">
             <h3 class="font-bold text-base text-slate-900 dark:text-white mb-4">{{ __('14-Day Daily Revenue Trend (USD $)') }}</h3>
@@ -114,11 +154,20 @@
                     <div class="space-y-3 mt-4">
                         @forelse($paymentBreakdown as $pay)
                             <div class="flex items-center justify-between text-xs">
-                                <span class="font-bold text-slate-800 dark:text-slate-200 capitalize flex items-center gap-2">
-                                    @if($pay->payment_method === 'khqr') 🇰🇭 Bakong KHQR
-                                    @elseif($pay->payment_method === 'cash') 💵 Cash
-                                    @else 💳 Card
-                                    @endif
+                                <span class="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                                    @php
+                                        $payLabel = match ($pay->payment_method) {
+                                            'khqr', 'bakong_khqr' => 'Bakong KHQR',
+                                            'aba_payway' => 'ABA PayWay',
+                                            'bank_transfer' => 'Bank Transfer',
+                                            'static_qr' => 'Static QR Payment',
+                                            'cod' => 'Cash on Delivery',
+                                            'cash' => 'Cash',
+                                            'card' => 'Card',
+                                            default => ucfirst(str_replace('_', ' ', (string) $pay->payment_method)),
+                                        };
+                                    @endphp
+                                    <span>{{ $payLabel }}</span>
                                     <span class="text-slate-600 dark:text-slate-300 font-medium">({{ $pay->count }} orders)</span>
                                 </span>
                                 <span class="font-mono font-bold text-slate-900 dark:text-white text-sm">${{ number_format($pay->total, 2) }}</span>

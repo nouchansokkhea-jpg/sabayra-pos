@@ -261,13 +261,21 @@
                 <div class="p-3 bg-slate-900 border-t border-slate-800 space-y-2">
                     <div class="space-y-1 text-xs">
                         <div class="flex justify-between text-slate-400">
-                            <span>Subtotal:</span>
+                            <span>{{ $business->tax_inclusive ? 'Subtotal (Incl. Tax):' : 'Subtotal:' }}</span>
                             <span class="font-mono text-slate-200" x-text="'$' + subtotal().toFixed(2)"></span>
                         </div>
-                        <div class="flex justify-between text-slate-400">
-                            <span>Tax ({{ $business->tax_percent }}%):</span>
-                            <span class="font-mono text-slate-200" x-text="'$' + tax().toFixed(2)"></span>
-                        </div>
+                        @if($business->service_charge_enabled && ($business->service_charge_rate ?? 0) > 0)
+                            <div class="flex justify-between text-slate-400">
+                                <span>Service Charge ({{ number_format((float) $business->service_charge_rate, 2) }}%):</span>
+                                <span class="font-mono text-slate-200" x-text="'$' + serviceCharge().toFixed(2)"></span>
+                            </div>
+                        @endif
+                        @if(($business->tax_percent ?? 0) > 0)
+                            <div class="flex justify-between text-slate-400">
+                                <span>{{ $business->tax_name ?: 'VAT' }} ({{ number_format((float) $business->tax_percent, 2) }}%{{ $business->tax_inclusive ? ' incl.' : '' }}):</span>
+                                <span class="font-mono text-slate-200" x-text="'$' + tax().toFixed(2)"></span>
+                            </div>
+                        @endif
                         <div class="flex justify-between text-base font-black text-white pt-1 border-t border-slate-800">
                             <span>TOTAL:</span>
                             <div class="text-right">
@@ -540,15 +548,33 @@
                 },
 
                 subtotal() {
-                    return this.cart.reduce((sum, item) => sum + (item.unit_price * item.quantity), 0);
+                    return Number(this.cart.reduce((sum, item) => sum + (item.unit_price * item.quantity), 0).toFixed(2));
+                },
+
+                serviceCharge() {
+                    const enabled = {{ ($business->service_charge_enabled && ($business->service_charge_rate ?? 0) > 0) ? 'true' : 'false' }};
+                    const rate = {{ (float) ($business->service_charge_rate ?? 0) }};
+                    if (!enabled || rate <= 0) return 0;
+                    return Number((this.subtotal() * (rate / 100)).toFixed(2));
                 },
 
                 tax() {
-                    return Number((this.subtotal() * ({{ $business->tax_percent }} / 100)).toFixed(2));
+                    const rate = {{ (float) ($business->tax_percent ?? 0) }};
+                    const inclusive = {{ $business->tax_inclusive ? 'true' : 'false' }};
+                    if (rate <= 0) return 0;
+                    if (inclusive) {
+                        return Number((this.subtotal() * (rate / (100 + rate))).toFixed(2));
+                    }
+                    return Number((this.subtotal() * (rate / 100)).toFixed(2));
                 },
 
                 total() {
-                    return Number((this.subtotal() + this.tax()).toFixed(2));
+                    const inclusive = {{ $business->tax_inclusive ? 'true' : 'false' }};
+                    const svc = this.serviceCharge();
+                    if (inclusive) {
+                        return Number((this.subtotal() + svc).toFixed(2));
+                    }
+                    return Number((this.subtotal() + svc + this.tax()).toFixed(2));
                 },
 
                 totalKhr() {

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Business;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\QrScanEvent;
 use App\Services\Tenant\TenantContext;
 use Carbon\Carbon;
 use Illuminate\Contracts\View\View;
@@ -15,13 +16,13 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 class ReportController extends Controller
 {
     /**
-     * Display comprehensive business financial analytics & sales reports.
+     * Display comprehensive business financial analytics, tax & service charge summaries, and sales reports.
      */
     public function index(Request $request): View
     {
         $business = TenantContext::get();
 
-        $period = $request->input('period', 'month'); // today, week, month, year
+        $period = $request->input('period', 'month');
         $startDate = match ($period) {
             'today' => Carbon::today(),
             'week' => Carbon::now()->startOfWeek(),
@@ -33,16 +34,38 @@ class ReportController extends Controller
         $ordersQuery = Order::where('business_id', $business->id)
             ->whereBetween('created_at', [$startDate, $endDate]);
 
-        // Key KPI metrics
+        $paidOrdersQuery = (clone $ordersQuery)->where('payment_status', 'paid');
+
+        // Core financial metrics
         $totalOrders = (clone $ordersQuery)->count();
         $completedOrders = (clone $ordersQuery)->where('status', 'completed')->count();
-        $totalRevenue = (float) (clone $ordersQuery)->where('payment_status', 'paid')->sum('total_amount');
-        $totalRevenueKhr = (float) (clone $ordersQuery)->where('payment_status', 'paid')->sum('total_khr');
-        $avgOrderValue = $completedOrders > 0 ? $totalRevenue / $completedOrders : 0.00;
+        $paidOrdersCount = (clone $paidOrdersQuery)->count();
 
-        // Payment Method breakdown
-        $paymentBreakdown = (clone $ordersQuery)
-            ->where('payment_status', 'paid')
+        $totalRevenue = round((float) (clone $paidOrdersQuery)->sum('total_amount'), 2);
+        $totalRevenueKhr = round((float) (clone $paidOrdersQuery)->sum('total_khr'), 0);
+        $totalGrossSales = round((float) (clone $paidOrdersQuery)->sum('subtotal'), 2);
+        $totalDiscounts = round((float) (clone $paidOrdersQuery)->sum('discount_amount'), 2);
+        $totalTaxCollected = round((float) (clone $paidOrdersQuery)->sum('tax_amount'), 2);
+        $totalServiceCharges = round((float) (clone $paidOrdersQuery)->sum('service_charge_amount'), 2);
+        $netRevenue = round(max(0.0, $totalRevenue - $totalTaxCollected - $totalServiceCharges), 2);
+        $avgOrderValue = $paidOrdersCount > 0 ? round($totalRevenue / $paidOrdersCount, 2) : 0.00;
+
+        // Payment Status Breakdown (Paid vs Pending Verification vs Pending Collection vs Unpaid/Rejected)
+        $paymentStatusBreakdown = (clone $ordersQuery)
+            ->select('payment_status', DB::raw('COUNT(*) as count'), DB::raw('SUM(total_amount) as total'))
+            ->groupBy('payment_status')
+            ->get()
+            ->keyBy('payment_status');
+
+        $pendingVerificationCount = (int) ($paymentStatusBreakdown['pending_verification']->count ?? 0);
+        $pendingVerificationAmount = round((float) ($paymentStatusBreakdown['pending_verification']->total ?? 0), 2);
+        $pendingCollectionCount = (int) ($paymentStatusBreakdown['pending_collection']->count ?? 0);
+        $pendingCollectionAmount = round((float) ($paymentStatusBreakdown['pending_collection']->total ?? 0), 2);
+        $unpaidAmount = round((float) ($paymentStatusBreakdown['unpaid']->total ?? 0), 2);
+        $unpaidCount = (int) ($paymentStatusBreakdown['unpaid']->count ?? 0);
+
+        // Payment Method breakdown (paid orders)
+        $paymentBreakdown = (clone $paidOrdersQuery)
             ->select('payment_method', DB::raw('COUNT(*) as count'), DB::raw('SUM(total_amount) as total'))
             ->groupBy('payment_method')
             ->get();
@@ -70,7 +93,7 @@ class ReportController extends Controller
 
         // QR Scans & Menu Views Metrics
         $totalQrScans = (int) $business->qrCodes()->sum('scan_count');
-        $periodQrScans = (int) \App\Models\QrScanEvent::where('business_id', $business->id)
+        $periodQrScans = (int) QrScanEvent::where('business_id', $business->id)
             ->whereBetween('scanned_at', [$startDate, $endDate])
             ->count();
         if ($periodQrScans === 0 && $totalQrScans > 0) {
@@ -90,7 +113,7 @@ class ReportController extends Controller
                 ->sum('total_amount');
             $chartData[] = (float) $daySales;
 
-            $dayViews = \App\Models\QrScanEvent::where('business_id', $business->id)
+            $dayViews = QrScanEvent::where('business_id', $business->id)
                 ->whereDate('scanned_at', $date)
                 ->count();
             $viewsChartData[] = $dayViews;
@@ -101,9 +124,22 @@ class ReportController extends Controller
             'period',
             'totalOrders',
             'completedOrders',
+            'paidOrdersCount',
             'totalRevenue',
             'totalRevenueKhr',
+            'totalGrossSales',
+            'totalDiscounts',
+            'totalTaxCollected',
+            'totalServiceCharges',
+            'netRevenue',
             'avgOrderValue',
+            'paymentStatusBreakdown',
+            'pendingVerificationCount',
+            'pendingVerificationAmount',
+            'pendingCollectionCount',
+            'pendingCollectionAmount',
+            'unpaidCount',
+            'unpaidAmount',
             'totalQrScans',
             'periodQrScans',
             'paymentBreakdown',
@@ -116,7 +152,7 @@ class ReportController extends Controller
     }
 
     /**
-     * Export sales orders report to CSV format.
+     * Export sales orders report to CSV format with tax, service charge, and payment breakdown.
      */
     public function exportCsv(Request $request): StreamedResponse
     {
@@ -136,10 +172,10 @@ class ReportController extends Controller
             'Expires' => '0',
         ];
 
-        return response()->stream(function () use ($orders) {
+        return response()->stream(function () use ($orders): void {
             $handle = fopen('php://output', 'w');
             // UTF-8 BOM for Excel Khmer/English support
-            fprintf($handle, chr(0xEF).chr(0xBB).chr(0xBF));
+            fprintf($handle, chr(0xEF) . chr(0xBB) . chr(0xBF));
 
             fputcsv($handle, [
                 'Order Number',
@@ -150,8 +186,13 @@ class ReportController extends Controller
                 'Status',
                 'Payment Status',
                 'Payment Method',
+                'Payment Reference',
                 'Subtotal (USD)',
                 'Discount (USD)',
+                'Service Charge (USD)',
+                'Tax Name',
+                'Tax Rate (%)',
+                'Tax Mode',
                 'Tax (USD)',
                 'Total (USD)',
                 'Total (KHR)',
@@ -167,11 +208,16 @@ class ReportController extends Controller
                     $order->status,
                     $order->payment_status,
                     $order->payment_method,
-                    number_format($order->subtotal, 2, '.', ''),
-                    number_format($order->discount_amount, 2, '.', ''),
-                    number_format($order->tax_amount, 2, '.', ''),
-                    number_format($order->total_amount, 2, '.', ''),
-                    number_format($order->total_khr, 0, '.', ''),
+                    $order->payment_reference,
+                    number_format((float) $order->subtotal, 2, '.', ''),
+                    number_format((float) $order->discount_amount, 2, '.', ''),
+                    number_format((float) ($order->service_charge_amount ?? 0), 2, '.', ''),
+                    $order->tax_name ?? 'VAT',
+                    number_format((float) ($order->tax_rate ?? 0), 2, '.', ''),
+                    ($order->tax_inclusive ?? false) ? 'Inclusive' : 'Exclusive',
+                    number_format((float) $order->tax_amount, 2, '.', ''),
+                    number_format((float) $order->total_amount, 2, '.', ''),
+                    number_format((float) $order->total_khr, 0, '.', ''),
                 ]);
             }
 

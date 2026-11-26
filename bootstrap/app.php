@@ -30,6 +30,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->validateCsrfTokens(except: [
             'webhooks/telegram',
+            'webhooks/aba-payway/*',
         ]);
 
         $middleware->web(append: [

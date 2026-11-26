@@ -20,6 +20,7 @@ use App\Http\Controllers\Business\LiveOrderController;
 use App\Http\Controllers\Business\LoyaltyController;
 use App\Http\Controllers\Business\NotificationPreferencesController;
 use App\Http\Controllers\Business\OrderManagementController;
+use App\Http\Controllers\Business\PaymentSettingsController;
 use App\Http\Controllers\Business\PosController;
 use App\Http\Controllers\Business\PrinterController;
 use App\Http\Controllers\Business\ProductController;
@@ -91,6 +92,10 @@ Route::get('/orders', [OrderManagementController::class, 'index'])->name('orders
 Route::get('/orders/{order}', [OrderManagementController::class, 'show'])->name('orders.show');
 Route::post('/orders/{order}/status', [OrderManagementController::class, 'updateStatus'])->name('orders.update-status');
 Route::post('/orders/{order}/payment', [OrderManagementController::class, 'updatePayment'])->name('orders.update-payment');
+Route::post('/orders/{order}/payment/approve', [OrderManagementController::class, 'approvePayment'])->name('orders.payment.approve');
+Route::post('/orders/{order}/payment/reject', [OrderManagementController::class, 'rejectPayment'])->name('orders.payment.reject');
+Route::post('/orders/{order}/payment/collect-cod', [OrderManagementController::class, 'collectCod'])->name('orders.payment.collect-cod');
+Route::get('/orders/{order}/payment-proof/{proof}', [OrderManagementController::class, 'showProof'])->name('orders.payment-proof.show');
 Route::get('/orders/{order}/receipt', [OrderManagementController::class, 'receipt'])->name('orders.receipt');
 Route::get('/orders/{order}/kitchen-ticket', [OrderManagementController::class, 'kitchenTicket'])->name('orders.kitchen-ticket');
 
@@ -225,7 +230,9 @@ Route::get('/settings', [SettingController::class, 'index'])->name('settings.ind
 Route::put('/settings', [SettingController::class, 'update'])->name('settings.update');
 Route::put('/settings/general', [SettingController::class, 'updateGeneral'])->name('settings.general.update');
 Route::put('/settings/business', [SettingController::class, 'updateBusinessInfo'])->name('settings.business.update');
-Route::put('/settings/payment', [SettingController::class, 'updatePaymentTax'])->name('settings.payment.update');
+Route::put('/settings/payment', [PaymentSettingsController::class, 'update'])->name('settings.payment.update');
+Route::post('/settings/payment/verify-bakong', [PaymentSettingsController::class, 'verifyBakong'])->name('settings.payment.verify-bakong');
+Route::post('/settings/payment/test-aba', [PaymentSettingsController::class, 'testAbaConnection'])->name('settings.payment.test-aba');
 Route::put('/settings/account', [SettingController::class, 'updateAccount'])->name('settings.account.update');
 Route::put('/settings/account/password', [SettingController::class, 'updatePassword'])->name('settings.account.password');
 

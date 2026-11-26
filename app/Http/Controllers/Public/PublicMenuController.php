@@ -4,18 +4,27 @@ namespace App\Http\Controllers\Public;
 
 use App\Http\Controllers\Controller;
 use App\Models\Business;
+use App\Models\BusinessPaymentConfig;
 use App\Models\Category;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\QrCode;
 use App\Models\QrScanEvent;
 use App\Models\RestaurantTable;
+use App\Services\Payment\BakongKhqrService;
+use App\Services\Payment\PaymentGatewayVisibilityService;
 use App\Services\Tenant\TenantContext;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 
 class PublicMenuController extends Controller
 {
+    public function __construct(
+        private PaymentGatewayVisibilityService $visibilityService,
+        private BakongKhqrService $bakongKhqrService,
+    ) {
+    }
+
     /**
      * Display the public digital menu / product catalog for a business.
      */
@@ -31,7 +40,6 @@ class PublicMenuController extends Controller
 
         TenantContext::set($business);
 
-        // Track menu view count
         try {
             $menuQr = QrCode::firstOrCreate(
                 ['business_id' => $business->id, 'type' => 'menu'],
@@ -63,17 +71,22 @@ class PublicMenuController extends Controller
         $tables = RestaurantTable::where('is_active', true)->orderBy('table_number')->get();
         $tableNumber = $request->query('table') ?? session("table_{$business->id}");
 
+        $paymentMethods = $this->visibilityService->resolveCheckoutMethods($business);
+        $pricingConfig = $this->buildPricingConfig($business);
+
         return view('public.menu', compact(
             'business',
             'categories',
             'featuredProducts',
             'tables',
-            'tableNumber'
+            'tableNumber',
+            'paymentMethods',
+            'pricingConfig'
         ));
     }
 
     /**
-     * Handle table QR code scan and redirect to menu with table context.
+     * Handle table QR code scan and render menu with table context.
      */
     public function table(Request $request, string $business_slug, string $table_number): View
     {
@@ -87,12 +100,10 @@ class PublicMenuController extends Controller
 
         TenantContext::set($business);
 
-        // Find table
         $table = RestaurantTable::where('business_id', $business->id)
             ->where('table_number', $table_number)
             ->first();
 
-        // Track QR scan event
         if ($table && $table->qrCode) {
             $table->qrCode->increment('scan_count');
             $table->qrCode->update(['last_scanned_at' => now()]);
@@ -125,17 +136,22 @@ class PublicMenuController extends Controller
         $tables = RestaurantTable::where('is_active', true)->orderBy('table_number')->get();
         $tableNumber = $table_number;
 
+        $paymentMethods = $this->visibilityService->resolveCheckoutMethods($business);
+        $pricingConfig = $this->buildPricingConfig($business);
+
         return view('public.menu', compact(
             'business',
             'categories',
             'featuredProducts',
             'tables',
-            'tableNumber'
+            'tableNumber',
+            'paymentMethods',
+            'pricingConfig'
         ));
     }
 
     /**
-     * Display live order tracking status for customer.
+     * Display live order tracking status and payment settlement steps for customer.
      */
     public function orderStatus(Request $request, string $business_slug, string $order_number): View
     {
@@ -148,9 +164,49 @@ class PublicMenuController extends Controller
 
         $order = Order::where('business_id', $business->id)
             ->where('order_number', $order_number)
-            ->with(['items.addons', 'table', 'statusHistories'])
+            ->with(['items.addons', 'table', 'statusHistories', 'proofs', 'paymentTransactions'])
             ->firstOrFail();
 
-        return view('public.order-status', compact('business', 'order'));
+        $paymentConfig = BusinessPaymentConfig::resolveForBusiness($business);
+        $paymentMethods = $this->visibilityService->resolveCheckoutMethods($business, $order->order_type);
+        $latestTransaction = $order->paymentTransactions()->latest('created_at')->first();
+
+        $khqrSvg = null;
+        if ($latestTransaction && filled($latestTransaction->khqr_payload)) {
+            $khqrSvg = $this->bakongKhqrService->renderQrSvg($latestTransaction->khqr_payload);
+        }
+
+        $queryToken = $request->query('token');
+        $proofToken = $this->visibilityService->verifyOrderProofToken($order, is_string($queryToken) ? $queryToken : null)
+            ? $queryToken
+            : null;
+
+        return view('public.order-status', compact(
+            'business',
+            'order',
+            'paymentConfig',
+            'paymentMethods',
+            'latestTransaction',
+            'khqrSvg',
+            'proofToken'
+        ));
+    }
+
+    /**
+     * Build safe public pricing rules for the live checkout drawer calculator.
+     *
+     * @return array<string, mixed>
+     */
+    private function buildPricingConfig(Business $business): array
+    {
+        return [
+            'tax_name' => $business->tax_name ?: 'VAT',
+            'tax_rate' => (float) ($business->tax_percent ?? 0),
+            'tax_inclusive' => (bool) ($business->tax_inclusive ?? false),
+            'service_charge_enabled' => (bool) ($business->service_charge_enabled ?? false),
+            'service_charge_rate' => (float) ($business->service_charge_rate ?? 0),
+            'exchange_rate_khr' => (float) ($business->exchange_rate_khr ?: 4100),
+            'default_currency' => (string) ($business->default_currency ?: 'USD'),
+        ];
     }
 }

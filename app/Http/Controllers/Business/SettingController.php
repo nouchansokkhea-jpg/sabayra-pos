@@ -4,8 +4,10 @@ namespace App\Http\Controllers\Business;
 
 use App\Http\Controllers\Controller;
 use App\Models\Business;
+use App\Models\BusinessPaymentConfig;
 use App\Models\BusinessSetting;
 use App\Models\NotificationPreference;
+use App\Models\PlatformSetting;
 use App\Models\SecurityLog;
 use App\Models\TelegramConnection;
 use App\Models\TelegramNotificationLog;
@@ -209,6 +211,13 @@ class SettingController extends Controller
 
         $mailMailer = (string) config('mail.default', 'log');
 
+        $paymentConfig = ($business && $canManageBusinessSettings)
+            ? BusinessPaymentConfig::resolveForBusiness($business)
+            : null;
+        $platformBakongEnabled = PlatformSetting::isBakongEnabled();
+        $platformAbaEnabled = PlatformSetting::isAbaPayWayEnabled();
+        $platformBakongTokenConfigured = filled(PlatformSetting::resolveBakongApiToken());
+
         return [
             'business' => $business,
             'user' => $user,
@@ -217,6 +226,10 @@ class SettingController extends Controller
             'businessTypes' => config('menuhub.business_types'),
             'currencies' => config('menuhub.currencies'),
             'storedSettings' => $storedSettings,
+            'paymentConfig' => $paymentConfig,
+            'platformBakongEnabled' => $platformBakongEnabled,
+            'platformAbaEnabled' => $platformAbaEnabled,
+            'platformBakongTokenConfigured' => $platformBakongTokenConfigured,
             'securityLogs' => $securityLogs,
             'logs' => $securityLogs,
             'activeSessionCount' => $activeSessionCount,
@@ -401,36 +414,11 @@ class SettingController extends Controller
     }
 
     /**
-     * Update Payment, Currency, Exchange Rate, Tax & Bakong KHQR settings.
+     * Backward-compatible delegate for PUT /app/settings/payment.
      */
     public function updatePaymentTax(Request $request): RedirectResponse
     {
-        $business = $this->authorizedBusiness();
-
-        $validated = $request->validate([
-            'default_currency' => ['required', 'string', 'in:USD,KHR'],
-            'exchange_rate_khr' => ['required', 'numeric', 'min:1000'],
-            'tax_percent' => ['nullable', 'numeric', 'min:0', 'max:100'],
-            'bakong_account_id' => ['nullable', 'string', 'max:120'],
-            'bakong_merchant_name' => ['nullable', 'string', 'max:100'],
-            'receipt_footer' => ['nullable', 'string', 'max:255'],
-        ]);
-
-        $business->update([
-            'default_currency' => $validated['default_currency'],
-            'exchange_rate_khr' => $validated['exchange_rate_khr'],
-            'tax_percent' => $validated['tax_percent'] ?? 0.00,
-        ]);
-
-        BusinessSetting::setValue($business->id, 'payment.bakong_account_id', $validated['bakong_account_id'] ?? null);
-        BusinessSetting::setValue($business->id, 'payment.bakong_merchant_name', $validated['bakong_merchant_name'] ?? null);
-        BusinessSetting::setValue($business->id, 'payment.khqr_enabled', $request->boolean('khqr_enabled', true));
-        BusinessSetting::setValue($business->id, 'payment.cash_enabled', $request->boolean('cash_enabled', true));
-        BusinessSetting::setValue($business->id, 'payment.receipt_footer', $validated['receipt_footer'] ?? null);
-
-        return redirect()
-            ->route('business.settings.index', ['section' => 'payment'])
-            ->with('success', 'Payment, currency, and tax configuration updated.');
+        return app(PaymentSettingsController::class)->update($request);
     }
 
     /**

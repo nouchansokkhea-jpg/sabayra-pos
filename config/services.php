@@ -36,4 +36,18 @@ return [
         'polling_fallback' => filter_var(env('TELEGRAM_POLLING_FALLBACK', false), FILTER_VALIDATE_BOOLEAN),
     ],
 
+    'bakong' => [
+        'enabled' => filter_var(env('BAKONG_ENABLED', true), FILTER_VALIDATE_BOOLEAN),
+        'api_base_url' => env('BAKONG_API_BASE_URL', 'https://api-bakong.nbc.gov.kh'),
+        'api_token' => env('BAKONG_OPEN_API_TOKEN'),
+        'verify_ssl' => filter_var(env('BAKONG_VERIFY_SSL', true), FILTER_VALIDATE_BOOLEAN),
+    ],
+
+    'aba_payway' => [
+        'enabled' => filter_var(env('ABA_PAYWAY_ENABLED', true), FILTER_VALIDATE_BOOLEAN),
+        'sandbox_url' => env('ABA_PAYWAY_SANDBOX_URL', 'https://checkout-sandbox.payway.com.kh'),
+        'production_url' => env('ABA_PAYWAY_PRODUCTION_URL', 'https://checkout.payway.com.kh'),
+        'verify_ssl' => filter_var(env('ABA_PAYWAY_VERIFY_SSL', true), FILTER_VALIDATE_BOOLEAN),
+    ],
+
 ];
