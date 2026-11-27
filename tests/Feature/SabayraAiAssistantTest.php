@@ -228,6 +228,12 @@ class SabayraAiAssistantTest extends TestCase
                 ], 200),
         ]);
 
+        $this->actingAs($owner)
+            ->withSession(['active_business_id' => $business->id])
+            ->get(route('business.ai.assistant'))
+            ->assertOk()
+            ->assertSee('New Business Assistant Session');
+
         $response = $this->actingAs($owner)
             ->withSession(['active_business_id' => $business->id])
             ->postJson(route('business.ai.assistant.ask'), [

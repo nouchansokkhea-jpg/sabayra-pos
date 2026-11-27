@@ -3,6 +3,7 @@
 use App\Http\Controllers\Business\AiAssistantController;
 use App\Http\Controllers\Business\AiCenterController;
 use App\Http\Controllers\Business\AiInsightController;
+use App\Http\Controllers\Business\AiMarketingController;
 use App\Http\Controllers\Business\AiMenuBuilderController;
 use App\Http\Controllers\Business\AiMenuCreatorController;
 use App\Http\Controllers\Business\AnalyticsController;
@@ -206,7 +207,9 @@ Route::prefix('ai')->name('ai.')->group(function (): void {
     Route::get('/menu-creator', [AiMenuCreatorController::class, 'index'])->name('menu-creator');
     Route::post('/menu-creator/generate', [AiMenuCreatorController::class, 'generate'])->name('menu-creator.generate');
     Route::post('/menu-creator/{content}/apply', [AiMenuCreatorController::class, 'apply'])->name('menu-creator.apply');
-    Route::get('/marketing-studio', [AiCenterController::class, 'modulePlaceholder'])->name('marketing');
+    Route::get('/marketing-studio', [AiMarketingController::class, 'index'])->name('marketing');
+    Route::post('/marketing-studio/generate', [AiMarketingController::class, 'generate'])->name('marketing.generate');
+    Route::delete('/marketing-studio/{content}', [AiMarketingController::class, 'destroy'])->name('marketing.destroy');
     Route::get('/inventory-forecast', [AiCenterController::class, 'modulePlaceholder'])->name('inventory-forecast');
     Route::get('/sales-prediction', [AiCenterController::class, 'modulePlaceholder'])->name('sales-prediction');
     Route::get('/usage', [AiCenterController::class, 'usage'])->name('usage');
