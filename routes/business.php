@@ -4,6 +4,7 @@ use App\Http\Controllers\Business\AiAssistantController;
 use App\Http\Controllers\Business\AiCenterController;
 use App\Http\Controllers\Business\AiInsightController;
 use App\Http\Controllers\Business\AiMenuBuilderController;
+use App\Http\Controllers\Business\AiMenuCreatorController;
 use App\Http\Controllers\Business\AnalyticsController;
 use App\Http\Controllers\Business\ArAssistantController;
 use App\Http\Controllers\Business\BranchController;
@@ -202,7 +203,9 @@ Route::prefix('ai')->name('ai.')->group(function (): void {
     Route::get('/assistant', [AiAssistantController::class, 'index'])->name('assistant');
     Route::post('/assistant/ask', [AiAssistantController::class, 'ask'])->name('assistant.ask');
     Route::delete('/assistant/conversations/{conversation}', [AiAssistantController::class, 'destroy'])->name('assistant.destroy');
-    Route::get('/menu-creator', [AiCenterController::class, 'modulePlaceholder'])->name('menu-creator');
+    Route::get('/menu-creator', [AiMenuCreatorController::class, 'index'])->name('menu-creator');
+    Route::post('/menu-creator/generate', [AiMenuCreatorController::class, 'generate'])->name('menu-creator.generate');
+    Route::post('/menu-creator/{content}/apply', [AiMenuCreatorController::class, 'apply'])->name('menu-creator.apply');
     Route::get('/marketing-studio', [AiCenterController::class, 'modulePlaceholder'])->name('marketing');
     Route::get('/inventory-forecast', [AiCenterController::class, 'modulePlaceholder'])->name('inventory-forecast');
     Route::get('/sales-prediction', [AiCenterController::class, 'modulePlaceholder'])->name('sales-prediction');
