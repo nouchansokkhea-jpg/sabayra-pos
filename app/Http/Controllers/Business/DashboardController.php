@@ -131,6 +131,33 @@ class DashboardController extends Controller
         // Public Storefront URL
         $publicMenuUrl = \App\Services\Qr\QrCodeService::getMenuUrl($business);
 
+        // Real SABAYRA AI Center Snapshot (never fabricated)
+        $aiAccessService = app(\App\Services\AI\AiAccessService::class);
+        $canAccessAi = $aiAccessService->canAccess($user, $business, 'overview');
+        $aiOverviewWidget = [
+            'enabled' => $canAccessAi,
+            'remaining_credits' => 0,
+            'total_credits' => 0,
+            'used_credits' => 0,
+            'requests_count' => 0,
+            'low_stock_alerts_count' => $lowStockProducts->count() + $lowStockIngredients->count(),
+            'latest_insight' => null,
+        ];
+
+        if ($canAccessAi) {
+            $aiSummary = app(\App\Services\AI\AIUsageService::class)->getMonthlySummary($business);
+            $aiOverviewWidget['remaining_credits'] = $aiSummary['remaining_credits'];
+            $aiOverviewWidget['total_credits'] = $aiSummary['total_credits'];
+            $aiOverviewWidget['used_credits'] = $aiSummary['used_credits'];
+            $aiOverviewWidget['requests_count'] = $aiSummary['completed_requests'];
+            $aiOverviewWidget['latest_insight'] = \App\Models\BusinessAiInsight::where('business_id', $business->id)
+                ->where(function ($query): void {
+                    $query->whereNull('status')->orWhere('status', '!=', 'dismissed');
+                })
+                ->latest('generated_at')
+                ->first();
+        }
+
         return view('business.dashboard', compact(
             'business',
             'publicMenuUrl',
@@ -158,7 +185,26 @@ class DashboardController extends Controller
             'lowStockIngredients',
             'chartDates',
             'chartSales',
-            'securityOverview'
+            'securityOverview',
+            'aiOverviewWidget'
         ));
+    }
+
+    /**
+     * Refresh deterministic AI business insights for the active store without charging credits.
+     */
+    public function refreshAiInsights(): \Illuminate\Http\RedirectResponse
+    {
+        $business = \App\Services\Tenant\TenantContext::get();
+        $user = \Illuminate\Support\Facades\Auth::user();
+
+        if (! $business || ! $user) {
+            abort(403, 'Active business workspace required.');
+        }
+
+        app(\App\Services\AI\AiAccessService::class)->authorizeArea($user, $business, 'insights');
+        app(\App\Services\AI\AiInsightsService::class)->generateAndPersistInsights($business, $user, false);
+
+        return redirect()->route('business.ai.insights')->with('success', 'Weekly store insights refreshed from latest orders and stock.');
     }
 }

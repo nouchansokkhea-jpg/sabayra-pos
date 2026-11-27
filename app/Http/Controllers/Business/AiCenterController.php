@@ -208,38 +208,6 @@ class AiCenterController extends Controller
     }
 
     /**
-     * Temporary workspace views until Phases 3–7 dedicated modules activate each tool.
-     */
-    public function modulePlaceholder(Request $request): View
-    {
-        $routeName = (string) ($request->route()?->getName() ?? 'business.ai.assistant');
-        $meta = match ($routeName) {
-            'business.ai.menu-creator' => ['area' => 'menu_creator', 'title' => 'AI Menu Creator', 'subtitle' => 'Generate bilingual Khmer & English item names, descriptions, pricing tips, and smart menu suggestions.'],
-            'business.ai.marketing' => ['area' => 'marketing_studio', 'title' => 'AI Marketing Studio', 'subtitle' => 'Create Cambodian Facebook captions, TikTok video scripts, Telegram promos, and holiday campaigns.'],
-            'business.ai.inventory-forecast' => ['area' => 'inventory_forecast', 'title' => 'AI Inventory Forecast', 'subtitle' => 'Moving-average stock runway estimates, reorder alerts, and explainable risk commentary.'],
-            'business.ai.sales-prediction' => ['area' => 'sales_prediction', 'title' => 'AI Sales Prediction', 'subtitle' => '1-day, 7-day, and 30-day revenue outlook computed strictly from historical orders.'],
-            default => ['area' => 'assistant', 'title' => 'AI Business Assistant', 'subtitle' => 'Khmer & English conversational copilot grounded in real store orders, menu, and stock data.'],
-        };
-
-        [$business, $user] = $this->resolveTenantAndAuthorize($meta['area']);
-        $monthlySummary = $this->usageService->getMonthlySummary($business);
-        $allowedAreas = $this->accessService->allowedAreas($user, $business);
-        $entitlements = $this->usageService->resolveEntitlements($business);
-        $platformConfig = $this->aiManager->getPlatformConfig();
-
-        return view('business.ai.coming-soon', [
-            'business' => $business,
-            'monthlySummary' => $monthlySummary,
-            'allowedAreas' => $allowedAreas,
-            'entitlements' => $entitlements,
-            'platformConfig' => $platformConfig,
-            'moduleTitle' => $meta['title'],
-            'moduleSubtitle' => $meta['subtitle'],
-            'moduleArea' => $meta['area'],
-        ]);
-    }
-
-    /**
      * Resolve active tenant business and verify role/permission authorization.
      *
      * @return array{0: Business, 1: User}

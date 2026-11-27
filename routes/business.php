@@ -220,8 +220,10 @@ Route::prefix('ai')->name('ai.')->group(function (): void {
     Route::get('/settings', [AiCenterController::class, 'settings'])->name('settings');
     Route::put('/settings', [AiCenterController::class, 'updateSettings'])->name('settings.update');
 
-    // Legacy heuristic AI endpoints preserved for backwards compatibility
+    // Actionable AI Insights & Legacy Algorithmic BI Modules
     Route::get('/insights', [AiInsightController::class, 'weeklySummary'])->name('insights');
+    Route::post('/insights/generate', [AiInsightController::class, 'generate'])->name('insights.generate');
+    Route::patch('/insights/{insight}/status', [AiInsightController::class, 'updateStatus'])->name('insights.status');
     Route::get('/menu-audit', [AiInsightController::class, 'menuAudit'])->name('menu-audit');
     Route::get('/sentiment', [AiInsightController::class, 'sentimentRadar'])->name('sentiment');
     Route::get('/upsell-pairings', [AiInsightController::class, 'upsellPairings'])->name('upsell-pairings');

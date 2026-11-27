@@ -53,8 +53,8 @@ class PlanController extends Controller
             'has_ai_menu_creator' => ['boolean'],
             'has_ai_marketing' => ['boolean'],
             'has_ai_forecasting' => ['boolean'],
-            'ai_monthly_credits' => ['required', 'integer', 'min:0', 'max:1000000'],
-            'ai_max_tokens_per_request' => ['required', 'integer', 'min:256', 'max:16384'],
+            'ai_monthly_credits' => ['nullable', 'integer', 'min:0', 'max:1000000'],
+            'ai_max_tokens_per_request' => ['nullable', 'integer', 'min:256', 'max:16384'],
             'is_active' => ['boolean'],
             'is_popular' => ['boolean'],
             'sort_order' => ['integer', 'min:0'],
@@ -69,10 +69,12 @@ class PlanController extends Controller
         $validated['has_online_ordering'] = (bool) ($request->has('has_online_ordering'));
         $validated['has_analytics'] = (bool) ($request->has('has_analytics'));
         $validated['has_custom_branding'] = (bool) ($request->has('has_custom_branding'));
-        $validated['has_ai_assistant'] = $request->boolean('has_ai_assistant');
-        $validated['has_ai_menu_creator'] = $request->boolean('has_ai_menu_creator');
+        $validated['has_ai_assistant'] = $request->has('has_ai_assistant') ? $request->boolean('has_ai_assistant') : true;
+        $validated['has_ai_menu_creator'] = $request->has('has_ai_menu_creator') ? $request->boolean('has_ai_menu_creator') : true;
         $validated['has_ai_marketing'] = $request->boolean('has_ai_marketing');
         $validated['has_ai_forecasting'] = $request->boolean('has_ai_forecasting');
+        $validated['ai_monthly_credits'] = (int) ($validated['ai_monthly_credits'] ?? 100);
+        $validated['ai_max_tokens_per_request'] = (int) ($validated['ai_max_tokens_per_request'] ?? 2048);
         $validated['is_active'] = (bool) ($request->has('is_active'));
         $validated['is_popular'] = (bool) ($request->has('is_popular'));
 
@@ -104,10 +106,13 @@ class PlanController extends Controller
             'product_limit' => ['required', 'integer', 'min:1'],
             'branch_limit' => ['required', 'integer', 'min:1'],
             'staff_limit' => ['required', 'integer', 'min:1'],
-            'ai_monthly_credits' => ['required', 'integer', 'min:0', 'max:1000000'],
-            'ai_max_tokens_per_request' => ['required', 'integer', 'min:256', 'max:16384'],
+            'ai_monthly_credits' => ['nullable', 'integer', 'min:0', 'max:1000000'],
+            'ai_max_tokens_per_request' => ['nullable', 'integer', 'min:256', 'max:16384'],
             'sort_order' => ['integer', 'min:0'],
         ]);
+
+        $validated['ai_monthly_credits'] = (int) ($validated['ai_monthly_credits'] ?? $plan->ai_monthly_credits ?? 100);
+        $validated['ai_max_tokens_per_request'] = (int) ($validated['ai_max_tokens_per_request'] ?? $plan->ai_max_tokens_per_request ?? 2048);
 
         $validated['has_pos'] = $request->boolean('has_pos');
         $validated['has_inventory'] = $request->boolean('has_inventory');

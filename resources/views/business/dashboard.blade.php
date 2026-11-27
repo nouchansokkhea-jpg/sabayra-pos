@@ -112,6 +112,44 @@
     </div>
 
     <!-- 3. QUICK ACTIONS GRID -->
+    @if(($aiOverviewWidget['enabled'] ?? false))
+        <div class="p-5 bg-[#0F1E3A] border border-[#1E3560] rounded-2xl shadow-xs text-white flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div class="space-y-1">
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="text-sm font-extrabold text-amber-300">✨ SABAYRA AI Center</span>
+                    <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-white/10 border border-white/15">
+                        {{ number_format($aiOverviewWidget['remaining_credits']) }} / {{ number_format($aiOverviewWidget['total_credits']) }} Credits Left
+                    </span>
+                    @if($aiOverviewWidget['low_stock_alerts_count'] > 0)
+                        <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-500/20 text-rose-200 border border-rose-400/40">
+                            {{ $aiOverviewWidget['low_stock_alerts_count'] }} Low-Stock Alerts
+                        </span>
+                    @endif
+                </div>
+                @if($aiOverviewWidget['latest_insight'])
+                    <p class="text-xs text-slate-200">
+                        <strong class="text-white">{{ $aiOverviewWidget['latest_insight']->title ?: 'Latest Insight' }}:</strong>
+                        {{ \Illuminate\Support\Str::limit($aiOverviewWidget['latest_insight']->summary ?? '', 140) }}
+                    </p>
+                @else
+                    <p class="text-xs text-slate-300">
+                        No AI insights generated yet for {{ $business->name }}. Ask Business Assistant or run a Sales / Inventory Forecast using your live store records.
+                    </p>
+                @endif
+            </div>
+            <div class="flex flex-wrap items-center gap-2 shrink-0">
+                <a href="{{ route('business.ai.assistant') }}"
+                   class="rounded-xl bg-orange-600 hover:bg-orange-700 px-3.5 py-2 text-xs font-bold text-white transition">
+                    Ask AI Assistant
+                </a>
+                <a href="{{ route('business.ai.overview') }}"
+                   class="rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 px-3.5 py-2 text-xs font-bold text-white transition">
+                    Open AI Center &rarr;
+                </a>
+            </div>
+        </div>
+    @endif
+
     <div class="p-5 bg-gray-800/90 border border-gray-700/70 rounded-2xl shadow-xs">
         <h3 class="text-xs font-extrabold uppercase tracking-wider text-slate-200 mb-3">Quick Operational Actions</h3>
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
