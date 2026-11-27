@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Business\AiCenterController;
 use App\Http\Controllers\Business\AiInsightController;
 use App\Http\Controllers\Business\AiMenuBuilderController;
 use App\Http\Controllers\Business\AnalyticsController;
@@ -194,10 +195,24 @@ Route::get('/analytics', [AnalyticsController::class, 'index'])->name('analytics
 Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
 Route::get('/reports/export', [ReportController::class, 'exportCsv'])->name('reports.export');
 
-Route::get('/ai/insights', [AiInsightController::class, 'weeklySummary'])->name('ai.insights');
-Route::get('/ai/menu-audit', [AiInsightController::class, 'menuAudit'])->name('ai.menu-audit');
-Route::get('/ai/sentiment', [AiInsightController::class, 'sentimentRadar'])->name('ai.sentiment');
-Route::get('/ai/upsell-pairings', [AiInsightController::class, 'upsellPairings'])->name('ai.upsell-pairings');
+// Unified SABAYRA AI Center
+Route::prefix('ai')->name('ai.')->group(function (): void {
+    Route::get('/', [AiCenterController::class, 'overview'])->name('overview');
+    Route::get('/assistant', [AiCenterController::class, 'modulePlaceholder'])->name('assistant');
+    Route::get('/menu-creator', [AiCenterController::class, 'modulePlaceholder'])->name('menu-creator');
+    Route::get('/marketing-studio', [AiCenterController::class, 'modulePlaceholder'])->name('marketing');
+    Route::get('/inventory-forecast', [AiCenterController::class, 'modulePlaceholder'])->name('inventory-forecast');
+    Route::get('/sales-prediction', [AiCenterController::class, 'modulePlaceholder'])->name('sales-prediction');
+    Route::get('/usage', [AiCenterController::class, 'usage'])->name('usage');
+    Route::get('/settings', [AiCenterController::class, 'settings'])->name('settings');
+    Route::put('/settings', [AiCenterController::class, 'updateSettings'])->name('settings.update');
+
+    // Legacy heuristic AI endpoints preserved for backwards compatibility
+    Route::get('/insights', [AiInsightController::class, 'weeklySummary'])->name('insights');
+    Route::get('/menu-audit', [AiInsightController::class, 'menuAudit'])->name('menu-audit');
+    Route::get('/sentiment', [AiInsightController::class, 'sentimentRadar'])->name('sentiment');
+    Route::get('/upsell-pairings', [AiInsightController::class, 'upsellPairings'])->name('upsell-pairings');
+});
 
 // ==========================================
 // 7. QR & ADVANCED FEATURES

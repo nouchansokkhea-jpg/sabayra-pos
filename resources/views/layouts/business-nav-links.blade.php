@@ -192,6 +192,90 @@
         </a>
     </li>
 
+    @php
+        $aiAllowedAreas = ($biz && Auth::check())
+            ? app(\App\Services\AI\AiAccessService::class)->allowedAreas(Auth::user(), $biz)
+            : [];
+    @endphp
+    @if ($aiAllowedAreas['overview'] ?? false)
+        <li class="pt-3" x-data="{ aiMenuOpen: {{ request()->routeIs('business.ai.*') ? 'true' : 'false' }} }">
+            <button type="button" @click="aiMenuOpen = !aiMenuOpen"
+                    class="w-full flex items-center justify-between rounded-xl px-2.5 py-2 font-bold transition {{ request()->routeIs('business.ai.*') ? 'bg-orange-600 text-white shadow-sm' : 'bg-amber-500/10 text-amber-300 border border-amber-500/30 hover:bg-amber-500/20' }}">
+                <span class="flex items-center gap-2">
+                    <span>✨ AI Center</span>
+                </span>
+                <svg class="w-3.5 h-3.5 transition-transform" :class="aiMenuOpen ? 'rotate-180' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+            </button>
+
+            <ul x-show="aiMenuOpen" style="{{ request()->routeIs('business.ai.*') ? '' : 'display: none;' }}" class="mt-1.5 pl-2 space-y-1 border-l border-gray-700/80 ml-2.5">
+                <li>
+                    <a href="{{ route('business.ai.overview') }}"
+                       class="block rounded-lg px-2.5 py-1.5 font-semibold transition {{ request()->routeIs('business.ai.overview') ? 'bg-gray-800 text-amber-300 font-bold' : 'text-slate-300 hover:bg-gray-800 hover:text-white' }}">
+                        AI Overview
+                    </a>
+                </li>
+                @if ($aiAllowedAreas['assistant'] ?? false)
+                    <li>
+                        <a href="{{ route('business.ai.assistant') }}"
+                           class="block rounded-lg px-2.5 py-1.5 font-semibold transition {{ request()->routeIs('business.ai.assistant*') ? 'bg-gray-800 text-amber-300 font-bold' : 'text-slate-300 hover:bg-gray-800 hover:text-white' }}">
+                            AI Business Assistant
+                        </a>
+                    </li>
+                @endif
+                @if ($aiAllowedAreas['menu_creator'] ?? false)
+                    <li>
+                        <a href="{{ route('business.ai.menu-creator') }}"
+                           class="block rounded-lg px-2.5 py-1.5 font-semibold transition {{ request()->routeIs('business.ai.menu-creator*') ? 'bg-gray-800 text-amber-300 font-bold' : 'text-slate-300 hover:bg-gray-800 hover:text-white' }}">
+                            AI Menu Creator
+                        </a>
+                    </li>
+                @endif
+                @if ($aiAllowedAreas['marketing_studio'] ?? false)
+                    <li>
+                        <a href="{{ route('business.ai.marketing') }}"
+                           class="block rounded-lg px-2.5 py-1.5 font-semibold transition {{ request()->routeIs('business.ai.marketing*') ? 'bg-gray-800 text-amber-300 font-bold' : 'text-slate-300 hover:bg-gray-800 hover:text-white' }}">
+                            AI Marketing Studio
+                        </a>
+                    </li>
+                @endif
+                @if ($aiAllowedAreas['inventory_forecast'] ?? false)
+                    <li>
+                        <a href="{{ route('business.ai.inventory-forecast') }}"
+                           class="block rounded-lg px-2.5 py-1.5 font-semibold transition {{ request()->routeIs('business.ai.inventory-forecast*') ? 'bg-gray-800 text-amber-300 font-bold' : 'text-slate-300 hover:bg-gray-800 hover:text-white' }}">
+                            AI Inventory Forecast
+                        </a>
+                    </li>
+                @endif
+                @if ($aiAllowedAreas['sales_prediction'] ?? false)
+                    <li>
+                        <a href="{{ route('business.ai.sales-prediction') }}"
+                           class="block rounded-lg px-2.5 py-1.5 font-semibold transition {{ request()->routeIs('business.ai.sales-prediction*') ? 'bg-gray-800 text-amber-300 font-bold' : 'text-slate-300 hover:bg-gray-800 hover:text-white' }}">
+                            AI Sales Prediction
+                        </a>
+                    </li>
+                @endif
+                @if ($aiAllowedAreas['usage'] ?? false)
+                    <li>
+                        <a href="{{ route('business.ai.usage') }}"
+                           class="block rounded-lg px-2.5 py-1.5 font-semibold transition {{ request()->routeIs('business.ai.usage*') ? 'bg-gray-800 text-amber-300 font-bold' : 'text-slate-300 hover:bg-gray-800 hover:text-white' }}">
+                            AI Usage &amp; History
+                        </a>
+                    </li>
+                @endif
+                @if ($aiAllowedAreas['settings'] ?? false)
+                    <li>
+                        <a href="{{ route('business.ai.settings') }}"
+                           class="block rounded-lg px-2.5 py-1.5 font-semibold transition {{ request()->routeIs('business.ai.settings*') ? 'bg-gray-800 text-amber-300 font-bold' : 'text-slate-300 hover:bg-gray-800 hover:text-white' }}">
+                            AI Settings
+                        </a>
+                    </li>
+                @endif
+            </ul>
+        </li>
+    @endif
+
     {{-- ============================================================== --}}
     {{-- 6. ACCOUNT & SETTINGS --}}
     {{-- ============================================================== --}}
