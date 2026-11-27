@@ -50,6 +50,10 @@
                             <span>Max Staff Members</span>
                             <span>{{ $plan->staff_limit }}</span>
                         </li>
+                        <li class="flex items-center justify-between font-semibold">
+                            <span>Monthly AI Credits</span>
+                            <span class="text-indigo-600 dark:text-indigo-400">{{ number_format($plan->ai_monthly_credits ?? 0) }} / mo</span>
+                        </li>
                         <li class="flex items-center space-x-2 pt-2">
                             <svg class="w-4 h-4 {{ $plan->has_pos ? 'text-emerald-500' : 'text-gray-300 dark:text-gray-600' }}" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
                             <span class="{{ $plan->has_pos ? '' : 'text-gray-400 line-through' }}">Point of Sale (POS)</span>
@@ -65,6 +69,18 @@
                         <li class="flex items-center space-x-2">
                             <svg class="w-4 h-4 {{ $plan->has_analytics ? 'text-emerald-500' : 'text-gray-300 dark:text-gray-600' }}" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
                             <span class="{{ $plan->has_analytics ? '' : 'text-gray-400 line-through' }}">Analytics & Reports</span>
+                        </li>
+                        <li class="flex items-center space-x-2">
+                            <svg class="w-4 h-4 {{ $plan->has_ai_assistant ? 'text-emerald-500' : 'text-gray-300 dark:text-gray-600' }}" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                            <span class="{{ $plan->has_ai_assistant ? '' : 'text-gray-400 line-through' }}">AI Business Assistant</span>
+                        </li>
+                        <li class="flex items-center space-x-2">
+                            <svg class="w-4 h-4 {{ $plan->has_ai_marketing ? 'text-emerald-500' : 'text-gray-300 dark:text-gray-600' }}" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                            <span class="{{ $plan->has_ai_marketing ? '' : 'text-gray-400 line-through' }}">AI Marketing Studio</span>
+                        </li>
+                        <li class="flex items-center space-x-2">
+                            <svg class="w-4 h-4 {{ $plan->has_ai_forecasting ? 'text-emerald-500' : 'text-gray-300 dark:text-gray-600' }}" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                            <span class="{{ $plan->has_ai_forecasting ? '' : 'text-gray-400 line-through' }}">AI Forecasting & Sales</span>
                         </li>
                     </ul>
                 </div>

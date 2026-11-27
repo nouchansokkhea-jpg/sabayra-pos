@@ -26,11 +26,22 @@ class Plan extends Model
         'has_online_ordering',
         'has_analytics',
         'has_custom_branding',
+        'has_ai_assistant',
+        'has_ai_menu_creator',
+        'has_ai_marketing',
+        'has_ai_forecasting',
+        'ai_monthly_credits',
+        'ai_max_tokens_per_request',
         'is_active',
         'is_popular',
         'sort_order',
     ];
 
+    /**
+     * Get attribute cast definitions.
+     *
+     * @return array<string, string>
+     */
     protected function casts(): array
     {
         return [
@@ -44,10 +55,30 @@ class Plan extends Model
             'has_online_ordering' => 'boolean',
             'has_analytics' => 'boolean',
             'has_custom_branding' => 'boolean',
+            'has_ai_assistant' => 'boolean',
+            'has_ai_menu_creator' => 'boolean',
+            'has_ai_marketing' => 'boolean',
+            'has_ai_forecasting' => 'boolean',
+            'ai_monthly_credits' => 'integer',
+            'ai_max_tokens_per_request' => 'integer',
             'is_active' => 'boolean',
             'is_popular' => 'boolean',
             'sort_order' => 'integer',
         ];
+    }
+
+    /**
+     * Determine whether this subscription plan unlocks the given AI Center feature.
+     */
+    public function allowsAiFeature(string $feature): bool
+    {
+        return match ($feature) {
+            'assistant', 'insights' => (bool) $this->has_ai_assistant,
+            'menu_creator' => (bool) $this->has_ai_menu_creator,
+            'marketing_studio' => (bool) $this->has_ai_marketing,
+            'inventory_forecast', 'sales_prediction' => (bool) $this->has_ai_forecasting,
+            default => false,
+        };
     }
 
     public function subscriptions(): HasMany

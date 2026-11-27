@@ -55,3 +55,5 @@ Route::get('/activity-logs', [ActivityLogController::class, 'index'])->name('act
 // 11. Platform Settings
 Route::get('/settings', [SettingController::class, 'index'])->name('settings.index');
 Route::post('/settings', [SettingController::class, 'update'])->name('settings.update');
+Route::post('/settings/ai', [SettingController::class, 'updateAi'])->name('settings.ai.update');
+Route::post('/settings/ai/test', [SettingController::class, 'testAi'])->name('settings.ai.test');

@@ -50,4 +50,14 @@ return [
         'verify_ssl' => filter_var(env('ABA_PAYWAY_VERIFY_SSL', true), FILTER_VALIDATE_BOOLEAN),
     ],
 
+    'gemini' => [
+        'api_key' => env('GEMINI_API_KEY'),
+        'model' => env('GEMINI_MODEL', 'gemini-2.5-flash'),
+    ],
+
+    'openai' => [
+        'api_key' => env('OPENAI_API_KEY'),
+        'model' => env('OPENAI_MODEL', 'gpt-4o-mini'),
+    ],
+
 ];

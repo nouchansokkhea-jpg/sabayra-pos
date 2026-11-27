@@ -195,6 +195,62 @@ class Business extends Model
     }
 
     /**
+     * Get the business AI configuration and feature toggles.
+     */
+    public function aiFeatureSetting(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(AiFeatureSetting::class, 'business_id')->withoutGlobalScopes();
+    }
+
+    /**
+     * Get monthly AI credit allocation and consumption ledgers for this business.
+     */
+    public function aiCreditLedgers(): HasMany
+    {
+        return $this->hasMany(AiCreditLedger::class, 'business_id')->withoutGlobalScopes();
+    }
+
+    /**
+     * Get AI request usage logs for this business.
+     */
+    public function aiUsageLogs(): HasMany
+    {
+        return $this->hasMany(AiUsageLog::class, 'business_id')->withoutGlobalScopes();
+    }
+
+    /**
+     * Get AI Business Assistant conversations belonging to this business.
+     */
+    public function aiConversations(): HasMany
+    {
+        return $this->hasMany(AiConversation::class, 'business_id')->withoutGlobalScopes();
+    }
+
+    /**
+     * Get generated menu and marketing copy items for this business.
+     */
+    public function aiGeneratedContents(): HasMany
+    {
+        return $this->hasMany(AiGeneratedContent::class, 'business_id')->withoutGlobalScopes();
+    }
+
+    /**
+     * Get persisted AI inventory and sales forecasts for this business.
+     */
+    public function aiForecasts(): HasMany
+    {
+        return $this->hasMany(AiForecast::class, 'business_id')->withoutGlobalScopes();
+    }
+
+    /**
+     * Get actionable business AI insights belonging to this business.
+     */
+    public function aiInsights(): HasMany
+    {
+        return $this->hasMany(BusinessAiInsight::class, 'business_id')->withoutGlobalScopes();
+    }
+
+    /**
      * Calculate Cambodian Riel equivalent based on business exchange rate.
      */
     public function khrEquivalent(float $usdAmount): float

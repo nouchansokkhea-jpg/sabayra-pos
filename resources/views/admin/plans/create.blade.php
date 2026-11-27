@@ -65,6 +65,18 @@
                 <input type="number" name="sort_order" value="{{ old('sort_order', '0') }}"
                        class="w-full text-sm rounded-xl border-gray-200 dark:border-gray-700 dark:bg-gray-900 dark:text-white px-3 py-2.5 focus:border-orange-500 focus:ring-orange-500">
             </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">Monthly AI Credits</label>
+                <input type="number" name="ai_monthly_credits" min="0" max="1000000" value="{{ old('ai_monthly_credits', '100') }}" required
+                       class="w-full text-sm rounded-xl border-gray-200 bg-white text-slate-900 dark:border-gray-700 dark:bg-gray-900 dark:text-white px-3 py-2.5 focus:border-orange-500 focus:ring-orange-500">
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">Max AI Tokens / Request</label>
+                <input type="number" name="ai_max_tokens_per_request" min="256" max="16384" value="{{ old('ai_max_tokens_per_request', '2048') }}" required
+                       class="w-full text-sm rounded-xl border-gray-200 bg-white text-slate-900 dark:border-gray-700 dark:bg-gray-900 dark:text-white px-3 py-2.5 focus:border-orange-500 focus:ring-orange-500">
+            </div>
         </div>
 
         <!-- Feature Entitlement Toggles -->
@@ -90,6 +102,22 @@
                 <label class="flex items-center space-x-2">
                     <input type="checkbox" name="has_custom_branding" value="1" class="rounded text-orange-600 focus:ring-orange-500">
                     <span>Custom Branding</span>
+                </label>
+                <label class="flex items-center space-x-2">
+                    <input type="checkbox" name="has_ai_assistant" value="1" checked class="rounded text-orange-600 focus:ring-orange-500">
+                    <span>AI Business Assistant</span>
+                </label>
+                <label class="flex items-center space-x-2">
+                    <input type="checkbox" name="has_ai_menu_creator" value="1" checked class="rounded text-orange-600 focus:ring-orange-500">
+                    <span>AI Menu Creator</span>
+                </label>
+                <label class="flex items-center space-x-2">
+                    <input type="checkbox" name="has_ai_marketing" value="1" class="rounded text-orange-600 focus:ring-orange-500">
+                    <span>AI Marketing Studio</span>
+                </label>
+                <label class="flex items-center space-x-2">
+                    <input type="checkbox" name="has_ai_forecasting" value="1" class="rounded text-orange-600 focus:ring-orange-500">
+                    <span>AI Forecasting & Sales</span>
                 </label>
                 <label class="flex items-center space-x-2">
                     <input type="checkbox" name="is_popular" value="1" class="rounded text-orange-600 focus:ring-orange-500">
