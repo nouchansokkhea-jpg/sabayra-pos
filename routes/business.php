@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Business\AiAssistantController;
 use App\Http\Controllers\Business\AiCenterController;
 use App\Http\Controllers\Business\AiInsightController;
 use App\Http\Controllers\Business\AiMenuBuilderController;
@@ -198,7 +199,9 @@ Route::get('/reports/export', [ReportController::class, 'exportCsv'])->name('rep
 // Unified SABAYRA AI Center
 Route::prefix('ai')->name('ai.')->group(function (): void {
     Route::get('/', [AiCenterController::class, 'overview'])->name('overview');
-    Route::get('/assistant', [AiCenterController::class, 'modulePlaceholder'])->name('assistant');
+    Route::get('/assistant', [AiAssistantController::class, 'index'])->name('assistant');
+    Route::post('/assistant/ask', [AiAssistantController::class, 'ask'])->name('assistant.ask');
+    Route::delete('/assistant/conversations/{conversation}', [AiAssistantController::class, 'destroy'])->name('assistant.destroy');
     Route::get('/menu-creator', [AiCenterController::class, 'modulePlaceholder'])->name('menu-creator');
     Route::get('/marketing-studio', [AiCenterController::class, 'modulePlaceholder'])->name('marketing');
     Route::get('/inventory-forecast', [AiCenterController::class, 'modulePlaceholder'])->name('inventory-forecast');
