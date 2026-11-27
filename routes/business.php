@@ -3,9 +3,11 @@
 use App\Http\Controllers\Business\AiAssistantController;
 use App\Http\Controllers\Business\AiCenterController;
 use App\Http\Controllers\Business\AiInsightController;
+use App\Http\Controllers\Business\AiInventoryForecastController;
 use App\Http\Controllers\Business\AiMarketingController;
 use App\Http\Controllers\Business\AiMenuBuilderController;
 use App\Http\Controllers\Business\AiMenuCreatorController;
+use App\Http\Controllers\Business\AiSalesPredictionController;
 use App\Http\Controllers\Business\AnalyticsController;
 use App\Http\Controllers\Business\ArAssistantController;
 use App\Http\Controllers\Business\BranchController;
@@ -210,8 +212,10 @@ Route::prefix('ai')->name('ai.')->group(function (): void {
     Route::get('/marketing-studio', [AiMarketingController::class, 'index'])->name('marketing');
     Route::post('/marketing-studio/generate', [AiMarketingController::class, 'generate'])->name('marketing.generate');
     Route::delete('/marketing-studio/{content}', [AiMarketingController::class, 'destroy'])->name('marketing.destroy');
-    Route::get('/inventory-forecast', [AiCenterController::class, 'modulePlaceholder'])->name('inventory-forecast');
-    Route::get('/sales-prediction', [AiCenterController::class, 'modulePlaceholder'])->name('sales-prediction');
+    Route::get('/inventory-forecast', [AiInventoryForecastController::class, 'index'])->name('inventory-forecast');
+    Route::post('/inventory-forecast/run', [AiInventoryForecastController::class, 'run'])->name('inventory-forecast.run');
+    Route::get('/sales-prediction', [AiSalesPredictionController::class, 'index'])->name('sales-prediction');
+    Route::post('/sales-prediction/run', [AiSalesPredictionController::class, 'run'])->name('sales-prediction.run');
     Route::get('/usage', [AiCenterController::class, 'usage'])->name('usage');
     Route::get('/settings', [AiCenterController::class, 'settings'])->name('settings');
     Route::put('/settings', [AiCenterController::class, 'updateSettings'])->name('settings.update');
