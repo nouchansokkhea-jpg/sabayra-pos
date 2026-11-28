@@ -1,6 +1,10 @@
 @php
     $biz = $currentBusiness ?? \App\Services\Tenant\TenantContext::get();
-    $can = fn($feature) => \App\Services\Business\BusinessFeatureService::canAccess($biz, $feature);
+    $expService = app(\App\Services\Business\CategoryExperienceService::class);
+    $can = fn (string $feature): bool => $expService->isModuleEnabled($biz, $feature);
+    $term = $expService->terminology($biz);
+    $catMeta = $expService->meta($biz);
+    $isBookingBiz = $can('service_bookings');
 @endphp
 
 <ul role="list" class="flex flex-col flex-1 gap-y-1 pb-10 text-xs">
@@ -31,21 +35,33 @@
     </li>
 
     {{-- ============================================================== --}}
-    {{-- 2. CATALOG & MENU --}}
+    {{-- 2. CATALOG / SERVICES / MENU --}}
     {{-- ============================================================== --}}
     <li class="pt-3">
-        <p class="px-2.5 text-[10px] font-black text-slate-300 dark:text-slate-200 uppercase tracking-wider">Catalog & Menu</p>
+        <p class="px-2.5 text-[10px] font-black text-slate-300 dark:text-slate-200 uppercase tracking-wider">{{ $term['catalog'] ?? 'Catalog & Menu' }}</p>
     </li>
 
     <li>
         <a href="{{ route('business.products.index') }}"
-           class="group flex items-center gap-x-3 rounded-xl p-2 font-semibold transition {{ request()->routeIs('business.products.*') ? 'bg-orange-600 text-white shadow-sm font-bold' : 'text-slate-300 hover:bg-gray-800 hover:text-white' }}">
+           class="group flex items-center gap-x-3 rounded-xl p-2 font-semibold transition {{ request()->routeIs('business.products.index', 'business.products.create', 'business.products.edit', 'business.products.show') ? 'bg-orange-600 text-white shadow-sm font-bold' : 'text-slate-300 hover:bg-gray-800 hover:text-white' }}">
             <svg class="w-4 h-4 shrink-0 {{ request()->routeIs('business.products.*') ? 'text-white' : 'text-slate-400 group-hover:text-white' }}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
             </svg>
-            <span>Products & Catalog</span>
+            <span>{{ $term['catalog'] ?? 'Products & Catalog' }}</span>
         </a>
     </li>
+
+    @if ($can('bulk_import'))
+        <li>
+            <a href="{{ route('business.products.import') }}"
+               class="group flex items-center gap-x-3 rounded-xl p-2 font-semibold transition {{ request()->routeIs('business.products.import*') ? 'bg-orange-600 text-white shadow-sm font-bold' : 'text-slate-300 hover:bg-gray-800 hover:text-white' }}">
+                <svg class="w-4 h-4 shrink-0 {{ request()->routeIs('business.products.import*') ? 'text-white' : 'text-slate-400 group-hover:text-white' }}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                </svg>
+                <span>Bulk CSV / Barcode Import</span>
+            </a>
+        </li>
+    @endif
 
     <li>
         <a href="{{ route('business.categories.index') }}"
@@ -61,7 +77,7 @@
     {{-- 3. OPERATIONS --}}
     {{-- ============================================================== --}}
     <li class="pt-3">
-        <p class="px-2.5 text-[10px] font-black text-slate-300 dark:text-slate-200 uppercase tracking-wider">Operations</p>
+        <p class="px-2.5 text-[10px] font-black text-slate-300 dark:text-slate-200 uppercase tracking-wider">{{ $term['operations'] ?? 'Operations' }}</p>
     </li>
 
     <li>
@@ -70,7 +86,7 @@
             <svg class="w-4 h-4 shrink-0 {{ request()->routeIs('business.orders.index') || request()->routeIs('business.orders.show') ? 'text-white' : 'text-slate-400 group-hover:text-white' }}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
             </svg>
-            <span>Orders Management</span>
+            <span>{{ $term['orders'] ?? 'Orders Management' }}</span>
         </a>
     </li>
 
@@ -86,6 +102,30 @@
             <span class="text-[9px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-1.5 py-0.5 rounded font-mono font-bold animate-pulse">FEED</span>
         </a>
     </li>
+
+    @if ($isBookingBiz || $can('reservations'))
+        <li>
+            <a href="{{ route('business.reservations.index') }}"
+               class="group flex items-center gap-x-3 rounded-xl p-2 font-semibold transition {{ request()->routeIs('business.reservations.*') ? 'bg-orange-600 text-white shadow-sm font-bold' : 'text-slate-300 hover:bg-gray-800 hover:text-white' }}">
+                <svg class="w-4 h-4 shrink-0 {{ request()->routeIs('business.reservations.*') ? 'text-white' : 'text-slate-400 group-hover:text-white' }}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                </svg>
+                <span>{{ $isBookingBiz ? 'Service Appointments' : 'Table Reservations' }}</span>
+            </a>
+        </li>
+    @endif
+
+    @if ($can('waitlist'))
+        <li>
+            <a href="{{ route('business.waitlist.index') }}"
+               class="group flex items-center gap-x-3 rounded-xl p-2 font-semibold transition {{ request()->routeIs('business.waitlist.*') ? 'bg-orange-600 text-white shadow-sm font-bold' : 'text-slate-300 hover:bg-gray-800 hover:text-white' }}">
+                <svg class="w-4 h-4 shrink-0 {{ request()->routeIs('business.waitlist.*') ? 'text-white' : 'text-slate-400 group-hover:text-white' }}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <span>Queue Waitlist</span>
+            </a>
+        </li>
+    @endif
 
     @if ($can('pos'))
         <li>
@@ -126,18 +166,20 @@
         </li>
     @endif
 
-    <li>
-        <a href="{{ route('business.printers.index') }}"
-           class="group flex items-center gap-x-3 rounded-xl p-2 font-semibold transition {{ request()->routeIs('business.printers.*') ? 'bg-orange-600 text-white shadow-sm font-bold' : 'text-slate-300 hover:bg-gray-800 hover:text-white' }}">
-            <svg class="w-4 h-4 shrink-0 {{ request()->routeIs('business.printers.*') ? 'text-white' : 'text-slate-400 group-hover:text-white' }}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
-            </svg>
-            <span>Printers & Hardware</span>
-        </a>
-    </li>
+    @if ($can('printers'))
+        <li>
+            <a href="{{ route('business.printers.index') }}"
+               class="group flex items-center gap-x-3 rounded-xl p-2 font-semibold transition {{ request()->routeIs('business.printers.*') ? 'bg-orange-600 text-white shadow-sm font-bold' : 'text-slate-300 hover:bg-gray-800 hover:text-white' }}">
+                <svg class="w-4 h-4 shrink-0 {{ request()->routeIs('business.printers.*') ? 'text-white' : 'text-slate-400 group-hover:text-white' }}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+                </svg>
+                <span>Printers & Hardware</span>
+            </a>
+        </li>
+    @endif
 
     {{-- ============================================================== --}}
-    {{-- 4. MANAGEMENT --}}
+    {{-- 4. MANAGEMENT & INVENTORY --}}
     {{-- ============================================================== --}}
     <li class="pt-3">
         <p class="px-2.5 text-[10px] font-black text-slate-300 dark:text-slate-200 uppercase tracking-wider">Management</p>
@@ -160,7 +202,31 @@
                 <svg class="w-4 h-4 shrink-0 {{ request()->routeIs('business.inventory.*') ? 'text-white' : 'text-slate-400 group-hover:text-white' }}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
                 </svg>
-                <span>Inventory & Ingredients</span>
+                <span>{{ $can('recipes') ? 'Inventory & Ingredients' : 'Inventory & Stock' }}</span>
+            </a>
+        </li>
+    @endif
+
+    @if ($can('recipes'))
+        <li>
+            <a href="{{ route('business.recipes.index') }}"
+               class="group flex items-center gap-x-3 rounded-xl p-2 font-semibold transition {{ request()->routeIs('business.recipes.*') ? 'bg-orange-600 text-white shadow-sm font-bold' : 'text-slate-300 hover:bg-gray-800 hover:text-white' }}">
+                <svg class="w-4 h-4 shrink-0 {{ request()->routeIs('business.recipes.*') ? 'text-white' : 'text-slate-400 group-hover:text-white' }}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2"/>
+                </svg>
+                <span>Recipes &amp; BOM</span>
+            </a>
+        </li>
+    @endif
+
+    @if ($can('suppliers') || $can('purchase_orders'))
+        <li>
+            <a href="{{ route('business.suppliers.index') }}"
+               class="group flex items-center gap-x-3 rounded-xl p-2 font-semibold transition {{ request()->routeIs('business.suppliers.*') ? 'bg-orange-600 text-white shadow-sm font-bold' : 'text-slate-300 hover:bg-gray-800 hover:text-white' }}">
+                <svg class="w-4 h-4 shrink-0 {{ request()->routeIs('business.suppliers.*') ? 'text-white' : 'text-slate-400 group-hover:text-white' }}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
+                </svg>
+                <span>Suppliers &amp; PO</span>
             </a>
         </li>
     @endif
@@ -175,11 +241,82 @@
         </a>
     </li>
 
+    @if ($can('delivery_zones'))
+        <li>
+            <a href="{{ route('business.delivery-zones.index') }}"
+               class="group flex items-center gap-x-3 rounded-xl p-2 font-semibold transition {{ request()->routeIs('business.delivery-zones.*') ? 'bg-orange-600 text-white shadow-sm font-bold' : 'text-slate-300 hover:bg-gray-800 hover:text-white' }}">
+                <svg class="w-4 h-4 shrink-0 {{ request()->routeIs('business.delivery-zones.*') ? 'text-white' : 'text-slate-400 group-hover:text-white' }}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                </svg>
+                <span>Delivery Zones</span>
+            </a>
+        </li>
+    @endif
+
+    {{-- ============================================================== --}}
+    {{-- 4B. CUSTOMERS & MARKETING --}}
+    {{-- ============================================================== --}}
+    <li class="pt-3">
+        <p class="px-2.5 text-[10px] font-black text-slate-300 dark:text-slate-200 uppercase tracking-wider">{{ $term['customer'] ?? 'Customers' }} &amp; Growth</p>
+    </li>
+
+    <li>
+        <a href="{{ route('business.customers.index') }}"
+           class="group flex items-center gap-x-3 rounded-xl p-2 font-semibold transition {{ request()->routeIs('business.customers.*') ? 'bg-orange-600 text-white shadow-sm font-bold' : 'text-slate-300 hover:bg-gray-800 hover:text-white' }}">
+            <svg class="w-4 h-4 shrink-0 {{ request()->routeIs('business.customers.*') ? 'text-white' : 'text-slate-400 group-hover:text-white' }}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197"/>
+            </svg>
+            <span>{{ $term['customer'] ?? 'Customers' }}</span>
+        </a>
+    </li>
+
+    <li>
+        <a href="{{ route('business.coupons.index') }}"
+           class="group flex items-center gap-x-3 rounded-xl p-2 font-semibold transition {{ request()->routeIs('business.coupons.*') ? 'bg-orange-600 text-white shadow-sm font-bold' : 'text-slate-300 hover:bg-gray-800 hover:text-white' }}">
+            <svg class="w-4 h-4 shrink-0 {{ request()->routeIs('business.coupons.*') ? 'text-white' : 'text-slate-400 group-hover:text-white' }}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
+            </svg>
+            <span>Coupons &amp; Discounts</span>
+        </a>
+    </li>
+
+    @if ($can('happy_hours'))
+        <li>
+            <a href="{{ route('business.happy-hours.index') }}"
+               class="group flex items-center gap-x-3 rounded-xl p-2 font-semibold transition {{ request()->routeIs('business.happy-hours.*') ? 'bg-orange-600 text-white shadow-sm font-bold' : 'text-slate-300 hover:bg-gray-800 hover:text-white' }}">
+                <svg class="w-4 h-4 shrink-0 {{ request()->routeIs('business.happy-hours.*') ? 'text-white' : 'text-slate-400 group-hover:text-white' }}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <span>Happy Hours</span>
+            </a>
+        </li>
+    @endif
+
+    <li>
+        <a href="{{ route('business.qr.index') }}"
+           class="group flex items-center gap-x-3 rounded-xl p-2 font-semibold transition {{ request()->routeIs('business.qr*') ? 'bg-orange-600 text-white shadow-sm font-bold' : 'text-slate-300 hover:bg-gray-800 hover:text-white' }}">
+            <svg class="w-4 h-4 shrink-0 {{ request()->routeIs('business.qr*') ? 'text-white' : 'text-slate-400 group-hover:text-white' }}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/>
+            </svg>
+            <span>QR Studio</span>
+        </a>
+    </li>
+
     {{-- ============================================================== --}}
     {{-- 5. BUSINESS INTELLIGENCE --}}
     {{-- ============================================================== --}}
     <li class="pt-3">
         <p class="px-2.5 text-[10px] font-black text-slate-300 dark:text-slate-200 uppercase tracking-wider">Business Intelligence</p>
+    </li>
+
+    <li>
+        <a href="{{ route('business.analytics.index') }}"
+           class="group flex items-center gap-x-3 rounded-xl p-2 font-semibold transition {{ request()->routeIs('business.analytics.*') ? 'bg-orange-600 text-white shadow-sm font-bold' : 'text-slate-300 hover:bg-gray-800 hover:text-white' }}">
+            <svg class="w-4 h-4 shrink-0 {{ request()->routeIs('business.analytics.*') ? 'text-white' : 'text-slate-400 group-hover:text-white' }}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"/>
+            </svg>
+            <span>Smart Analytics</span>
+        </a>
     </li>
 
     <li>

@@ -83,8 +83,11 @@
                                     {{ strtoupper(substr($currentBusiness->name, 0, 1)) }}
                                 </div>
                                 <div class="truncate">
+                                    @php
+                                        $switcherCatMeta = app(\App\Services\Business\CategoryExperienceService::class)->meta($currentBusiness);
+                                    @endphp
                                     <p class="text-xs font-bold text-white truncate">{{ $currentBusiness->name }}</p>
-                                    <p class="text-[10px] text-slate-300 font-medium truncate capitalize">{{ str_replace('_', ' ', $currentBusiness->business_type) }}</p>
+                                    <p class="text-[10px] text-orange-300/90 font-semibold truncate">{{ $switcherCatMeta['display_name'] }}</p>
                                 </div>
                             </div>
                             <svg class="w-4 h-4 text-slate-400 group-hover:text-white shrink-0 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">

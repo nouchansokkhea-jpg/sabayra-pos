@@ -60,6 +60,7 @@ Route::post('/switch-business/{business}', [BusinessWorkspaceController::class, 
 // 1. OVERVIEW
 // ==========================================
 Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+Route::post('/dashboard/widgets', [DashboardController::class, 'updateWidgets'])->name('dashboard.widgets.update');
 Route::get('/dashboard/refresh-ai', [DashboardController::class, 'refreshAiInsights'])->name('dashboard.refresh-ai');
 
 // ==========================================
