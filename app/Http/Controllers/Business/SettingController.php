@@ -12,6 +12,7 @@ use App\Models\SecurityLog;
 use App\Models\TelegramConnection;
 use App\Models\TelegramNotificationLog;
 use App\Models\User;
+use App\Services\Business\CategoryExperienceService;
 use App\Services\Storage\SupabaseStorageService;
 use App\Services\Security\SecurityActivityService;
 use App\Services\Security\SessionManagementService;
@@ -37,14 +38,19 @@ class SettingController extends Controller
      *
      * @var array<int, string>
      */
-    public const BUSINESS_SECTIONS = ['general', 'business', 'payment', 'notifications'];
+    public const BUSINESS_SECTIONS = ['general', 'business', 'experience', 'payment', 'notifications'];
 
     /**
      * All supported Settings sections.
      *
      * @var array<int, string>
      */
-    public const ALL_SECTIONS = ['general', 'business', 'payment', 'notifications', 'security', 'account'];
+    public const ALL_SECTIONS = ['general', 'business', 'experience', 'payment', 'notifications', 'security', 'account'];
+
+    public function __construct(
+        private readonly CategoryExperienceService $categoryExperience
+    ) {
+    }
 
     /**
      * Display the tabbed Business & Account Settings hub.
@@ -218,6 +224,30 @@ class SettingController extends Controller
         $platformAbaEnabled = PlatformSetting::isAbaPayWayEnabled();
         $platformBakongTokenConfigured = filled(PlatformSetting::resolveBakongApiToken());
 
+        $experienceService = app(CategoryExperienceService::class);
+        $categoryConfig = $business ? $experienceService->configFor($business) : [];
+        $categoryMeta = $business ? $experienceService->meta($business) : [];
+        $categoryCatalog = collect($experienceService->categories())->map(function (array $cfg, string $key) use ($experienceService): array {
+            $theme = $experienceService->defaultThemeForCategory($key);
+            $features = (array) ($cfg['features'] ?? []);
+
+            return [
+                'key' => $key,
+                'name_en' => (string) ($cfg['name_en'] ?? $key),
+                'name_km' => (string) ($cfg['name_km'] ?? $key),
+                'description_en' => (string) ($cfg['description_en'] ?? ''),
+                'description_km' => (string) ($cfg['description_km'] ?? ''),
+                'pos_mode' => (string) ($cfg['pos']['mode'] ?? 'standard'),
+                'storefront_mode' => (string) ($cfg['storefront']['mode'] ?? 'catalog'),
+                'active_modules' => array_keys(array_filter($features, static fn ($enabled): bool => (bool) $enabled)),
+                'primary_color' => $theme['primary_color'],
+                'layout' => $theme['layout'],
+            ];
+        })->all();
+        $customModuleOverrides = ($business && is_array($storedSettings['category.custom_modules'] ?? null))
+            ? $storedSettings['category.custom_modules']
+            : [];
+
         return [
             'business' => $business,
             'user' => $user,
@@ -226,6 +256,11 @@ class SettingController extends Controller
             'businessTypes' => config('menuhub.business_types'),
             'currencies' => config('menuhub.currencies'),
             'storedSettings' => $storedSettings,
+            'categoryConfig' => $categoryConfig,
+            'categoryMeta' => $categoryMeta,
+            'categoryCatalog' => $categoryCatalog,
+            'configurableModules' => CategoryExperienceService::CONFIGURABLE_MODULES,
+            'customModuleOverrides' => $customModuleOverrides,
             'paymentConfig' => $paymentConfig,
             'platformBakongEnabled' => $platformBakongEnabled,
             'platformAbaEnabled' => $platformAbaEnabled,
@@ -394,9 +429,14 @@ class SettingController extends Controller
             'social_links.tiktok' => ['nullable', 'string', 'max:255'],
         ]);
 
+        $previousCategory = $business->business_type;
         $validated = $this->handleBrandMediaUploads($request, $validated);
 
         $existingTheme = $business->theme_settings ?? [];
+        if ($previousCategory !== $validated['business_type'] && $request->boolean('apply_category_theme')) {
+            $recommendedTheme = $this->categoryExperience->defaultThemeForCategory($validated['business_type']);
+            $existingTheme = array_merge($existingTheme, $recommendedTheme);
+        }
         $existingTheme['social_links'] = $validated['social_links'] ?? ($existingTheme['social_links'] ?? []);
 
         if (!empty($validated['social_links']['telegram'])) {
@@ -408,9 +448,66 @@ class SettingController extends Controller
 
         $business->update($validated);
 
+        if ($previousCategory !== $business->business_type) {
+            $this->categoryExperience->initializeDefaultsForBusiness($business, preserveCustomModules: false);
+        }
+
         return redirect()
             ->route('business.settings.index', ['section' => 'business'])
             ->with('success', 'Business information & branding updated successfully.');
+    }
+
+    /**
+     * Guided Category Switch & Optional Module Overrides (zero data loss).
+     */
+    public function updateCategoryExperience(Request $request): RedirectResponse
+    {
+        $business = $this->authorizedBusiness();
+
+        $validated = $request->validate([
+            'business_type' => ['required', 'string', 'in:' . implode(',', array_keys(config('menuhub.business_types')))],
+            'apply_category_theme' => ['nullable', 'boolean'],
+            'reset_module_overrides' => ['nullable', 'boolean'],
+            'custom_modules' => ['nullable', 'array'],
+        ]);
+
+        $previousCategory = $business->business_type;
+        $nextCategory = $validated['business_type'];
+        $categoryChanged = $previousCategory !== $nextCategory;
+
+        $updates = ['business_type' => $nextCategory];
+        if ($categoryChanged && $request->boolean('apply_category_theme')) {
+            $recommendedTheme = $this->categoryExperience->defaultThemeForCategory($nextCategory);
+            $updates['theme_settings'] = array_merge($business->theme_settings ?? [], $recommendedTheme);
+        }
+
+        $business->update($updates);
+
+        if ($request->boolean('reset_module_overrides')) {
+            $this->categoryExperience->initializeDefaultsForBusiness($business, preserveCustomModules: false);
+        } else {
+            if ($categoryChanged) {
+                $this->categoryExperience->initializeDefaultsForBusiness($business, preserveCustomModules: false);
+            }
+
+            $rawOverrides = (array) $request->input('custom_modules', []);
+            $baseFeatures = (array) config("business_features.categories.{$nextCategory}.features", []);
+            $overrides = [];
+
+            foreach (CategoryExperienceService::CONFIGURABLE_MODULES as $moduleKey) {
+                $desired = filter_var($rawOverrides[$moduleKey] ?? false, FILTER_VALIDATE_BOOLEAN);
+                $categoryDefault = (bool) ($baseFeatures[$moduleKey] ?? false);
+                if ($desired !== $categoryDefault || $nextCategory === 'other') {
+                    $overrides[$moduleKey] = $desired;
+                }
+            }
+
+            BusinessSetting::setValue($business->id, 'category.custom_modules', $overrides);
+        }
+
+        return redirect()
+            ->route('business.settings.index', ['section' => 'experience'])
+            ->with('success', 'Category experience & module configuration updated without affecting existing business data.');
     }
 
     /**

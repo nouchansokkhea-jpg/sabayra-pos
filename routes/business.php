@@ -260,6 +260,7 @@ Route::get('/settings', [SettingController::class, 'index'])->name('settings.ind
 Route::put('/settings', [SettingController::class, 'update'])->name('settings.update');
 Route::put('/settings/general', [SettingController::class, 'updateGeneral'])->name('settings.general.update');
 Route::put('/settings/business', [SettingController::class, 'updateBusinessInfo'])->name('settings.business.update');
+Route::put('/settings/experience', [SettingController::class, 'updateCategoryExperience'])->name('settings.experience.update');
 Route::put('/settings/payment', [PaymentSettingsController::class, 'update'])->name('settings.payment.update');
 Route::post('/settings/payment/verify-bakong', [PaymentSettingsController::class, 'verifyBakong'])->name('settings.payment.verify-bakong');
 Route::post('/settings/payment/test-aba', [PaymentSettingsController::class, 'testAbaConnection'])->name('settings.payment.test-aba');

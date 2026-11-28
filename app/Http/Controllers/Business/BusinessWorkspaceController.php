@@ -8,6 +8,7 @@ use App\Models\BusinessBranch;
 use App\Models\BusinessMember;
 use App\Models\Plan;
 use App\Models\Subscription;
+use App\Services\Business\CategoryExperienceService;
 use App\Services\Tenant\TenantContext;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -17,6 +18,11 @@ use Illuminate\Support\Str;
 
 class BusinessWorkspaceController extends Controller
 {
+    public function __construct(
+        private readonly CategoryExperienceService $categoryExperience
+    ) {
+    }
+
     /**
      * Show form to create/register a new business.
      */
@@ -24,8 +30,35 @@ class BusinessWorkspaceController extends Controller
     {
         $businessTypes = config('menuhub.business_types');
         $currencies = config('menuhub.currencies');
+        $categoryCatalog = collect($this->categoryExperience->categories())->map(function (array $cfg, string $key): array {
+            $theme = $this->categoryExperience->defaultThemeForCategory($key);
+            $features = (array) ($cfg['features'] ?? []);
 
-        return view('business.onboarding.create', compact('businessTypes', 'currencies'));
+            return [
+                'key' => $key,
+                'name_en' => (string) ($cfg['name_en'] ?? $key),
+                'name_km' => (string) ($cfg['name_km'] ?? $key),
+                'description_en' => (string) ($cfg['description_en'] ?? ''),
+                'description_km' => (string) ($cfg['description_km'] ?? ''),
+                'icon' => (string) ($cfg['icon'] ?? 'building'),
+                'pos_mode' => (string) ($cfg['pos']['mode'] ?? 'standard'),
+                'storefront_mode' => (string) ($cfg['storefront']['mode'] ?? 'catalog'),
+                'headline_en' => (string) ($cfg['dashboard']['headline_en'] ?? ''),
+                'headline_km' => (string) ($cfg['dashboard']['headline_km'] ?? ''),
+                'kpis' => array_values((array) ($cfg['dashboard']['kpis'] ?? [])),
+                'active_modules' => array_keys(array_filter($features, static fn ($enabled): bool => (bool) $enabled)),
+                'primary_color' => $theme['primary_color'],
+                'layout' => $theme['layout'],
+            ];
+        })->all();
+        $configurableModules = CategoryExperienceService::CONFIGURABLE_MODULES;
+
+        return view('business.onboarding.create', compact(
+            'businessTypes',
+            'currencies',
+            'categoryCatalog',
+            'configurableModules'
+        ));
     }
 
     /**
@@ -56,10 +89,14 @@ class BusinessWorkspaceController extends Controller
             'default_currency' => ['required', 'string', 'in:USD,KHR'],
             'exchange_rate_khr' => ['required', 'numeric', 'min:1000'],
             'tax_percent' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'custom_modules' => ['nullable', 'array'],
         ], [
             'slug.regex' => 'The public menu slug may only contain letters (English/Khmer), numbers, and dashes.',
             'slug.unique' => 'This public menu URL slug is already taken. Please pick another one.',
         ]);
+
+        $customModulesInput = (array) $request->input('custom_modules', []);
+        unset($validated['custom_modules']);
 
         if (empty($validated['slug'])) {
             $raw = trim($validated['name']);
@@ -84,16 +121,25 @@ class BusinessWorkspaceController extends Controller
         $validated['status'] = 'active';
         $validated['tax_percent'] = $validated['tax_percent'] ?? 0.00;
 
-        // Default theme
-        $validated['theme_settings'] = [
-            'primary_color' => '#f97316',
-            'secondary_color' => '#1f2937',
-            'font' => 'Inter, Siemreap, sans-serif',
-            'layout' => 'modern',
-        ];
+        // Category-tailored default theme
+        $validated['theme_settings'] = $this->categoryExperience->defaultThemeForCategory($validated['business_type']);
 
         // 1. Create Business
         $business = Business::create($validated);
+
+        // 1b. Initialize smart category experience defaults & optional custom modules
+        $this->categoryExperience->initializeDefaultsForBusiness($business, preserveCustomModules: false);
+
+        if ($validated['business_type'] === 'other' && $customModulesInput !== []) {
+            $sanitizedModules = [];
+            foreach (CategoryExperienceService::CONFIGURABLE_MODULES as $moduleKey) {
+                $sanitizedModules[$moduleKey] = filter_var(
+                    $customModulesInput[$moduleKey] ?? false,
+                    FILTER_VALIDATE_BOOLEAN
+                );
+            }
+            \App\Models\BusinessSetting::setValue($business->id, 'category.custom_modules', $sanitizedModules);
+        }
 
         // 2. Create Default Main Branch
         $mainBranch = BusinessBranch::create([

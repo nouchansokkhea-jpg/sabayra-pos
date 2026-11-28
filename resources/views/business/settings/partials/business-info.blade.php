@@ -24,13 +24,26 @@
 
             <div>
                 <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">Business Category *</label>
-                <select name="business_type" required class="w-full text-xs rounded-xl border-gray-200 dark:border-gray-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 focus:border-orange-500 focus:ring-orange-500">
-                    @foreach ($businessTypes as $key => $type)
-                        <option value="{{ $key }}" {{ old('business_type', $business->business_type) === $key ? 'selected' : '' }}>
-                            {{ $type['name_en'] }} ({{ $type['name_km'] }})
-                        </option>
-                    @endforeach
-                </select>
+                <div x-data="{ originalType: '{{ $business->business_type }}', pickedType: '{{ old('business_type', $business->business_type) }}' }" class="space-y-2">
+                    <select name="business_type" x-model="pickedType" required class="w-full text-xs rounded-xl border-gray-200 dark:border-gray-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 focus:border-orange-500 focus:ring-orange-500">
+                        @foreach ($businessTypes as $key => $type)
+                            <option value="{{ $key }}" {{ old('business_type', $business->business_type) === $key ? 'selected' : '' }}>
+                                {{ $type['name_en'] }} ({{ $type['name_km'] }})
+                            </option>
+                        @endforeach
+                    </select>
+                    <div x-show="pickedType !== originalType" x-cloak class="p-2.5 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/70 text-[11px] text-amber-900 dark:text-amber-200 space-y-1.5">
+                        <p class="font-bold">Safe Switch: Existing products, orders, and customers remain preserved.</p>
+                        <label class="flex items-center gap-1.5 cursor-pointer">
+                            <input type="checkbox" name="apply_category_theme" value="1" class="rounded border-amber-400 text-orange-600 focus:ring-orange-500">
+                            <span>Apply recommended storefront color &amp; layout for the new category</span>
+                        </label>
+                    </div>
+                    <p class="text-[11px] text-slate-500 dark:text-slate-400">
+                        Need custom modules or side-by-side preview?
+                        <button type="button" @click="switchSection('experience')" class="font-bold text-orange-600 hover:underline">Open Category &amp; Modules</button>
+                    </p>
+                </div>
             </div>
 
             <div class="sm:col-span-2">
