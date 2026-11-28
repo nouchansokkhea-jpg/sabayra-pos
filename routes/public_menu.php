@@ -2,10 +2,20 @@
 
 use App\Http\Controllers\Public\CustomerOrderPaymentController;
 use App\Http\Controllers\Public\OrderCheckoutController;
+use App\Http\Controllers\Public\PublicBookingController;
 use App\Http\Controllers\Public\PublicMenuController;
 use Illuminate\Support\Facades\Route;
 
 Route::name('public.')->group(function () {
+    Route::get('/{business_slug}/booking-slots', [PublicBookingController::class, 'slots'])
+        ->name('booking-slots');
+
+    Route::post('/{business_slug}/book', [PublicBookingController::class, 'store'])
+        ->name('book');
+
+    Route::get('/{business_slug}/booking/{booking_code}', [PublicBookingController::class, 'show'])
+        ->name('booking-status');
+
     Route::get('/{business_slug}/table/{table_number}', [PublicMenuController::class, 'table'])
         ->name('table');
 

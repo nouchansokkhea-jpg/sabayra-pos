@@ -15,6 +15,7 @@ use App\Models\Product;
 use App\Models\ProductAddon;
 use App\Models\ProductVariant;
 use App\Models\RestaurantTable;
+use App\Services\Business\CategoryExperienceService;
 use App\Services\Inventory\RecipeDeductionService;
 use App\Services\Notifications\BusinessNotificationService;
 use App\Services\Payment\AbaPayWayService;
@@ -36,6 +37,7 @@ class OrderCheckoutController extends Controller
         private PaymentGatewayVisibilityService $visibilityService,
         private AbaPayWayService $abaPayWayService,
         private BakongKhqrService $bakongKhqrService,
+        private CategoryExperienceService $categoryExperience,
     ) {
     }
 
@@ -55,12 +57,16 @@ class OrderCheckoutController extends Controller
 
             TenantContext::set($business);
 
+            $storefrontConfig = $this->categoryExperience->storefrontConfig($business);
+            $allowedOrderTypes = (array) ($storefrontConfig['allowed_order_types'] ?? ['dine_in', 'takeaway', 'delivery']);
+
             $validated = $request->validate([
                 'customer_name' => ['required', 'string', 'max:150'],
                 'customer_phone' => ['required', 'string', 'max:50'],
-                'order_type' => ['required', 'string', 'in:dine_in,takeaway,delivery'],
+                'order_type' => ['required', 'string', 'in:' . implode(',', $allowedOrderTypes)],
                 'table_number' => ['nullable', 'string', 'max:50'],
                 'delivery_address' => ['nullable', 'string', 'max:500'],
+                'scheduled_for' => ['nullable', 'date'],
                 'payment_method' => ['required', 'string', 'in:cash,cod,khqr,bakong_khqr,aba_payway,bank_transfer,static_qr,card'],
                 'notes' => ['nullable', 'string', 'max:500'],
                 'items' => ['required', 'array', 'min:1'],
@@ -68,6 +74,7 @@ class OrderCheckoutController extends Controller
                 'items.*.variant_id' => ['nullable', 'exists:product_variants,id'],
                 'items.*.addons' => ['nullable', 'array'],
                 'items.*.addons.*' => ['exists:product_addons,id'],
+                'items.*.options' => ['nullable', 'array'],
                 'items.*.quantity' => ['required', 'numeric', 'min:1', 'max:100'],
                 'items.*.notes' => ['nullable', 'string', 'max:255'],
             ]);
@@ -160,6 +167,19 @@ class OrderCheckoutController extends Controller
                         }
                     }
 
+                    $options = is_array($itemData['options'] ?? null) ? $itemData['options'] : [];
+                    $optParts = [];
+                    foreach (['temp', 'sugar', 'ice', 'size', 'color'] as $ok) {
+                        if (! empty($options[$ok])) {
+                            $optParts[] = (string) $options[$ok];
+                        }
+                    }
+                    $noteStr = trim((string) ($itemData['notes'] ?? ''));
+                    if ($optParts !== []) {
+                        $joined = implode(' · ', $optParts);
+                        $noteStr = $noteStr !== '' ? "{$joined} — {$noteStr}" : $joined;
+                    }
+
                     $subtotal += $itemSubtotal;
 
                     $preparedItems[] = [
@@ -170,9 +190,17 @@ class OrderCheckoutController extends Controller
                         'unit_price' => $unitPrice,
                         'quantity' => $quantity,
                         'subtotal' => $itemSubtotal,
-                        'notes' => $itemData['notes'] ?? null,
+                        'notes' => $noteStr !== '' ? $noteStr : null,
+                        'options_json' => $options !== [] ? $options : null,
                         'addons' => $itemAddons,
                     ];
+
+                    if (! empty($itemData['variant_id'])) {
+                        $decVariant = ProductVariant::where('product_id', $product->id)->find($itemData['variant_id']);
+                        if ($decVariant && (float) $decVariant->stock_quantity > 0) {
+                            $decVariant->decrement('stock_quantity', min($quantity, (float) $decVariant->stock_quantity));
+                        }
+                    }
 
                     if ($product->track_inventory) {
                         $product->decrement('stock_quantity', $quantity);
@@ -192,6 +220,7 @@ class OrderCheckoutController extends Controller
                     'customer_name' => $validated['customer_name'],
                     'customer_phone' => $validated['customer_phone'],
                     'delivery_address' => $validated['delivery_address'] ?? null,
+                    'scheduled_for' => $validated['scheduled_for'] ?? null,
                     'subtotal' => $pricing['gross_subtotal'],
                     'discount_amount' => $pricing['discount_amount'],
                     'service_charge_enabled' => $pricing['service_charge_enabled'],
@@ -222,6 +251,7 @@ class OrderCheckoutController extends Controller
                         'quantity' => $prepItem['quantity'],
                         'subtotal' => $prepItem['subtotal'],
                         'notes' => $prepItem['notes'],
+                        'options_json' => $prepItem['options_json'],
                     ]);
 
                     foreach ($prepItem['addons'] as $add) {

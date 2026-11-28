@@ -1,4 +1,4 @@
-<x-business-layout title="Reservations" heading="Reservations Management">
+<x-business-layout title="{{ ($isServiceMode ?? false) ? 'Service Appointments' : 'Reservations' }}" heading="{{ ($isServiceMode ?? false) ? 'Service Appointments & Schedule' : 'Reservations Management' }}">
 <div class="space-y-6" x-data="{ addModal: false }">
 
     @if (session('status'))
@@ -16,7 +16,7 @@
         </div>
 
         <button @click="addModal = true" class="px-4 py-2 bg-orange-600 hover:bg-orange-500 text-white rounded-xl text-xs font-bold shadow-xs transition">
-            + New Reservation
+            + New {{ ($isServiceMode ?? false) ? 'Appointment' : 'Reservation' }}
         </button>
     </div>
 
@@ -37,10 +37,10 @@
             <thead class="bg-slate-50 dark:bg-gray-900/60 border-b border-gray-200 dark:border-gray-700/60 text-slate-500 uppercase tracking-wider text-[10px]">
                 <tr>
                     <th class="p-4">Time</th>
-                    <th class="p-4">Guest Name</th>
+                    <th class="p-4">{{ ($isServiceMode ?? false) ? 'Client Name' : 'Guest Name' }}</th>
                     <th class="p-4">Phone</th>
-                    <th class="p-4">Party Size</th>
-                    <th class="p-4">Assigned Table</th>
+                    <th class="p-4">{{ ($isServiceMode ?? false) ? 'Service' : 'Party Size' }}</th>
+                    <th class="p-4">{{ ($isServiceMode ?? false) ? 'Specialist' : 'Assigned Table' }}</th>
                     <th class="p-4">Status</th>
                     <th class="p-4 text-right">Actions</th>
                 </tr>
@@ -48,21 +48,50 @@
             <tbody class="divide-y divide-gray-100 dark:divide-gray-700/60">
                 @forelse ($reservations as $res)
                     <tr>
-                        <td class="p-4 font-mono font-bold text-gray-900 dark:text-white">{{ $res->reservation_time }}</td>
+                        <td class="p-4 font-mono font-bold text-gray-900 dark:text-white">
+                            {{ $res->reservation_time }}{{ $res->end_time ? ' - ' . $res->end_time : '' }}
+                            @if($res->booking_code)
+                                <div class="text-[10px] text-orange-600">{{ $res->booking_code }}</div>
+                            @endif
+                        </td>
                         <td class="p-4 font-bold text-gray-900 dark:text-white">{{ $res->customer_name }}</td>
                         <td class="p-4 font-mono text-slate-500">{{ $res->customer_phone }}</td>
-                        <td class="p-4 font-bold">{{ $res->party_size }} guests</td>
-                        <td class="p-4">{{ $res->table ? 'Table ' . $res->table->table_number : 'Unassigned' }}</td>
+                        <td class="p-4 font-bold">
+                            @if($res->booking_type === 'service')
+                                {{ $res->serviceProduct?->name_en ?? 'Service Visit' }}
+                                @if($res->price_usd)
+                                    <span class="text-emerald-600 font-mono ml-1">${{ number_format((float) $res->price_usd, 2) }}</span>
+                                @endif
+                            @else
+                                {{ $res->party_size }} guests
+                            @endif
+                        </td>
+                        <td class="p-4">
+                            @if($res->booking_type === 'service')
+                                {{ $res->staffMember?->user?->name ?? 'Any Staff' }}
+                            @else
+                                {{ $res->table ? 'Table ' . $res->table->table_number : 'Unassigned' }}
+                            @endif
+                        </td>
                         <td class="p-4">
                             <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase
                                 {{ $res->status === 'confirmed' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400' :
+                                   ($res->status === 'completed' ? 'bg-sky-50 text-sky-600 dark:bg-sky-950/40 dark:text-sky-400' :
                                    ($res->status === 'seated' ? 'bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400' :
-                                   ($res->status === 'cancelled' ? 'bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-400' : 'bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400')) }}">
+                                   ($res->status === 'cancelled' ? 'bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-400' : 'bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400'))) }}">
                                 {{ $res->status }}
                             </span>
                         </td>
                         <td class="p-4 text-right space-x-1">
-                            @if ($res->status !== 'seated')
+                            @if ($res->booking_type === 'service' && $res->status !== 'completed')
+                                <form method="POST" action="{{ route('business.reservations.update-status', $res) }}" class="inline">
+                                    @csrf
+                                    <input type="hidden" name="status" value="completed" />
+                                    <button type="submit" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-[10px] font-bold">
+                                        Complete
+                                    </button>
+                                </form>
+                            @elseif ($res->booking_type !== 'service' && $res->status !== 'seated')
                                 <form method="POST" action="{{ route('business.reservations.update-status', $res) }}" class="inline">
                                     @csrf
                                     <input type="hidden" name="status" value="seated" />
@@ -118,21 +147,43 @@
                         <input type="time" name="reservation_time" value="18:30" required class="w-full rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 p-2.5 text-xs text-gray-900 dark:text-white" />
                     </div>
                 </div>
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="block font-bold text-slate-500 mb-1">Party Size</label>
-                        <input type="number" name="party_size" value="2" min="1" max="100" required class="w-full rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 p-2.5 text-xs text-gray-900 dark:text-white font-bold" />
+                @if ($isServiceMode ?? false)
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block font-bold text-slate-500 mb-1">Service *</label>
+                            <select name="service_product_id" required class="w-full rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 p-2.5 text-xs text-gray-900 dark:text-white">
+                                @foreach ($services ?? collect() as $svc)
+                                    <option value="{{ $svc->id }}">{{ $svc->name_en }} (${{ number_format((float) $svc->effective_price, 2) }})</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block font-bold text-slate-500 mb-1">Specialist</label>
+                            <select name="staff_member_id" class="w-full rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 p-2.5 text-xs text-gray-900 dark:text-white">
+                                <option value="">Any Available Staff</option>
+                                @foreach ($staffMembers ?? collect() as $staff)
+                                    <option value="{{ $staff->id }}">{{ $staff->user?->name ?? 'Staff' }}</option>
+                                @endforeach
+                            </select>
+                        </div>
                     </div>
-                    <div>
-                        <label class="block font-bold text-slate-500 mb-1">Table</label>
-                        <select name="table_id" class="w-full rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 p-2.5 text-xs text-gray-900 dark:text-white">
-                            <option value="">Any Available Table</option>
-                            @foreach ($tables as $t)
-                                <option value="{{ $t->id }}">Table {{ $t->table_number }} ({{ $t->capacity }} seats)</option>
-                            @endforeach
-                        </select>
+                @else
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block font-bold text-slate-500 mb-1">Party Size</label>
+                            <input type="number" name="party_size" value="2" min="1" max="100" required class="w-full rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 p-2.5 text-xs text-gray-900 dark:text-white font-bold" />
+                        </div>
+                        <div>
+                            <label class="block font-bold text-slate-500 mb-1">Table</label>
+                            <select name="table_id" class="w-full rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 p-2.5 text-xs text-gray-900 dark:text-white">
+                                <option value="">Any Available Table</option>
+                                @foreach ($tables as $t)
+                                    <option value="{{ $t->id }}">Table {{ $t->table_number }} ({{ $t->capacity }} seats)</option>
+                                @endforeach
+                            </select>
+                        </div>
                     </div>
-                </div>
+                @endif
 
                 <div class="mt-5 pt-3 border-t border-gray-100 dark:border-gray-700/60 flex justify-end gap-2">
                     <button type="button" @click="addModal = false" class="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-xl text-xs font-bold">Cancel</button>

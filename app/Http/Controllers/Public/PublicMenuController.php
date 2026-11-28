@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Public;
 
 use App\Http\Controllers\Controller;
 use App\Models\Business;
+use App\Models\BusinessMember;
 use App\Models\BusinessPaymentConfig;
 use App\Models\Category;
 use App\Models\Order;
@@ -11,6 +12,7 @@ use App\Models\Product;
 use App\Models\QrCode;
 use App\Models\QrScanEvent;
 use App\Models\RestaurantTable;
+use App\Services\Business\CategoryExperienceService;
 use App\Services\Payment\BakongKhqrService;
 use App\Services\Payment\PaymentGatewayVisibilityService;
 use App\Services\Tenant\TenantContext;
@@ -22,11 +24,12 @@ class PublicMenuController extends Controller
     public function __construct(
         private PaymentGatewayVisibilityService $visibilityService,
         private BakongKhqrService $bakongKhqrService,
+        private CategoryExperienceService $categoryExperience,
     ) {
     }
 
     /**
-     * Display the public digital menu / product catalog for a business.
+     * Display the category-adapted public digital menu, storefront catalog, or service booking hub.
      */
     public function show(Request $request, string $business_slug): View
     {
@@ -55,34 +58,7 @@ class PublicMenuController extends Controller
             // Non-blocking
         }
 
-        $categories = Category::where('is_active', true)
-            ->with(['products' => function ($q) {
-                $q->where('is_available', true)->with(['variants', 'addons']);
-            }])
-            ->orderBy('sort_order')
-            ->get();
-
-        $featuredProducts = Product::where('is_available', true)
-            ->where('is_featured', true)
-            ->with(['variants', 'addons', 'category'])
-            ->take(8)
-            ->get();
-
-        $tables = RestaurantTable::where('is_active', true)->orderBy('table_number')->get();
-        $tableNumber = $request->query('table') ?? session("table_{$business->id}");
-
-        $paymentMethods = $this->visibilityService->resolveCheckoutMethods($business);
-        $pricingConfig = $this->buildPricingConfig($business);
-
-        return view('public.menu', compact(
-            'business',
-            'categories',
-            'featuredProducts',
-            'tables',
-            'tableNumber',
-            'paymentMethods',
-            'pricingConfig'
-        ));
+        return $this->renderStorefront($request, $business, null);
     }
 
     /**
@@ -120,24 +96,68 @@ class PublicMenuController extends Controller
 
         session(["table_{$business->id}" => $table_number]);
 
-        $categories = Category::where('is_active', true)
-            ->with(['products' => function ($q) {
-                $q->where('is_available', true)->with(['variants', 'addons']);
+        return $this->renderStorefront($request, $business, $table_number);
+    }
+
+    /**
+     * Assemble storefront data tailored to the active business category.
+     */
+    private function renderStorefront(Request $request, Business $business, ?string $forcedTableNumber): View
+    {
+        $categories = Category::where('business_id', $business->id)
+            ->where('is_active', true)
+            ->with(['products' => function ($q) use ($business): void {
+                $q->where('business_id', $business->id)
+                    ->where('is_available', true)
+                    ->with(['variants', 'addons']);
             }])
             ->orderBy('sort_order')
             ->get();
 
-        $featuredProducts = Product::where('is_available', true)
+        $featuredProducts = Product::where('business_id', $business->id)
+            ->where('is_available', true)
             ->where('is_featured', true)
             ->with(['variants', 'addons', 'category'])
             ->take(8)
             ->get();
 
-        $tables = RestaurantTable::where('is_active', true)->orderBy('table_number')->get();
-        $tableNumber = $table_number;
+        $categoryMeta = $this->categoryExperience->meta($business);
+        $storefrontConfig = $this->categoryExperience->storefrontConfig($business);
+        $terminology = $this->categoryExperience->terminology($business);
+
+        $tablesEnabled = $this->categoryExperience->isModuleEnabled($business, 'tables');
+        $tables = $tablesEnabled
+            ? RestaurantTable::where('business_id', $business->id)->where('is_active', true)->orderBy('table_number')->get()
+            : collect();
+        $tableNumber = $tablesEnabled
+            ? ($forcedTableNumber ?? $request->query('table') ?? session("table_{$business->id}"))
+            : null;
 
         $paymentMethods = $this->visibilityService->resolveCheckoutMethods($business);
         $pricingConfig = $this->buildPricingConfig($business);
+
+        $brands = collect();
+        if (! empty($storefrontConfig['show_retail_filters'])) {
+            $brands = $categories->flatMap->products
+                ->pluck('brand')
+                ->filter(fn ($b): bool => filled($b))
+                ->unique()
+                ->sort()
+                ->values();
+        }
+
+        $bookingServices = collect();
+        $staffMembers = collect();
+        if ($this->categoryExperience->isModuleEnabled($business, 'service_bookings')) {
+            $bookingServices = Product::where('business_id', $business->id)
+                ->where('is_available', true)
+                ->orderBy('sort_order')
+                ->get();
+            $staffMembers = BusinessMember::with('user')
+                ->where('business_id', $business->id)
+                ->where('is_active', true)
+                ->get();
+        }
 
         return view('public.menu', compact(
             'business',
@@ -146,7 +166,13 @@ class PublicMenuController extends Controller
             'tables',
             'tableNumber',
             'paymentMethods',
-            'pricingConfig'
+            'pricingConfig',
+            'categoryMeta',
+            'storefrontConfig',
+            'terminology',
+            'brands',
+            'bookingServices',
+            'staffMembers'
         ));
     }
 

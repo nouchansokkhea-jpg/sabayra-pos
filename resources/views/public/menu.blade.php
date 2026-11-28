@@ -1,3 +1,19 @@
+@php
+    $sfCfg = $storefrontConfig ?? [];
+    $sfMode = (string) ($sfCfg['mode'] ?? 'menu');
+    $allowedOrderTypes = (array) ($sfCfg['allowed_order_types'] ?? ['dine_in', 'takeaway', 'delivery']);
+    $showDrinkCustomizer = (bool) ($sfCfg['show_drink_customizer'] ?? false);
+    $showRetailFilters = (bool) ($sfCfg['show_retail_filters'] ?? false);
+    $showSku = (bool) ($sfCfg['show_sku'] ?? false);
+    $showPreOrder = (bool) ($sfCfg['show_pre_order'] ?? false);
+    $showBookingCalendar = (bool) ($sfCfg['show_booking_calendar'] ?? false);
+    $defaultPublicOrderType = (! empty($tableNumber) && in_array('dine_in', $allowedOrderTypes, true))
+        ? 'dine_in'
+        : ($allowedOrderTypes[0] ?? 'takeaway');
+    $searchPlaceholder = app()->getLocale() === 'km'
+        ? ($sfCfg['search_placeholder_km'] ?? 'ស្វែងរកមុខម្ហូប ឬទំនិញ...')
+        : ($sfCfg['search_placeholder_en'] ?? 'Search dishes, drinks, or items...');
+@endphp
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="h-full bg-gray-50 dark:bg-gray-950">
 <head>
@@ -5,7 +21,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>{{ $business->name }} - Digital Menu</title>
+    <title>{{ $business->name }} - {{ $sfCfg['title_en'] ?? 'Digital Menu' }}</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -228,21 +244,38 @@
         </div>
     </div>
 
-    <!-- Real-time Dish Search Bar -->
-    <div class="max-w-4xl mx-auto px-4 sm:px-6 pt-3 pb-1">
+    <!-- Real-time Search & Retail Filters Bar -->
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 pt-3 pb-1 space-y-2.5">
         <div class="relative">
             <svg class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
             </svg>
             <input type="text"
                    x-model="searchQuery"
-                   placeholder="{{ app()->getLocale() === 'km' ? 'ស្វែងរកមុខម្ហូប ឬភេសជ្ជៈ... (Search dishes, drinks...)' : 'Search dishes, drinks, or ingredients...' }}"
+                   placeholder="{{ $searchPlaceholder }}"
                    style="--tw-ring-color: var(--brand-primary);"
                    class="w-full pl-10 pr-9 py-2.5 rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-sm text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-400 focus:outline-none focus:ring-2 shadow-xs transition">
             <button type="button" x-show="searchQuery.length > 0" @click="searchQuery = ''" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 dark:hover:text-white p-1">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
             </button>
         </div>
+
+        @if ($showRetailFilters)
+            <div class="flex flex-wrap items-center gap-2 text-xs">
+                @if (($brands ?? collect())->isNotEmpty())
+                    <select x-model="brandFilter" class="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200 px-3 py-1.5 text-xs font-semibold">
+                        <option value="">All Brands</option>
+                        @foreach($brands as $brandName)
+                            <option value="{{ strtolower($brandName) }}">{{ $brandName }}</option>
+                        @endforeach
+                    </select>
+                @endif
+                <label class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200 cursor-pointer font-semibold">
+                    <input type="checkbox" x-model="inStockOnly" class="rounded text-orange-600 focus:ring-orange-500">
+                    <span>In Stock Only</span>
+                </label>
+            </div>
+        @endif
     </div>
 
     <!-- Sticky Horizontal Category Navigation -->
@@ -265,8 +298,12 @@
         </div>
     </div>
 
-    <!-- Main Menu Catalog Container -->
+    <!-- Main Menu / Catalog / Booking Container -->
     <main class="max-w-4xl mx-auto px-4 sm:px-6 pt-6 space-y-8">
+        @if ($showBookingCalendar && ($bookingServices ?? collect())->isNotEmpty())
+            @include('public.partials.booking-widget')
+        @endif
+
         <!-- Featured Items Section -->
         @if ($featuredProducts->count() > 0)
             <div x-show="activeCategory === 'all' && (!searchQuery || searchQuery.trim() === '')">
@@ -395,8 +432,13 @@
                     <!-- Layout Option: Modern Clean Cards (Default) -->
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4">
                         @forelse ($category->products as $product)
+                            @php
+                                $searchKey = strtolower(trim($product->name_en . ' ' . $product->name_km . ' ' . $product->description_en . ' ' . $product->description_km . ' ' . $product->sku . ' ' . $product->barcode . ' ' . $product->brand));
+                                $prodBrand = strtolower((string) ($product->brand ?? ''));
+                                $prodInStock = (!$product->track_inventory || (float) $product->stock_quantity > 0) ? 'true' : 'false';
+                            @endphp
                             <div class="p-3 sm:p-4 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700/60 shadow-xs hover:shadow-md transition flex items-center space-x-3.5 cursor-pointer"
-                                 x-show="matchesSearch(@js(strtolower($product->name_en . ' ' . $product->name_km . ' ' . $product->description_en . ' ' . $product->description_km)))"
+                                 x-show="matchesItem(@js($searchKey), @js($prodBrand), {{ $prodInStock }})"
                                  @click="openProductModal({{ json_encode($product) }})">
                                 <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-xl bg-gray-100 dark:bg-gray-700 shrink-0 overflow-hidden relative">
                                     @if ($product->primary_image_url)
@@ -413,14 +455,29 @@
 
                                 <div class="grow min-w-0">
                                     <h3 class="font-bold text-sm text-gray-900 dark:text-white truncate">{{ $product->localized_name }}</h3>
+                                    @if ($showSku && ($product->sku || $product->brand))
+                                        <p class="text-[10px] font-mono text-gray-500 dark:text-gray-400 truncate">{{ $product->brand ? $product->brand . ' · ' : '' }}{{ $product->sku }}</p>
+                                    @endif
+                                    @if ($product->duration_minutes)
+                                        <span class="inline-block text-[10px] font-bold text-sky-600 dark:text-sky-400">{{ $product->duration_minutes }} min session</span>
+                                    @endif
                                     <p class="text-xs text-slate-600 dark:text-slate-300 font-medium line-clamp-2 mt-0.5">{{ $product->localized_description }}</p>
-                                    <div class="mt-2 flex items-center justify-between">
+                                    <div class="mt-2 flex items-center justify-between gap-2">
                                         <x-khr-price :usd="$product->effective_price" size="base" />
-                                        <button type="button"
-                                                style="background-color: var(--brand-primary); color: #fff;"
-                                                class="px-3.5 py-1.5 text-xs font-bold rounded-xl transition shadow-xs hover:opacity-90 active:scale-95">
-                                            {{ __('menu.add_to_cart') }}
-                                        </button>
+                                        @if ($sfMode === 'booking')
+                                            <button type="button"
+                                                    @click.stop="$dispatch('select-booking-service', '{{ $product->id }}')"
+                                                    style="background-color: var(--brand-primary); color: #fff;"
+                                                    class="px-3.5 py-1.5 text-xs font-bold rounded-xl transition shadow-xs hover:opacity-90 active:scale-95">
+                                                Book Slot
+                                            </button>
+                                        @else
+                                            <button type="button"
+                                                    style="background-color: var(--brand-primary); color: #fff;"
+                                                    class="px-3.5 py-1.5 text-xs font-bold rounded-xl transition shadow-xs hover:opacity-90 active:scale-95">
+                                                {{ __('menu.add_to_cart') }}
+                                            </button>
+                                        @endif
                                     </div>
                                 </div>
                             </div>
@@ -518,6 +575,44 @@
                     </div>
                 </template>
 
+                @if ($showDrinkCustomizer)
+                    <div class="space-y-2.5 p-3 rounded-2xl bg-gray-50 dark:bg-gray-800/70 border border-gray-200 dark:border-gray-700 text-xs">
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-600 dark:text-gray-300 uppercase mb-1">Temperature</label>
+                            <div class="grid grid-cols-2 gap-1.5">
+                                <template x-for="tempOpt in ['Iced', 'Hot']" :key="tempOpt">
+                                    <button type="button" @click="modalDrinkOptions.temp = tempOpt"
+                                            :style="modalDrinkOptions.temp === tempOpt ? 'background-color: var(--brand-primary); color: #fff;' : ''"
+                                            :class="modalDrinkOptions.temp === tempOpt ? 'font-bold' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300'"
+                                            class="py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 transition" x-text="tempOpt"></button>
+                                </template>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-600 dark:text-gray-300 uppercase mb-1">Sugar Level</label>
+                            <div class="grid grid-cols-5 gap-1 text-[11px]">
+                                <template x-for="sugarOpt in ['0%', '25%', '50%', '75%', '100%']" :key="sugarOpt">
+                                    <button type="button" @click="modalDrinkOptions.sugar = sugarOpt"
+                                            :style="modalDrinkOptions.sugar === sugarOpt ? 'background-color: var(--brand-primary); color: #fff;' : ''"
+                                            :class="modalDrinkOptions.sugar === sugarOpt ? 'font-bold' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300'"
+                                            class="py-1 rounded-lg border border-gray-200 dark:border-gray-700 transition" x-text="sugarOpt"></button>
+                                </template>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-600 dark:text-gray-300 uppercase mb-1">Ice Level</label>
+                            <div class="grid grid-cols-4 gap-1 text-[11px]">
+                                <template x-for="iceOpt in ['No Ice', 'Less Ice', 'Normal', 'Extra']" :key="iceOpt">
+                                    <button type="button" @click="modalDrinkOptions.ice = iceOpt"
+                                            :style="modalDrinkOptions.ice === iceOpt ? 'background-color: var(--brand-primary); color: #fff;' : ''"
+                                            :class="modalDrinkOptions.ice === iceOpt ? 'font-bold' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300'"
+                                            class="py-1 rounded-lg border border-gray-200 dark:border-gray-700 transition" x-text="iceOpt"></button>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+                @endif
+
                 <!-- Quantity Stepper -->
                 <div class="flex items-center justify-between pt-2">
                     <span class="text-xs font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Quantity</span>
@@ -574,28 +669,34 @@
 
                 <!-- Checkout Form -->
                 <form @submit.prevent="submitOrder" novalidate class="space-y-4 pt-4 border-t border-gray-200 dark:border-gray-800 text-xs">
+                    @php
+                        $publicOrderLabels = ['dine_in' => 'Dine-In', 'takeaway' => 'Pickup / Takeaway', 'delivery' => 'Delivery'];
+                    @endphp
                     <div>
-                        <label class="block font-bold uppercase tracking-wider text-gray-800 dark:text-gray-200 mb-1">Dining Option</label>
-                        <div class="grid grid-cols-3 gap-2">
-                            <button type="button" @click="orderType = 'dine_in'"
-                                    :style="orderType === 'dine_in' ? 'background-color: var(--brand-primary); color: #fff;' : ''"
-                                    :class="orderType === 'dine_in' ? 'font-bold' : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'"
-                                    class="py-2 rounded-xl text-center transition">Dine-In</button>
-                            <button type="button" @click="orderType = 'takeaway'"
-                                    :style="orderType === 'takeaway' ? 'background-color: var(--brand-primary); color: #fff;' : ''"
-                                    :class="orderType === 'takeaway' ? 'font-bold' : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'"
-                                    class="py-2 rounded-xl text-center transition">Takeaway</button>
-                            <button type="button" @click="orderType = 'delivery'"
-                                    :style="orderType === 'delivery' ? 'background-color: var(--brand-primary); color: #fff;' : ''"
-                                    :class="orderType === 'delivery' ? 'font-bold' : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'"
-                                    class="py-2 rounded-xl text-center transition">Delivery</button>
+                        <label class="block font-bold uppercase tracking-wider text-gray-800 dark:text-gray-200 mb-1">Order Option</label>
+                        <div class="grid grid-cols-{{ count($allowedOrderTypes) }} gap-2">
+                            @foreach ($allowedOrderTypes as $ot)
+                                <button type="button" @click="orderType = '{{ $ot }}'"
+                                        :style="orderType === '{{ $ot }}' ? 'background-color: var(--brand-primary); color: #fff;' : ''"
+                                        :class="orderType === '{{ $ot }}' ? 'font-bold' : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'"
+                                        class="py-2 rounded-xl text-center transition">{{ $publicOrderLabels[$ot] ?? ucfirst($ot) }}</button>
+                            @endforeach
                         </div>
                     </div>
 
-                    <div x-show="orderType === 'dine_in'">
-                        <label class="block font-bold uppercase tracking-wider text-gray-800 dark:text-gray-200 mb-1">Table Number *</label>
-                        <input type="text" x-model="tableNumber" placeholder="e.g. 1, 2, A5..." class="w-full rounded-xl border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white px-3 py-2 text-xs">
-                    </div>
+                    @if (in_array('dine_in', $allowedOrderTypes, true))
+                        <div x-show="orderType === 'dine_in'">
+                            <label class="block font-bold uppercase tracking-wider text-gray-800 dark:text-gray-200 mb-1">Table Number *</label>
+                            <input type="text" x-model="tableNumber" placeholder="e.g. 1, 2, A5..." class="w-full rounded-xl border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white px-3 py-2 text-xs">
+                        </div>
+                    @endif
+
+                    @if ($showPreOrder)
+                        <div>
+                            <label class="block font-bold uppercase tracking-wider text-gray-800 dark:text-gray-200 mb-1">Pickup / Cake Pre-Order Date &amp; Time</label>
+                            <input type="datetime-local" x-model="scheduledFor" class="w-full rounded-xl border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white px-3 py-2 text-xs">
+                        </div>
+                    @endif
 
                     <div x-show="orderType === 'delivery'" style="display: none;">
                         <label class="block font-bold uppercase tracking-wider text-gray-800 dark:text-gray-200 mb-1">Delivery Address *</label>
@@ -738,6 +839,8 @@
         function menuCartApp() {
             return {
                 searchQuery: '',
+                brandFilter: '',
+                inStockOnly: false,
                 openingHoursModalOpen: false,
                 activeCategory: 'all',
                 cart: JSON.parse(localStorage.getItem('cart_{{ $business->id }}') || '[]'),
@@ -746,9 +849,11 @@
                 selectedProduct: null,
                 modalSelectedVariantId: null,
                 modalSelectedAddonIds: [],
+                modalDrinkOptions: { temp: 'Iced', sugar: '50%', ice: 'Normal' },
                 modalQuantity: 1,
-                orderType: '{{ $tableNumber ? "dine_in" : "dine_in" }}',
+                orderType: '{{ $defaultPublicOrderType }}',
                 tableNumber: '{{ $tableNumber ?? "" }}',
+                scheduledFor: '',
                 deliveryAddress: '',
                 customerName: localStorage.getItem('customer_name') || '',
                 customerPhone: localStorage.getItem('customer_phone') || '',
@@ -778,6 +883,13 @@
                 matchesSearch(haystack) {
                     if (!this.searchQuery || this.searchQuery.trim() === '') return true;
                     return (haystack || '').toLowerCase().includes(this.searchQuery.toLowerCase().trim());
+                },
+
+                matchesItem(haystack, brand, inStock) {
+                    if (!this.matchesSearch(haystack)) return false;
+                    if (this.brandFilter && brand !== this.brandFilter) return false;
+                    if (this.inStockOnly && !inStock) return false;
+                    return true;
                 },
 
                 get cartTotalCount() {
@@ -820,6 +932,7 @@
                     this.selectedProduct = product;
                     this.modalSelectedVariantId = product.variants && product.variants.length > 0 ? product.variants[0].id : null;
                     this.modalSelectedAddonIds = [];
+                    this.modalDrinkOptions = { temp: 'Iced', sugar: '50%', ice: 'Normal' };
                     this.modalQuantity = 1;
                     this.productModalOpen = true;
                 },
@@ -842,6 +955,7 @@
 
                     // Addons
                     const addons = [...this.modalSelectedAddonIds];
+                    const showDrinkOpts = {{ $showDrinkCustomizer ? 'true' : 'false' }};
 
                     this.cart.push({
                         product_id: this.selectedProduct.id,
@@ -849,6 +963,7 @@
                         variant_id: this.modalSelectedVariantId,
                         variant_name: variantName,
                         addons: addons,
+                        options: showDrinkOpts ? { ...this.modalDrinkOptions } : null,
                         unit_price: basePrice,
                         quantity: this.modalQuantity,
                     });
@@ -905,6 +1020,7 @@
                                 order_type: this.orderType,
                                 table_number: this.orderType === 'dine_in' ? this.tableNumber.trim() : null,
                                 delivery_address: this.orderType === 'delivery' ? this.deliveryAddress.trim() : null,
+                                scheduled_for: this.scheduledFor || null,
                                 payment_method: this.paymentMethod,
                                 items: this.cart,
                             })

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Business;
 
 use App\Http\Controllers\Controller;
 use App\Models\RestaurantTable;
+use App\Services\Business\CategoryExperienceService;
 use App\Services\Qr\QrCodeService;
 use App\Services\Tenant\TenantContext;
 use Illuminate\Contracts\View\View;
@@ -12,16 +13,24 @@ use Illuminate\Http\Request;
 
 class QrStudioController extends Controller
 {
-    public function __construct(protected QrCodeService $qrCodeService) {}
+    public function __construct(
+        protected QrCodeService $qrCodeService,
+        protected CategoryExperienceService $categoryExperience
+    ) {}
 
     /**
-     * Display QR Code Studio with customization and downloads.
+     * Display QR Code Studio with category-aware framing and downloads.
      */
     public function index(): View
     {
         $business = TenantContext::get();
-        $tables = RestaurantTable::with('qrCode')->where('business_id', $business->id)->orderBy('table_number')->get();
+        $tablesEnabled = $this->categoryExperience->isModuleEnabled($business, 'tables');
+        $tables = $tablesEnabled
+            ? RestaurantTable::with('qrCode')->where('business_id', $business->id)->orderBy('table_number')->get()
+            : collect();
         $publicMenuUrl = QrCodeService::getMenuUrl($business);
+        $categoryMeta = $this->categoryExperience->meta($business);
+        $storefrontConfig = $this->categoryExperience->storefrontConfig($business);
 
         $qrSettings = $business->theme_settings['qr'] ?? [
             'color' => '#f97316',
@@ -30,7 +39,15 @@ class QrStudioController extends Controller
             'show_logo' => true,
         ];
 
-        return view('business.qr.index', compact('business', 'tables', 'publicMenuUrl', 'qrSettings'));
+        return view('business.qr.index', compact(
+            'business',
+            'tables',
+            'tablesEnabled',
+            'publicMenuUrl',
+            'qrSettings',
+            'categoryMeta',
+            'storefrontConfig'
+        ));
     }
 
     /**

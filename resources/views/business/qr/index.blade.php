@@ -104,15 +104,15 @@
                     <div class="flex flex-col sm:flex-row items-center gap-6">
                         <div class="p-4 bg-white rounded-2xl border-2 border-dashed border-orange-200 dark:border-zinc-700 shadow-inner flex flex-col items-center">
                             <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data={{ urlencode($publicMenuUrl) }}&color=000000" alt="Main Storefront QR" class="w-44 h-44 rounded-lg">
-                            <span class="text-[11px] font-bold text-zinc-700 dark:text-zinc-200 uppercase tracking-wider mt-2">{{ __('Scan For Storefront') }}</span>
+                            <span class="text-[11px] font-bold text-zinc-700 dark:text-zinc-200 uppercase tracking-wider mt-2">{{ $storefrontConfig['title_en'] ?? 'Storefront' }} QR</span>
                         </div>
                         <div class="flex-1 space-y-3 text-center sm:text-left">
                             <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-800 dark:bg-orange-950/40 dark:text-orange-300">
-                                {{ __('Public Storefront QR') }}
+                                {{ $categoryMeta['name_en'] ?? 'Public Storefront' }} · {{ ucfirst($storefrontConfig['mode'] ?? 'catalog') }} Mode
                             </div>
                             <h3 class="text-xl font-bold text-zinc-900 dark:text-zinc-100">{{ $business->name }}</h3>
                             <p class="text-sm text-zinc-600 dark:text-zinc-300 font-medium">
-                                {{ __('Customers can scan this code to browse products, view prices in USD/KHR, and place pickup or delivery orders.') }}
+                                Customers can scan this QR code to open your {{ strtolower($storefrontConfig['title_en'] ?? 'digital storefront') }}, view prices in USD/KHR, and {{ ($storefrontConfig['mode'] ?? 'menu') === 'booking' ? 'book appointments online' : 'submit pickup or delivery orders' }}.
                             </p>
                             <div class="p-3 bg-zinc-50 dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-700 text-xs font-mono text-zinc-600 dark:text-zinc-300 break-all">
                                 {{ $publicMenuUrl }}
@@ -129,8 +129,9 @@
                     </div>
                 </div>
 
-                <!-- Table QR Codes (If tables exist) -->
-                <div class="bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700/60 rounded-2xl p-6 shadow-sm">
+                @if ($tablesEnabled ?? true)
+                    <!-- Table QR Codes (Hospitality Categories Only) -->
+                    <div class="bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700/60 rounded-2xl p-6 shadow-sm">
                     <div class="flex items-center justify-between mb-4">
                         <div>
                             <h3 class="text-base font-bold text-zinc-900 dark:text-zinc-100">{{ __('Dine-In Table QR Codes') }}</h3>
@@ -167,7 +168,8 @@
                             @endforeach
                         </div>
                     @endif
-                </div>
+                    </div>
+                @endif
             </div>
         </div>
     </div>
