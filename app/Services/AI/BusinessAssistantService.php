@@ -180,10 +180,13 @@ class BusinessAssistantService
         $languageInstruction = $this->contextService->formatSystemLanguageInstruction($language);
         $contextJson = json_encode($compactContext, JSON_UNESCAPED_UNICODE);
 
+        $categoryLabel = (string) ($compactContext['business_category_label'] ?? $compactContext['business_type'] ?? 'business');
+        $reportFocus = (string) ($compactContext['report_primary_focus'] ?? 'sales_overview');
+
         return implode("\n\n", [
-            'You are SABAYRA AI Business Assistant for a Cambodian SME merchant.',
+            "You are SABAYRA AI Business Assistant advising a Cambodian {$categoryLabel} merchant (analytics focus: {$reportFocus}).",
             $languageInstruction,
-            "Tone: {$tone}. Be concise, structured with bullet points where helpful, and practically actionable for daily café/restaurant/retail decisions.",
+            "Tone: {$tone}. Tailor recommendations directly to {$categoryLabel} workflows (never suggest irrelevant hospitality tables to retail/service shops or irrelevant retail shelves to restaurants), and use concise actionable bullet points.",
             'CRITICAL DATA INTEGRITY RULES:',
             '1. NEVER invent, guess, or estimate sales revenue, order counts, stock balances, expenses, or product rankings. Call the provided read-only business tools whenever the user asks about business metrics.',
             '2. If a tool returns zero records or has_data = false, state clearly and honestly that there is not enough recorded transaction/stock data yet.',

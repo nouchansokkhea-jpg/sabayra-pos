@@ -6,6 +6,8 @@ use App\Models\Business;
 use App\Models\Category;
 use App\Models\Order;
 use App\Models\Product;
+use App\Models\Reservation;
+use App\Services\Business\CategoryExperienceService;
 use Illuminate\Support\Carbon;
 
 class AIContextService
@@ -77,10 +79,22 @@ class AIContextService
         $ordersLast30Days = (clone $ordersQuery)->count();
         $revenueLast30Days = (float) (clone $ordersQuery)->sum('total_amount');
 
-        return [
+        $experienceService = app(CategoryExperienceService::class);
+        $meta = $experienceService->meta($business);
+        $posCfg = $experienceService->posConfig($business);
+        $sfCfg = $experienceService->storefrontConfig($business);
+        $reportCfg = $experienceService->reportConfig($business);
+        $terminology = $experienceService->terminology($business);
+
+        $context = [
             'business_name' => $business->name,
-            'business_type' => $business->business_type ?? 'restaurant',
-            'currency' => $business->currency ?? 'USD',
+            'business_type' => $meta['key'],
+            'business_category_label' => "{$meta['name_en']} ({$meta['name_km']})",
+            'pos_mode' => (string) ($posCfg['mode'] ?? 'standard'),
+            'storefront_mode' => (string) ($sfCfg['mode'] ?? 'catalog'),
+            'report_primary_focus' => (string) ($reportCfg['primary_focus'] ?? 'sales_overview'),
+            'catalog_terminology' => (string) ($terminology['catalog'] ?? 'Products'),
+            'currency' => $business->default_currency ?? 'USD',
             'exchange_rate_khr' => (float) ($business->exchange_rate_khr ?: config('menuhub.default_exchange_rate_khr', 4100)),
             'timezone' => config('app.timezone', 'Asia/Phnom_Penh'),
             'active_categories_count' => $activeCategoriesCount,
@@ -89,6 +103,24 @@ class AIContextService
             'orders_last_30_days' => $ordersLast30Days,
             'revenue_last_30_days_usd' => round($revenueLast30Days, 2),
         ];
+
+        if ($experienceService->isModuleEnabled($business, 'expiry_tracking')) {
+            $context['expiring_within_14_days_count'] = Product::withoutGlobalScopes()
+                ->where('business_id', $business->id)
+                ->whereNotNull('expiry_date')
+                ->whereDate('expiry_date', '<=', Carbon::today()->addDays(14))
+                ->count();
+        }
+
+        if ($experienceService->isModuleEnabled($business, 'service_bookings')) {
+            $context['upcoming_service_bookings_count'] = Reservation::where('business_id', $business->id)
+                ->where('booking_type', 'service')
+                ->whereIn('status', ['pending', 'confirmed'])
+                ->whereDate('reservation_date', '>=', Carbon::today())
+                ->count();
+        }
+
+        return $context;
     }
 
     /**

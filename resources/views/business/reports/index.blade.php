@@ -188,6 +188,7 @@
                                 <span class="font-bold text-slate-800 dark:text-slate-200 capitalize flex items-center gap-2">
                                     @if($chan->order_type === 'dine_in') 🍽️ Dine-In
                                     @elseif($chan->order_type === 'takeaway') 🛍️ Takeaway
+                                    @elseif($chan->order_type === 'service') ✨ In-Shop Service
                                     @else 🛵 Delivery
                                     @endif
                                     <span class="text-slate-600 dark:text-slate-300 font-medium">({{ $chan->count }} orders)</span>
@@ -201,10 +202,10 @@
                 </div>
             </div>
 
-            <!-- Top 5 Selling Products -->
+            <!-- Top 5 Selling Items -->
             <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-slate-200/80 dark:border-gray-700 p-6">
                 <h3 class="font-bold text-base text-slate-900 dark:text-white pb-3 border-b border-slate-100 dark:border-gray-700">
-                    {{ __('Top 5 Best Selling Items') }}
+                    Top 5 Best Selling {{ $terminology['catalog'] ?? 'Items' }}
                 </h3>
 
                 @if($topProducts->isEmpty())
@@ -226,6 +227,36 @@
                 @endif
             </div>
         </div>
+
+        @if (!empty($sectorReport['kpis']))
+            <!-- Sector-Specific Intelligence Report -->
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-slate-200/80 dark:border-gray-700 p-6 space-y-4">
+                <div class="flex items-center justify-between border-b border-slate-100 dark:border-gray-700 pb-3">
+                    <h3 class="font-bold text-base text-slate-900 dark:text-white">{{ $sectorReport['title'] }}</h3>
+                    <span class="text-xs font-bold text-orange-600 dark:text-orange-400">{{ $categoryMeta['name_en'] ?? '' }}</span>
+                </div>
+
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    @foreach ($sectorReport['kpis'] as $kpi)
+                        <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-gray-900/50 border border-slate-200/70 dark:border-gray-700">
+                            <span class="text-[11px] font-bold uppercase text-slate-500 dark:text-slate-400">{{ $kpi['label'] }}</span>
+                            <div class="mt-1 text-xl font-black text-slate-900 dark:text-white font-mono">{{ $kpi['value'] }}</div>
+                        </div>
+                    @endforeach
+                </div>
+
+                @if (!empty($sectorReport['rows']))
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2">
+                        @foreach ($sectorReport['rows'] as $row)
+                            <div class="p-3 rounded-xl bg-slate-50 dark:bg-gray-900/50 border border-slate-200/70 dark:border-gray-700 flex items-center justify-between text-xs">
+                                <span class="font-bold text-slate-900 dark:text-white">{{ $row['name'] }} <span class="text-slate-500 font-normal">({{ $row['count'] }})</span></span>
+                                <span class="font-mono font-bold text-emerald-600 dark:text-emerald-400">{{ $row['value'] }}</span>
+                            </div>
+                        @endforeach
+                    </div>
+                @endif
+            </div>
+        @endif
     </div>
 
     <!-- Chart.js Script -->

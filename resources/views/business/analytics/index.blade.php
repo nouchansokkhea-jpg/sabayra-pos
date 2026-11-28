@@ -1,10 +1,40 @@
 <x-business-layout title="Analytics" heading="Business Intelligence & Analytics">
 <div class="space-y-6">
 
-    <div class="p-4 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 rounded-2xl shadow-xs">
-        <h3 class="text-sm font-bold text-gray-900 dark:text-white">Commercial Velocity & Traffic Analytics</h3>
-        <p class="text-xs text-slate-400">Peak dining hours, category revenue distribution, and checkout preferences.</p>
+    <div class="p-4 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 rounded-2xl shadow-xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        <div>
+            <h3 class="text-sm font-bold text-gray-900 dark:text-white">{{ $categoryMeta['name_en'] ?? 'Commercial' }} Velocity &amp; Analytics</h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Tailored peak hours, {{ strtolower($categoryMeta['name_en'] ?? 'business') }} insights, and payment distribution.</p>
+        </div>
+        <span class="px-2.5 py-1 rounded-xl text-[11px] font-bold bg-orange-50 dark:bg-orange-950/50 text-orange-700 dark:text-orange-300 border border-orange-200 dark:border-orange-800">
+            {{ $categoryMeta['name_km'] ?? '' }}
+        </span>
     </div>
+
+    @if (!empty($sectorInsights['cards']))
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            @foreach ($sectorInsights['cards'] as $card)
+                <div class="p-4 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 rounded-2xl shadow-xs">
+                    <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">{{ $card['label'] }}</span>
+                    <div class="mt-1 text-2xl font-black text-slate-900 dark:text-white">{{ $card['value'] }}</div>
+                </div>
+            @endforeach
+        </div>
+    @endif
+
+    @if (!empty($sectorInsights['rows']))
+        <div class="p-6 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 rounded-2xl shadow-xs">
+            <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">{{ $sectorInsights['rows_title'] }}</h4>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                @foreach ($sectorInsights['rows'] as $row)
+                    <div class="p-3 rounded-xl bg-slate-50 dark:bg-gray-900/60 border border-gray-200 dark:border-gray-700 flex items-center justify-between text-xs">
+                        <span class="font-bold text-slate-900 dark:text-white">{{ $row['label'] }}</span>
+                        <span class="font-mono font-bold text-emerald-600 dark:text-emerald-400">{{ $row['value'] }}</span>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    @endif
 
     <!-- Row 1: Peak Hours Distribution Bar Chart -->
     <div class="p-6 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 rounded-2xl shadow-xs">

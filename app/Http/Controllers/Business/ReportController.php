@@ -3,9 +3,14 @@
 namespace App\Http\Controllers\Business;
 
 use App\Http\Controllers\Controller;
+use App\Models\Business;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\Product;
+use App\Models\ProductVariant;
 use App\Models\QrScanEvent;
+use App\Models\Reservation;
+use App\Services\Business\CategoryExperienceService;
 use App\Services\Tenant\TenantContext;
 use Carbon\Carbon;
 use Illuminate\Contracts\View\View;
@@ -15,6 +20,10 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ReportController extends Controller
 {
+    public function __construct(
+        private readonly CategoryExperienceService $categoryExperience
+    ) {
+    }
     /**
      * Display comprehensive business financial analytics, tax & service charge summaries, and sales reports.
      */
@@ -119,6 +128,16 @@ class ReportController extends Controller
             $viewsChartData[] = $dayViews;
         }
 
+        $categoryMeta = $this->categoryExperience->meta($business);
+        $reportConfig = $this->categoryExperience->reportConfig($business);
+        $terminology = $this->categoryExperience->terminology($business);
+        $sectorReport = $this->buildSectorReport(
+            $business,
+            (string) ($reportConfig['primary_focus'] ?? 'sales_overview'),
+            $startDate,
+            $endDate
+        );
+
         return view('business.reports.index', compact(
             'business',
             'period',
@@ -147,8 +166,119 @@ class ReportController extends Controller
             'topProducts',
             'chartLabels',
             'chartData',
-            'viewsChartData'
+            'viewsChartData',
+            'categoryMeta',
+            'reportConfig',
+            'terminology',
+            'sectorReport'
         ));
+    }
+
+    /**
+     * Compute category-specific financial & operational metrics for the active period.
+     *
+     * @return array<string, mixed>
+     */
+    private function buildSectorReport(Business $business, string $focus, Carbon $startDate, Carbon $endDate): array
+    {
+        if ($focus === 'services') {
+            $bookings = Reservation::with(['serviceProduct', 'staffMember.user'])
+                ->where('business_id', $business->id)
+                ->where('booking_type', 'service')
+                ->whereDate('reservation_date', '>=', $startDate->toDateString())
+                ->whereDate('reservation_date', '<=', $endDate->toDateString())
+                ->get();
+
+            $completed = $bookings->where('status', 'completed')->count();
+            $cancelled = $bookings->where('status', 'cancelled')->count();
+            $total = $bookings->count();
+
+            $staffRows = $bookings
+                ->groupBy(fn (Reservation $r): string => $r->staffMember?->user?->name ?? 'Unassigned')
+                ->map(fn ($grp, string $staffName): array => [
+                    'name' => $staffName,
+                    'count' => $grp->count(),
+                    'completed' => $grp->where('status', 'completed')->count(),
+                    'value' => '$' . number_format((float) $grp->where('status', 'completed')->sum('price_usd'), 2),
+                ])
+                ->values()
+                ->all();
+
+            return [
+                'title' => 'Service Bookings & Staff Performance',
+                'kpis' => [
+                    ['label' => 'Period Bookings', 'value' => (string) $total],
+                    ['label' => 'Completed Services', 'value' => (string) $completed],
+                    ['label' => 'Cancelled Bookings', 'value' => (string) $cancelled],
+                    ['label' => 'Completion Rate', 'value' => ($total > 0 ? round(($completed / $total) * 100) : 100) . '%'],
+                ],
+                'rows' => $staffRows,
+            ];
+        }
+
+        if ($focus === 'fashion') {
+            $variantBreakdown = DB::table('order_items as oi')
+                ->join('orders as o', 'oi.order_id', '=', 'o.id')
+                ->join('product_variants as pv', 'oi.variant_id', '=', 'pv.id')
+                ->where('o.business_id', $business->id)
+                ->whereBetween('o.created_at', [$startDate, $endDate])
+                ->where('o.payment_status', 'paid')
+                ->select(
+                    DB::raw("COALESCE(pv.size, 'Standard') as size"),
+                    DB::raw("COALESCE(pv.color, pv.shade, 'Standard') as color"),
+                    DB::raw('SUM(oi.quantity) as qty'),
+                    DB::raw('SUM(oi.subtotal) as sales')
+                )
+                ->groupBy('pv.size', 'pv.color', 'pv.shade')
+                ->orderByDesc('qty')
+                ->take(8)
+                ->get();
+
+            return [
+                'title' => 'Fashion Sales by Size & Color',
+                'kpis' => [
+                    ['label' => 'Variant Lines Sold', 'value' => (string) $variantBreakdown->count()],
+                    ['label' => 'Remaining Variant Stock', 'value' => (string) ((int) ProductVariant::whereHas('product', fn ($q) => $q->where('business_id', $business->id))->sum('stock_quantity'))],
+                ],
+                'rows' => $variantBreakdown->map(fn ($r): array => [
+                    'name' => trim($r->size . ' / ' . $r->color),
+                    'count' => (int) $r->qty,
+                    'value' => '$' . number_format((float) $r->sales, 2),
+                ])->all(),
+            ];
+        }
+
+        if (in_array($focus, ['retail', 'beauty', 'bakery'], true)) {
+            $tracked = Product::where('business_id', $business->id)->where('track_inventory', true)->get();
+            $costValue = round((float) $tracked->sum(fn (Product $p): float => max(0, (float) $p->stock_quantity) * (float) ($p->cost_price ?? 0)), 2);
+            $retailValue = round((float) $tracked->sum(fn (Product $p): float => max(0, (float) $p->stock_quantity) * (float) ($p->base_price ?? 0)), 2);
+            $expiringSoon = Product::where('business_id', $business->id)
+                ->whereNotNull('expiry_date')
+                ->whereDate('expiry_date', '<=', now()->addDays(30))
+                ->orderBy('expiry_date')
+                ->take(6)
+                ->get();
+
+            return [
+                'title' => 'Stock Valuation & Expiry Report',
+                'kpis' => [
+                    ['label' => 'Stock Cost Value', 'value' => '$' . number_format($costValue, 2)],
+                    ['label' => 'Stock Retail Value', 'value' => '$' . number_format($retailValue, 2)],
+                    ['label' => 'Items Expiring (30d)', 'value' => (string) $expiringSoon->count()],
+                ],
+                'rows' => $expiringSoon->map(fn (Product $p): array => [
+                    'name' => $p->name_en . ($p->batch_number ? " ({$p->batch_number})" : ''),
+                    'count' => (int) $p->stock_quantity,
+                    'value' => $p->expiry_date?->format('Y-m-d') ?? 'N/A',
+                ])->all(),
+            ];
+        }
+
+        return [
+            'title' => 'Hospitality & Channel Summary',
+            'kpis' => [],
+            'rows' => [],
+        ];
     }
 
     /**
