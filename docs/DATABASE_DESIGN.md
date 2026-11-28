@@ -136,3 +136,34 @@ CREATE TABLE security_logs (
     created_at TIMESTAMP
 );
 ```
+
+---
+
+## 3. Category-Based Business Experience Schema Extensions (`2026_11_28_000001_add_category_experience_columns.php`)
+
+Additive, idempotent (`Schema::hasColumn` / `Schema::hasTable` safe) extensions enabling retail barcodes/batches/expiry, fashion variant matrices, beverage customizations, bakery pre-orders, and online service appointments without disrupting existing hospitality records:
+
+1. **`products`**:
+   - `brand` (`VARCHAR(120)`, nullable) — Brand / Manufacturer for Retail, Beauty, Clothing.
+   - `batch_number` (`VARCHAR(120)`, nullable) — Production or batch/lot ID.
+   - `expiry_date` (`DATE`, nullable, indexed via `products_biz_expiry_idx`) — Expiry monitoring for Supermarket, Mini Mart, Bakery, Beauty.
+   - `duration_minutes` (`INTEGER`, nullable) — Session length for Services Business.
+   - `attributes_json` (`JSON`, nullable) — Extensible category-specific metadata.
+2. **`product_variants`**:
+   - `barcode` (`VARCHAR(100)`, nullable, indexed via `product_variants_barcode_idx`) — Per-variant barcode scan lookup.
+   - `size` (`VARCHAR(50)`, nullable) — Apparel size (`S`, `M`, `L`, `XL`, etc.).
+   - `color` (`VARCHAR(50)`, nullable) — Color option.
+   - `shade` (`VARCHAR(50)`, nullable) — Cosmetics shade / tone.
+3. **`orders`**:
+   - `scheduled_for` (`TIMESTAMP`, nullable) — Pickup / pre-order or appointment timestamp.
+   - `assigned_staff_id` (`UUID` FK &rarr; `business_members.id`, nullable, `SET NULL` on delete) — Staff / stylist / technician attribution.
+   - `pos_metadata` (`JSON`, nullable) — Sector POS checkout metadata.
+4. **`order_items`**:
+   - `options_json` (`JSON`, nullable) — Beverage customizations (`temp`, `sugar`, `ice`) and line-item preferences.
+5. **`reservations`**:
+   - `booking_type` (`VARCHAR(30)`, default `'table'`) — Distinguishes `'table'` dining reservations vs `'service'` appointments.
+   - `booking_code` (`VARCHAR(40)`, nullable, indexed via `reservations_biz_code_idx`) — Public appointment lookup code (`BK-YYMMDD-XXXX`).
+   - `service_product_id` (`UUID` FK &rarr; `products.id`, nullable, `SET NULL` on delete) — Booked catalog service.
+   - `staff_member_id` (`UUID` FK &rarr; `business_members.id`, nullable, `SET NULL` on delete) — Assigned staff specialist.
+   - `duration_minutes` (`INTEGER`, nullable) & `end_time` (`VARCHAR(20)`, nullable) — Slot overlap & double-booking protection.
+   - `price_usd` (`NUMERIC(10,2)`, nullable) & `payment_status` (`VARCHAR(30)`, default `'unpaid'`) — Financial tracking across Appointments & POS settlement.

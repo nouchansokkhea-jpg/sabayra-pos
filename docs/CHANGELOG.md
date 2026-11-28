@@ -4,6 +4,20 @@
 
 ---
 
+## [2.1.0] — 2026-11-28 (Category-Based Business Experience & Smart Industry Dashboards)
+
+### Added
+- Centralized 12-sector registry in `config/business_features.php` + `App\Services\Business\CategoryExperienceService` (`Feature/CategoryExperienceArchitectureTest`).
+- Additive idempotent migration `2026_11_28_000001_add_category_experience_columns.php` extending `products`, `product_variants`, `orders`, `order_items`, and `reservations` (for service appointments & booking codes).
+- Interactive 12-category workspace preview on onboarding (`/app/create-business`) and guided zero-data-loss Category & Custom Module settings (`PUT /app/settings/experience`).
+- Category-driven sidebar navigation (`layouts/business-nav-links.blade.php`) and `DashboardExperienceService` with personalized panel visibility (`POST /app/dashboard/widgets`).
+- Category-aware product/service forms & Touch POS upgrades: barcode/SKU instant lookup (`GET /app/pos/lookup-barcode`), café/milk-tea sugar & ice presets, fashion size/color variant stock tracking, bakery pre-orders, and service staff/booking checkout.
+- Category-adapted public storefronts (`menu` vs `catalog` vs `booking` mode), online service slot scheduler & booking status pass (`/{slug}/booking-slots`, `/{slug}/book`, `/{slug}/booking/{booking_code}`), and category-filtered QR Studio.
+- Industry-specific reports, commercial analytics, and category-grounded `AIContextService` prompts.
+- Verified with 192 PHPUnit tests (1,508 assertions, 0 failures) and production `vite build`.
+
+---
+
 ## [Unreleased] — 2026-11-23
 
 ### Added
