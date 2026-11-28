@@ -21,6 +21,7 @@ class Order extends Model
         'order_type',
         'table_id',
         'customer_id',
+        'assigned_staff_id',
         'customer_name',
         'customer_phone',
         'delivery_address',
@@ -48,6 +49,8 @@ class Order extends Model
         'payment_collected_by',
         'paid_at',
         'notes',
+        'scheduled_for',
+        'pos_metadata',
     ];
 
     protected function casts(): array
@@ -67,6 +70,8 @@ class Order extends Model
             'payment_verified_at' => 'datetime',
             'payment_collected_at' => 'datetime',
             'paid_at' => 'datetime',
+            'scheduled_for' => 'datetime',
+            'pos_metadata' => 'array',
         ];
     }
 
@@ -83,6 +88,14 @@ class Order extends Model
     public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class, 'customer_id');
+    }
+
+    /**
+     * Staff member or specialist assigned to this order or service appointment.
+     */
+    public function assignedStaff(): BelongsTo
+    {
+        return $this->belongsTo(BusinessMember::class, 'assigned_staff_id');
     }
 
     public function items(): HasMany

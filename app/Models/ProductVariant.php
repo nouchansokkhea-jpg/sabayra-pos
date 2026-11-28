@@ -15,8 +15,12 @@ class ProductVariant extends Model
         'product_id',
         'name_en',
         'name_km',
+        'size',
+        'color',
+        'shade',
         'price_adjustment',
         'sku',
+        'barcode',
         'stock_quantity',
         'is_default',
     ];

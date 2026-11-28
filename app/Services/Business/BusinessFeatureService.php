@@ -7,23 +7,11 @@ use App\Models\Business;
 class BusinessFeatureService
 {
     /**
-     * Check if a given business type has access to a specific operational feature.
+     * Check if a given business category has access to a specific operational feature.
      */
     public static function canAccess(?Business $business, string $feature): bool
     {
-        if (!$business) {
-            return false;
-        }
-
-        $type = $business->business_type ?? $business->category ?? 'restaurant';
-        $config = config("business_features.categories.{$type}.features");
-
-        if (is_array($config) && array_key_exists($feature, $config)) {
-            return (bool) $config[$feature];
-        }
-
-        // Default to true if unconfigured
-        return true;
+        return app(CategoryExperienceService::class)->isModuleEnabled($business, $feature);
     }
 
     /**
@@ -39,12 +27,13 @@ class BusinessFeatureService
      */
     public static function getTerminology(?Business $business, string $key, string $default): string
     {
-        if (!$business) {
+        if (! $business) {
             return $default;
         }
 
-        $type = $business->business_type ?? $business->category ?? 'restaurant';
-        return config("business_features.categories.{$type}.terminology.{$key}", $default);
+        $terminology = app(CategoryExperienceService::class)->terminology($business);
+
+        return (string) ($terminology[$key] ?? $default);
     }
 
     /**
@@ -52,11 +41,12 @@ class BusinessFeatureService
      */
     public static function getDefaultTemplate(?Business $business): string
     {
-        if (!$business) {
+        if (! $business) {
             return 'restaurant';
         }
 
-        $type = $business->business_type ?? $business->category ?? 'restaurant';
-        return config("business_features.categories.{$type}.default_template", 'restaurant');
+        $config = app(CategoryExperienceService::class)->configFor($business);
+
+        return (string) ($config['default_template'] ?? 'restaurant');
     }
 }

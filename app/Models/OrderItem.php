@@ -22,6 +22,7 @@ class OrderItem extends Model
         'quantity',
         'subtotal',
         'notes',
+        'options_json',
     ];
 
     protected function casts(): array
@@ -30,6 +31,7 @@ class OrderItem extends Model
             'unit_price' => 'decimal:2',
             'quantity' => 'decimal:2',
             'subtotal' => 'decimal:2',
+            'options_json' => 'array',
         ];
     }
 
