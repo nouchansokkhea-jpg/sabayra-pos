@@ -1,7 +1,19 @@
-<x-business-layout title="Create Product" heading="Add New Product">
+@php
+    $features = $catalogFeatures ?? [];
+    $itemLabel = $terminology['item_singular'] ?? 'Product';
+    $defaultType = old('product_type', $defaultProductType ?? 'food');
+    $showBarcode = (bool) ($features['barcode'] ?? false);
+    $showBrand = (bool) ($features['brands'] ?? false);
+    $showExpiry = (bool) ($features['expiry_tracking'] ?? false);
+    $showDuration = (bool) ($features['service_bookings'] ?? false);
+    $showMatrix = (bool) ($features['variant_matrix'] ?? false);
+@endphp
+
+<x-business-layout title="Add {{ $itemLabel }}" heading="Add New {{ $itemLabel }} · {{ $categoryMeta['name_en'] ?? 'Business' }}">
 <div class="max-w-4xl p-6 bg-white border border-gray-100 rounded-2xl shadow-xs dark:bg-gray-800 dark:border-gray-700/60"
      x-data="{
-         trackInventory: {{ old('track_inventory') ? 'true' : 'false' }},
+         trackInventory: {{ old('track_inventory', ($showBarcode || $showExpiry) ? 'true' : 'false') ? 'true' : 'false' }},
+         productType: '{{ $defaultType }}',
          variants: []
      }">
     <form method="POST" action="{{ route('business.products.store') }}" class="space-y-8">
@@ -9,18 +21,18 @@
 
         <!-- Section 1: Basic Information -->
         <div>
-            <h3 class="text-xs font-bold text-gray-900 dark:text-white uppercase tracking-wider mb-4 pb-2 border-b border-gray-100 dark:border-gray-700">1. Product Identity</h3>
+            <h3 class="text-xs font-bold text-gray-900 dark:text-white uppercase tracking-wider mb-4 pb-2 border-b border-gray-100 dark:border-gray-700">1. {{ $itemLabel }} Identity</h3>
             <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
                 <div>
-                    <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">Product Name (English) *</label>
+                    <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">{{ $itemLabel }} Name (English) *</label>
                     <input type="text" name="name_en" value="{{ old('name_en') }}" required
-                           placeholder="e.g. Traditional Fish Amok, Iced Latte, Silk Scarf..."
+                           placeholder="e.g. Traditional Fish Amok, Iced Latte, Haircut, Cotton Tee..."
                            class="w-full text-sm rounded-xl border-gray-200 dark:border-gray-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 focus:border-orange-500 focus:ring-orange-500">
                     @error('name_en') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
                 </div>
 
                 <div>
-                    <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">Product Name (Khmer) - ឈ្មោះជាភាសាខ្មែរ</label>
+                    <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">{{ $itemLabel }} Name (Khmer) - ឈ្មោះជាភាសាខ្មែរ</label>
                     <input type="text" name="name_km" value="{{ old('name_km') }}"
                            placeholder="ឧ. អាម៉ុកត្រីបុរាណ, កាហ្វេឡាតេទឹកកក..."
                            class="w-full text-sm rounded-xl border-gray-200 dark:border-gray-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 font-khmer focus:border-orange-500 focus:ring-orange-500">
@@ -39,21 +51,60 @@
                 </div>
 
                 <div>
-                    <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">Product Type *</label>
-                    <select name="product_type" required class="w-full text-xs rounded-xl border-gray-200 dark:border-gray-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 focus:border-orange-500 focus:ring-orange-500">
-                        <option value="food" {{ old('product_type') === 'food' ? 'selected' : '' }}>Food & Dining</option>
-                        <option value="beverage" {{ old('product_type') === 'beverage' ? 'selected' : '' }}>Beverage & Drinks</option>
-                        <option value="retail" {{ old('product_type') === 'retail' ? 'selected' : '' }}>Retail Product</option>
-                        <option value="service" {{ old('product_type') === 'service' ? 'selected' : '' }}>Service</option>
-                        <option value="standard" {{ old('product_type') === 'standard' ? 'selected' : '' }}>General Standard Item</option>
+                    <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">Item Type *</label>
+                    <select name="product_type" x-model="productType" required class="w-full text-xs rounded-xl border-gray-200 dark:border-gray-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 focus:border-orange-500 focus:ring-orange-500">
+                        <option value="food" {{ $defaultType === 'food' ? 'selected' : '' }}>Food &amp; Dining</option>
+                        <option value="beverage" {{ $defaultType === 'beverage' ? 'selected' : '' }}>Beverage &amp; Drinks</option>
+                        <option value="retail" {{ $defaultType === 'retail' ? 'selected' : '' }}>Retail Product</option>
+                        <option value="service" {{ $defaultType === 'service' ? 'selected' : '' }}>Service / Appointment</option>
+                        <option value="standard" {{ $defaultType === 'standard' ? 'selected' : '' }}>General Standard Item</option>
                     </select>
                 </div>
 
                 <div>
                     <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">SKU / Item Code</label>
-                    <input type="text" name="sku" value="{{ old('sku') }}" placeholder="e.g. FOOD-001"
+                    <input type="text" name="sku" value="{{ old('sku') }}" placeholder="e.g. SKU-001"
                            class="w-full text-sm rounded-xl border-gray-200 dark:border-gray-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 focus:border-orange-500 focus:ring-orange-500">
                 </div>
+
+                @if ($showBarcode)
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">Barcode (EAN / UPC)</label>
+                        <input type="text" name="barcode" value="{{ old('barcode') }}" placeholder="Scan or enter barcode..."
+                               class="w-full text-sm rounded-xl border-gray-200 dark:border-gray-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 font-mono focus:border-orange-500 focus:ring-orange-500">
+                    </div>
+                @endif
+
+                @if ($showBrand)
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">Brand / Manufacturer</label>
+                        <input type="text" name="brand" value="{{ old('brand') }}" placeholder="e.g. Nike, L'Oreal, Coca-Cola..."
+                               class="w-full text-sm rounded-xl border-gray-200 dark:border-gray-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 focus:border-orange-500 focus:ring-orange-500">
+                    </div>
+                @endif
+
+                @if ($showExpiry)
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">Batch / Lot Number</label>
+                        <input type="text" name="batch_number" value="{{ old('batch_number') }}" placeholder="e.g. LOT-2026-11"
+                               class="w-full text-sm rounded-xl border-gray-200 dark:border-gray-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 font-mono focus:border-orange-500 focus:ring-orange-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">Expiry Date</label>
+                        <input type="date" name="expiry_date" value="{{ old('expiry_date') }}"
+                               class="w-full text-sm rounded-xl border-gray-200 dark:border-gray-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 focus:border-orange-500 focus:ring-orange-500">
+                    </div>
+                @endif
+
+                @if ($showDuration)
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">Service Duration (Minutes)</label>
+                        <input type="number" min="5" max="1440" step="5" name="duration_minutes" value="{{ old('duration_minutes', 60) }}"
+                               placeholder="60"
+                               class="w-full text-sm rounded-xl border-gray-200 dark:border-gray-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 focus:border-orange-500 focus:ring-orange-500">
+                    </div>
+                @endif
 
                 <div>
                     <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">Image URL</label>
@@ -132,21 +183,23 @@
             </div>
         </div>
 
-        <!-- Section 4: Variants & Options -->
+        <!-- Section 4: Variants & Matrix -->
         <div>
             <div class="flex items-center justify-between mb-4 pb-2 border-b border-gray-100 dark:border-gray-700">
-                <h3 class="text-xs font-bold text-gray-900 dark:text-white uppercase tracking-wider">4. Product Variants (Sizes / Options)</h3>
-                <button type="button" @click="variants.push({ name_en: '', name_km: '', price_adjustment: '0.00' })"
+                <h3 class="text-xs font-bold text-gray-900 dark:text-white uppercase tracking-wider">
+                    {{ $showMatrix ? '4. Size, Color / Shade & Variant Stock Matrix' : '4. Product Variants (Sizes / Options)' }}
+                </h3>
+                <button type="button" @click="variants.push({ name_en: '', name_km: '', size: '', color: '', shade: '', barcode: '', stock_quantity: '0', price_adjustment: '0.00' })"
                         class="text-xs font-bold text-orange-600 hover:text-orange-700 dark:text-orange-400">
                     + Add Variant Option
                 </button>
             </div>
 
             <template x-for="(variant, index) in variants" :key="index">
-                <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 mb-3 p-3 bg-gray-50 dark:bg-gray-750 rounded-xl border border-gray-100 dark:border-gray-700">
-                    <div>
+                <div class="grid grid-cols-1 sm:grid-cols-6 gap-2.5 mb-3 p-3 bg-gray-50 dark:bg-gray-900/50 rounded-xl border border-gray-100 dark:border-gray-700">
+                    <div class="sm:col-span-2">
                         <input type="text" :name="'variants[' + index + '][name_en]'" x-model="variant.name_en" required
-                               placeholder="e.g. Regular, Large, XL"
+                               placeholder="{{ $showMatrix ? 'Label e.g. M / Ivory' : 'e.g. Regular, Large, XL' }}"
                                class="w-full text-xs rounded-lg border-gray-200 dark:border-gray-600 dark:bg-gray-900 dark:text-white px-2.5 py-2">
                     </div>
                     <div>
@@ -154,11 +207,35 @@
                                placeholder="ឈ្មោះខ្មែរ (ឧ. ធំ)"
                                class="w-full text-xs rounded-lg border-gray-200 dark:border-gray-600 dark:bg-gray-900 dark:text-white px-2.5 py-2 font-khmer">
                     </div>
+                    @if ($showMatrix)
+                        <div>
+                            <input type="text" :name="'variants[' + index + '][size]'" x-model="variant.size"
+                                   placeholder="Size (S/M/L)"
+                                   class="w-full text-xs rounded-lg border-gray-200 dark:border-gray-600 dark:bg-gray-900 dark:text-white px-2.5 py-2">
+                        </div>
+                        <div>
+                            <input type="text" :name="'variants[' + index + '][color]'" x-model="variant.color"
+                                   placeholder="Color / Shade"
+                                   class="w-full text-xs rounded-lg border-gray-200 dark:border-gray-600 dark:bg-gray-900 dark:text-white px-2.5 py-2">
+                        </div>
+                    @endif
                     <div>
                         <input type="number" step="0.01" :name="'variants[' + index + '][price_adjustment]'" x-model="variant.price_adjustment" required
                                placeholder="Price adj (+/- $)"
                                class="w-full text-xs rounded-lg border-gray-200 dark:border-gray-600 dark:bg-gray-900 dark:text-white px-2.5 py-2">
                     </div>
+                    @if ($showMatrix || $showBarcode)
+                        <div>
+                            <input type="number" step="1" :name="'variants[' + index + '][stock_quantity]'" x-model="variant.stock_quantity"
+                                   placeholder="Stock qty"
+                                   class="w-full text-xs rounded-lg border-gray-200 dark:border-gray-600 dark:bg-gray-900 dark:text-white px-2.5 py-2">
+                        </div>
+                        <div class="sm:col-span-2">
+                            <input type="text" :name="'variants[' + index + '][barcode]'" x-model="variant.barcode"
+                                   placeholder="Variant Barcode"
+                                   class="w-full text-xs rounded-lg border-gray-200 dark:border-gray-600 dark:bg-gray-900 dark:text-white px-2.5 py-2 font-mono">
+                        </div>
+                    @endif
                     <div class="flex items-center justify-end">
                         <button type="button" @click="variants.splice(index, 1)" class="text-xs font-semibold text-red-600 hover:text-red-700">
                             Remove
@@ -166,7 +243,7 @@
                     </div>
                 </div>
             </template>
-            <p x-show="variants.length === 0" class="text-xs text-gray-400">No variants configured. Click "+ Add Variant Option" if this product has sizes or options.</p>
+            <p x-show="variants.length === 0" class="text-xs text-gray-400">No variants configured. Click "+ Add Variant Option" if this item has sizes, colors, shades, or options.</p>
         </div>
 
         <!-- Section 5: Available Add-ons -->

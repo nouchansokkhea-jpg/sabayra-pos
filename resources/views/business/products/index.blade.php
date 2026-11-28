@@ -1,11 +1,11 @@
-<x-business-layout title="Products" heading="Product Catalog">
+<x-business-layout title="{{ $terminology['catalog'] ?? 'Products' }}" heading="{{ $terminology['catalog'] ?? 'Product Catalog' }}">
 <div class="space-y-6">
-    <!-- Header with Filters & Search -->
-    <div class="p-4 bg-white border border-gray-100 rounded-2xl shadow-xs dark:bg-gray-800 dark:border-gray-700/60">
+    <!-- Header with Category-Aware Filters & Search -->
+    <div class="p-4 bg-white border border-gray-100 rounded-2xl shadow-xs dark:bg-gray-800 dark:border-gray-700/60 space-y-3">
         <form method="GET" action="{{ route('business.products.index') }}" class="grid grid-cols-1 gap-3 sm:grid-cols-4">
             <div class="sm:col-span-2">
                 <input type="text" name="search" value="{{ request('search') }}"
-                       placeholder="Search products by name, SKU..."
+                       placeholder="{{ ($catalogFeatures['barcode'] ?? false) ? 'Search by name, SKU, barcode, or brand...' : 'Search ' . strtolower($terminology['catalog'] ?? 'products') . ' by name or SKU...' }}"
                        class="w-full text-xs rounded-xl border-gray-200 dark:border-gray-700 dark:bg-gray-900 dark:text-white px-3 py-2.5 focus:border-orange-500 focus:ring-orange-500">
             </div>
 
@@ -25,10 +25,36 @@
                     Filter
                 </button>
                 <a href="{{ route('business.products.create') }}" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs transition shrink-0">
-                    + Add Product
+                    + Add {{ $terminology['item_singular'] ?? 'Product' }}
                 </a>
             </div>
         </form>
+
+        <div class="flex flex-wrap items-center justify-between gap-2 pt-1 text-[11px]">
+            <div class="flex flex-wrap items-center gap-2">
+                <a href="{{ route('business.products.index') }}"
+                   class="px-2.5 py-1 rounded-lg font-bold {{ !request('filter') ? 'bg-orange-100 text-orange-700 dark:bg-orange-950/60 dark:text-orange-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-900 dark:text-gray-300' }}">
+                    All
+                </a>
+                @if ($catalogFeatures['inventory'] ?? false)
+                    <a href="{{ route('business.products.index', ['filter' => 'low_stock']) }}"
+                       class="px-2.5 py-1 rounded-lg font-bold {{ request('filter') === 'low_stock' ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-900 dark:text-gray-300' }}">
+                        Low Stock Alerts
+                    </a>
+                @endif
+                @if ($catalogFeatures['expiry_tracking'] ?? false)
+                    <a href="{{ route('business.products.index', ['filter' => 'expiring_soon']) }}"
+                       class="px-2.5 py-1 rounded-lg font-bold {{ request('filter') === 'expiring_soon' ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-900 dark:text-gray-300' }}">
+                        Expiring Within 30d
+                    </a>
+                @endif
+            </div>
+            @if ($catalogFeatures['bulk_import'] ?? false)
+                <a href="{{ route('business.products.import') }}" class="font-bold text-orange-600 dark:text-orange-400 hover:underline">
+                    Bulk CSV / Barcode Import &rarr;
+                </a>
+            @endif
+        </div>
     </div>
 
     <!-- Products Table -->
@@ -66,7 +92,21 @@
                                             @endif
                                         </p>
                                         <p class="text-xs text-slate-700 dark:text-slate-200 font-khmer font-semibold">{{ $prod->name_km ?? '—' }}</p>
-                                        <span class="text-[11px] text-slate-600 dark:text-slate-300 font-mono font-medium">SKU: {{ $prod->sku ?? 'N/A' }}</span>
+                                        <div class="flex flex-wrap items-center gap-2 mt-0.5 text-[11px] text-slate-600 dark:text-slate-300 font-mono">
+                                            <span>SKU: {{ $prod->sku ?? 'N/A' }}</span>
+                                            @if ($prod->barcode)
+                                                <span>· Barcode: {{ $prod->barcode }}</span>
+                                            @endif
+                                            @if ($prod->brand)
+                                                <span class="font-sans font-bold text-orange-600 dark:text-orange-400">· {{ $prod->brand }}</span>
+                                            @endif
+                                            @if ($prod->duration_minutes)
+                                                <span class="font-sans font-bold text-sky-600 dark:text-sky-400">· {{ $prod->duration_minutes }}m</span>
+                                            @endif
+                                            @if ($prod->expiry_date)
+                                                <span class="font-sans font-bold text-amber-600 dark:text-amber-400">· Exp: {{ $prod->expiry_date->format('Y-m-d') }}</span>
+                                            @endif
+                                        </div>
                                     </div>
                                 </div>
                             </td>

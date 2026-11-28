@@ -130,6 +130,7 @@ Route::post('/kitchen/orders/{order}/bump', [KitchenController::class, 'bump'])-
 
 // Touch POS
 Route::get('/pos', [PosController::class, 'index'])->name('pos.index');
+Route::get('/pos/lookup-barcode', [PosController::class, 'lookupBarcode'])->name('pos.lookup-barcode');
 Route::post('/pos/open-session', [PosController::class, 'openSession'])->name('pos.open-session');
 Route::post('/pos/close-session/{session}', [PosController::class, 'closeSession'])->name('pos.close-session');
 Route::post('/pos/checkout', [PosController::class, 'checkout'])->name('pos.checkout');

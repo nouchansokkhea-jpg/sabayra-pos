@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Business;
 use App\Http\Controllers\Controller;
 use App\Models\Business;
 use App\Models\BusinessBranch;
+use App\Models\BusinessMember;
 use App\Models\BusinessPaymentConfig;
 use App\Models\Category;
 use App\Models\Customer;
@@ -17,7 +18,9 @@ use App\Models\PosTransaction;
 use App\Models\Product;
 use App\Models\ProductAddon;
 use App\Models\ProductVariant;
+use App\Models\Reservation;
 use App\Models\RestaurantTable;
+use App\Services\Business\CategoryExperienceService;
 use App\Services\Inventory\RecipeDeductionService;
 use App\Services\Notifications\BusinessNotificationService;
 use App\Services\Payment\PaymentGatewayVisibilityService;
@@ -35,11 +38,12 @@ class PosController extends Controller
     public function __construct(
         private OrderPricingCalculator $pricingCalculator,
         private PaymentGatewayVisibilityService $visibilityService,
+        private CategoryExperienceService $categoryExperience,
     ) {
     }
 
     /**
-     * Display the Touch POS Terminal interface.
+     * Display the category-adapted Touch POS Terminal interface.
      */
     public function index(Request $request): View
     {
@@ -53,12 +57,15 @@ class PosController extends Controller
             ->latest()
             ->first();
 
-        $branches = BusinessBranch::where('is_active', true)->get();
-        $tables = RestaurantTable::where('is_active', true)->orderBy('table_number')->get();
+        $branches = BusinessBranch::where('business_id', $business->id)->where('is_active', true)->get();
+        $tables = RestaurantTable::where('business_id', $business->id)->where('is_active', true)->orderBy('table_number')->get();
 
-        $categories = Category::where('is_active', true)
-            ->with(['products' => function ($query) {
-                $query->where('is_available', true)->with(['variants', 'addons']);
+        $categories = Category::where('business_id', $business->id)
+            ->where('is_active', true)
+            ->with(['products' => function ($query) use ($business): void {
+                $query->where('business_id', $business->id)
+                    ->where('is_available', true)
+                    ->with(['variants', 'addons']);
             }])
             ->orderBy('sort_order')
             ->get();
@@ -74,6 +81,28 @@ class PosController extends Controller
 
         $paymentConfig = BusinessPaymentConfig::resolveForBusiness($business);
         $paymentMethods = $this->visibilityService->resolveCheckoutMethods($business);
+        $categoryMeta = $this->categoryExperience->meta($business);
+        $posConfig = $this->categoryExperience->posConfig($business);
+        $terminology = $this->categoryExperience->terminology($business);
+
+        $staffMembers = collect();
+        $upcomingBookings = collect();
+        if (! empty($posConfig['show_service_booking'])) {
+            $staffMembers = BusinessMember::with('user')
+                ->where('business_id', $business->id)
+                ->where('is_active', true)
+                ->get();
+
+            $upcomingBookings = Reservation::with(['serviceProduct', 'staffMember.user'])
+                ->where('business_id', $business->id)
+                ->where('booking_type', 'service')
+                ->whereIn('status', ['pending', 'confirmed'])
+                ->whereDate('reservation_date', '>=', now()->toDateString())
+                ->orderBy('reservation_date')
+                ->orderBy('reservation_time')
+                ->take(15)
+                ->get();
+        }
 
         return view('business.pos.index', compact(
             'business',
@@ -83,8 +112,63 @@ class PosController extends Controller
             'categories',
             'recentTransactions',
             'paymentConfig',
-            'paymentMethods'
+            'paymentMethods',
+            'categoryMeta',
+            'posConfig',
+            'terminology',
+            'staffMembers',
+            'upcomingBookings'
         ));
+    }
+
+    /**
+     * Look up a product or variant strictly within the active tenant by barcode or SKU.
+     */
+    public function lookupBarcode(Request $request): JsonResponse
+    {
+        $business = TenantContext::get();
+        $validated = $request->validate([
+            'code' => ['required', 'string', 'max:120'],
+        ]);
+
+        $code = trim($validated['code']);
+
+        $product = Product::where('business_id', $business->id)
+            ->where('is_available', true)
+            ->where(function ($q) use ($code): void {
+                $q->where('barcode', $code)->orWhere('sku', $code);
+            })
+            ->with(['variants', 'addons'])
+            ->first();
+
+        $matchedVariant = null;
+
+        if (! $product) {
+            $matchedVariant = ProductVariant::query()
+                ->where(function ($q) use ($code): void {
+                    $q->where('barcode', $code)->orWhere('sku', $code);
+                })
+                ->whereHas('product', function ($q) use ($business): void {
+                    $q->where('business_id', $business->id)->where('is_available', true);
+                })
+                ->with(['product.variants', 'product.addons'])
+                ->first();
+
+            $product = $matchedVariant?->product;
+        }
+
+        if (! $product) {
+            return response()->json([
+                'found' => false,
+                'message' => "No active item matches barcode or SKU '{$code}'.",
+            ], 404);
+        }
+
+        return response()->json([
+            'found' => true,
+            'product' => $product,
+            'variant' => $matchedVariant,
+        ]);
     }
 
     /**
@@ -175,19 +259,24 @@ class PosController extends Controller
         }
 
         $validated = $request->validate([
-            'order_type' => ['required', 'string', 'in:dine_in,takeaway,delivery'],
+            'order_type' => ['required', 'string', 'in:dine_in,takeaway,delivery,service'],
             'table_number' => ['nullable', 'string', 'max:50'],
             'customer_name' => ['nullable', 'string', 'max:150'],
             'customer_phone' => ['nullable', 'string', 'max:50'],
+            'assigned_staff_id' => ['nullable', 'exists:business_members,id'],
+            'reservation_id' => ['nullable', 'exists:reservations,id'],
+            'scheduled_for' => ['nullable', 'date'],
             'payment_method' => ['required', 'string', 'in:cash,cod,khqr,bakong_khqr,aba_payway,bank_transfer,static_qr,card'],
             'amount_tendered' => ['nullable', 'numeric', 'min:0'],
             'discount_amount' => ['nullable', 'numeric', 'min:0'],
             'notes' => ['nullable', 'string', 'max:500'],
+            'pos_metadata' => ['nullable', 'array'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_id' => ['required', 'exists:products,id'],
             'items.*.variant_id' => ['nullable', 'exists:product_variants,id'],
             'items.*.addons' => ['nullable', 'array'],
             'items.*.addons.*' => ['exists:product_addons,id'],
+            'items.*.options' => ['nullable', 'array'],
             'items.*.quantity' => ['required', 'numeric', 'min:1', 'max:500'],
             'items.*.notes' => ['nullable', 'string', 'max:255'],
         ]);
@@ -195,6 +284,18 @@ class PosController extends Controller
         $paymentMethod = $validated['payment_method'] === 'bakong_khqr' ? 'khqr' : $validated['payment_method'];
         $customerName = ! empty($validated['customer_name']) ? $validated['customer_name'] : 'Walk-in Guest';
         $customerPhone = ! empty($validated['customer_phone']) ? $validated['customer_phone'] : null;
+
+        $assignedStaff = null;
+        if (! empty($validated['assigned_staff_id'])) {
+            $assignedStaff = BusinessMember::where('business_id', $business->id)
+                ->find($validated['assigned_staff_id']);
+        }
+
+        $linkedReservation = null;
+        if (! empty($validated['reservation_id'])) {
+            $linkedReservation = Reservation::where('business_id', $business->id)
+                ->find($validated['reservation_id']);
+        }
 
         $tableId = null;
         if ($validated['order_type'] === 'dine_in' && ! empty($validated['table_number'])) {
@@ -204,7 +305,7 @@ class PosController extends Controller
             $tableId = $table?->id;
         }
 
-        $result = DB::transaction(function () use ($business, $activeSession, $user, $validated, $paymentMethod, $customerName, $customerPhone, $tableId): array {
+        $result = DB::transaction(function () use ($business, $activeSession, $user, $validated, $paymentMethod, $customerName, $customerPhone, $tableId, $assignedStaff, $linkedReservation): array {
             Business::whereKey($business->id)->lockForUpdate()->first();
 
             $customerId = null;
@@ -233,6 +334,7 @@ class PosController extends Controller
 
                 $unitPrice = (float) $product->effective_price;
                 $variantName = null;
+                $variant = null;
 
                 if (! empty($itemData['variant_id'])) {
                     $variant = ProductVariant::where('product_id', $product->id)->find($itemData['variant_id']);
@@ -260,6 +362,19 @@ class PosController extends Controller
                     }
                 }
 
+                $options = is_array($itemData['options'] ?? null) ? $itemData['options'] : [];
+                $optionParts = [];
+                foreach (['temp', 'sugar', 'ice', 'size', 'color'] as $optKey) {
+                    if (! empty($options[$optKey])) {
+                        $optionParts[] = (string) $options[$optKey];
+                    }
+                }
+                $noteText = trim((string) ($itemData['notes'] ?? ''));
+                if ($optionParts !== []) {
+                    $optionSummary = implode(' · ', $optionParts);
+                    $noteText = $noteText !== '' ? "{$optionSummary} — {$noteText}" : $optionSummary;
+                }
+
                 $subtotal += $itemSubtotal;
 
                 $preparedItems[] = [
@@ -270,9 +385,14 @@ class PosController extends Controller
                     'unit_price' => $unitPrice,
                     'quantity' => $quantity,
                     'subtotal' => $itemSubtotal,
-                    'notes' => $itemData['notes'] ?? null,
+                    'notes' => $noteText !== '' ? $noteText : null,
+                    'options_json' => $options !== [] ? $options : null,
                     'addons' => $itemAddons,
                 ];
+
+                if ($variant && (float) $variant->stock_quantity > 0) {
+                    $variant->decrement('stock_quantity', min($quantity, (float) $variant->stock_quantity));
+                }
 
                 if ($product->track_inventory) {
                     $product->decrement('stock_quantity', $quantity);
@@ -297,8 +417,11 @@ class PosController extends Controller
                 'order_type' => $validated['order_type'],
                 'table_id' => $tableId,
                 'customer_id' => $customerId,
+                'assigned_staff_id' => $assignedStaff?->id,
                 'customer_name' => $customerName,
                 'customer_phone' => $customerPhone,
+                'scheduled_for' => $validated['scheduled_for'] ?? null,
+                'pos_metadata' => $validated['pos_metadata'] ?? null,
                 'subtotal' => $pricing['gross_subtotal'],
                 'discount_amount' => $pricing['discount_amount'],
                 'service_charge_enabled' => $pricing['service_charge_enabled'],
@@ -332,6 +455,7 @@ class PosController extends Controller
                     'quantity' => $prepItem['quantity'],
                     'subtotal' => $prepItem['subtotal'],
                     'notes' => $prepItem['notes'],
+                    'options_json' => $prepItem['options_json'],
                 ]);
 
                 foreach ($prepItem['addons'] as $add) {
@@ -371,6 +495,13 @@ class PosController extends Controller
             if ($customer) {
                 $customer->increment('total_orders');
                 $customer->increment('total_spent', $pricing['total_amount']);
+            }
+
+            if ($linkedReservation) {
+                $linkedReservation->update([
+                    'status' => 'completed',
+                    'payment_status' => $isCodDeferred ? 'pending' : 'paid',
+                ]);
             }
 
             (new RecipeDeductionService())->deductOrderIngredients($order);

@@ -18,6 +18,35 @@
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
+@php
+    $posCfg = $posConfig ?? [];
+    $allowedOrderTypes = (array) ($posCfg['allowed_order_types'] ?? ['dine_in', 'takeaway', 'delivery']);
+    $defaultOrderType = (string) ($posCfg['default_order_type'] ?? ($allowedOrderTypes[0] ?? 'dine_in'));
+    $showTableSelector = (bool) ($posCfg['show_table_selector'] ?? true);
+    $showBarcodeScanner = (bool) ($posCfg['show_barcode_scanner'] ?? false);
+    $showDrinkPresets = (bool) ($posCfg['show_drink_presets'] ?? false);
+    $showVariantMatrix = (bool) ($posCfg['show_variant_matrix'] ?? false);
+    $showPreOrder = (bool) ($posCfg['show_pre_order'] ?? false);
+    $showServiceBooking = (bool) ($posCfg['show_service_booking'] ?? false);
+    $orderTypeLabels = [
+        'dine_in' => '🍽️ Dine-In',
+        'takeaway' => '🛍️ Takeaway',
+        'delivery' => '🛵 Delivery',
+        'service' => '✨ In-Shop Service',
+    ];
+    $bookingsJs = \Illuminate\Support\Js::from(
+        ($upcomingBookings ?? collect())->map(fn ($b): array => [
+            'id' => $b->id,
+            'booking_code' => $b->booking_code,
+            'customer_name' => $b->customer_name,
+            'customer_phone' => $b->customer_phone,
+            'staff_member_id' => $b->staff_member_id,
+            'service_product_id' => $b->service_product_id,
+            'label' => trim(($b->booking_code ?: 'Booking') . ' - ' . $b->customer_name . ' (' . ($b->serviceProduct?->name_en ?? 'Service') . ' @ ' . $b->reservation_time . ')'),
+        ])->values()->all()
+    );
+@endphp
+
 <body class="h-full overflow-hidden select-none bg-slate-900 text-slate-100 font-sans"
       x-data="posApp()"
       x-cloak>
@@ -94,6 +123,11 @@
                     <h1 class="font-extrabold text-base text-white tracking-tight flex items-center gap-2">
                         <span>{{ $business->name }}</span>
                         <span class="text-xs px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-mono font-bold">POS</span>
+                        @if(!empty($categoryMeta['name_en']))
+                            <span class="hidden md:inline-block text-[11px] px-2 py-0.5 rounded bg-slate-800 text-orange-300 border border-slate-700 font-bold">
+                                {{ $categoryMeta['name_en'] }}
+                            </span>
+                        @endif
                     </h1>
                 </div>
             </div>
@@ -117,13 +151,27 @@
         <div class="flex-1 flex overflow-hidden">
             <!-- Left / Catalog Area -->
             <div class="flex-1 flex flex-col bg-slate-900 overflow-hidden border-r border-slate-800">
-                <!-- Search & Category Filters Bar -->
+                <!-- Search, Barcode Scan & Category Filters Bar -->
                 <div class="p-3 bg-slate-950/60 border-b border-slate-800/80 space-y-2">
-                    <div class="relative">
-                        <svg class="w-4 h-4 absolute left-3.5 top-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                        <input type="text" x-model="searchQuery" placeholder="{{ __('Search products by name, code or SKU...') }}"
-                               class="w-full bg-slate-900 border border-slate-800 rounded-xl pl-10 pr-4 py-2 text-sm text-slate-200 placeholder-slate-500 focus:ring-emerald-500 focus:border-emerald-500">
+                    <div class="flex flex-col sm:flex-row gap-2">
+                        <div class="relative flex-1">
+                            <svg class="w-4 h-4 absolute left-3.5 top-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                            <input type="text" x-model="searchQuery" placeholder="Search {{ strtolower($terminology['catalog'] ?? 'items') }} by name, SKU, barcode or brand..."
+                                   class="w-full bg-slate-900 border border-slate-800 rounded-xl pl-10 pr-4 py-2 text-sm text-slate-200 placeholder-slate-500 focus:ring-emerald-500 focus:border-emerald-500">
+                        </div>
+                        @if ($showBarcodeScanner)
+                            <div class="flex items-center gap-1.5 sm:w-80">
+                                <input type="text" x-model="barcodeInput" @keydown.enter.prevent="scanBarcode()" autofocus
+                                       placeholder="Scan barcode / SKU & Enter..."
+                                       class="w-full bg-slate-900 border border-emerald-500/50 rounded-xl px-3 py-2 text-sm font-mono text-emerald-300 placeholder-slate-500 focus:ring-emerald-500 focus:border-emerald-500">
+                                <button type="button" @click="scanBarcode()"
+                                        class="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shrink-0">
+                                    Scan
+                                </button>
+                            </div>
+                        @endif
                     </div>
+                    <div x-show="scanStatus" x-cloak class="text-xs font-bold px-3 py-1 rounded-lg bg-emerald-500/15 text-emerald-300 border border-emerald-500/30" x-text="scanStatus"></div>
 
                     <!-- Category Quick Select Pills -->
                     <div class="flex items-center space-x-2 overflow-x-auto no-scrollbar py-1">
@@ -147,8 +195,12 @@
                     <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3">
                         @foreach($categories as $category)
                             @foreach($category->products as $item)
-                                <div x-show="(selectedCategory === 'all' || selectedCategory === '{{ $category->id }}') && (!searchQuery || '{{ strtolower($item->name_en) }}'.includes(searchQuery.toLowerCase()) || '{{ strtolower($item->name_km ?? '') }}'.includes(searchQuery.toLowerCase()))"
-                                     @click="addItem({{ json_encode($item) }})"
+                                @php
+                                    $itemSearchKey = strtolower(trim($item->name_en . ' ' . ($item->name_km ?? '') . ' ' . ($item->sku ?? '') . ' ' . ($item->barcode ?? '') . ' ' . ($item->brand ?? '')));
+                                    $itemJson = \Illuminate\Support\Js::from($item);
+                                @endphp
+                                <div x-show="(selectedCategory === 'all' || selectedCategory === '{{ $category->id }}') && (!searchQuery || {{ \Illuminate\Support\Js::from($itemSearchKey) }}.includes(searchQuery.toLowerCase()))"
+                                     @click="addItem({{ $itemJson }})"
                                      class="bg-slate-800/80 hover:bg-slate-800 active:scale-95 border border-slate-700/60 hover:border-emerald-500/50 rounded-2xl p-3 flex flex-col justify-between cursor-pointer transition shadow-sm group">
                                     <div>
                                         <div class="aspect-video w-full rounded-xl bg-slate-900 overflow-hidden mb-2 relative flex items-center justify-center">
@@ -157,9 +209,14 @@
                                             @else
                                                 <span class="font-bold text-slate-600 text-xl">{{ strtoupper(substr($item->name_en, 0, 1)) }}</span>
                                             @endif
-                                            @if($item->variants->isNotEmpty() || $item->addons->isNotEmpty())
+                                            @if($item->variants->isNotEmpty() || $item->addons->isNotEmpty() || $showDrinkPresets)
                                                 <span class="absolute top-1.5 right-1.5 bg-emerald-500/90 text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow">
-                                                    Options
+                                                    {{ $showDrinkPresets ? 'Customize' : 'Options' }}
+                                                </span>
+                                            @endif
+                                            @if($item->duration_minutes)
+                                                <span class="absolute bottom-1.5 left-1.5 bg-slate-950/85 text-sky-300 text-[9px] font-bold px-1.5 py-0.5 rounded">
+                                                    {{ $item->duration_minutes }}m
                                                 </span>
                                             @endif
                                         </div>
@@ -168,6 +225,9 @@
                                         </h4>
                                         @if($item->name_km)
                                             <p class="text-[10px] text-slate-400 font-khmer mt-0.5 truncate">{{ $item->name_km }}</p>
+                                        @endif
+                                        @if($item->barcode || $item->brand)
+                                            <p class="text-[10px] text-slate-400 font-mono mt-0.5 truncate">{{ $item->brand ? $item->brand . ' · ' : '' }}{{ $item->barcode ?? $item->sku }}</p>
                                         @endif
                                     </div>
 
@@ -188,35 +248,61 @@
 
             <!-- Right / Cart Register Area -->
             <div class="w-96 lg:w-[420px] bg-slate-950 flex flex-col shrink-0">
-                <!-- Cart Header: Order Type & Table Selector -->
+                <!-- Cart Header: Order Type, Table, Staff & Schedule -->
                 <div class="p-3 border-b border-slate-800 space-y-2">
-                    <div class="grid grid-cols-3 gap-1 bg-slate-900 p-1 rounded-xl">
-                        <button type="button" @click="orderType = 'dine_in'"
-                                :class="orderType === 'dine_in' ? 'bg-emerald-600 text-white font-bold' : 'text-slate-400 hover:text-white font-medium'"
-                                class="py-1.5 rounded-lg text-xs transition">
-                            🍽️ Dine-In
-                        </button>
-                        <button type="button" @click="orderType = 'takeaway'"
-                                :class="orderType === 'takeaway' ? 'bg-emerald-600 text-white font-bold' : 'text-slate-400 hover:text-white font-medium'"
-                                class="py-1.5 rounded-lg text-xs transition">
-                            🛍️ Takeaway
-                        </button>
-                        <button type="button" @click="orderType = 'delivery'"
-                                :class="orderType === 'delivery' ? 'bg-emerald-600 text-white font-bold' : 'text-slate-400 hover:text-white font-medium'"
-                                class="py-1.5 rounded-lg text-xs transition">
-                            🛵 Delivery
-                        </button>
+                    <div class="grid grid-cols-{{ count($allowedOrderTypes) }} gap-1 bg-slate-900 p-1 rounded-xl">
+                        @foreach($allowedOrderTypes as $ot)
+                            <button type="button" @click="orderType = '{{ $ot }}'"
+                                    :class="orderType === '{{ $ot }}' ? 'bg-emerald-600 text-white font-bold' : 'text-slate-400 hover:text-white font-medium'"
+                                    class="py-1.5 rounded-lg text-xs transition">
+                                {{ $orderTypeLabels[$ot] ?? ucfirst(str_replace('_', ' ', $ot)) }}
+                            </button>
+                        @endforeach
                     </div>
 
-                    <div x-show="orderType === 'dine_in'" class="flex items-center gap-2">
-                        <label class="text-xs text-slate-400 shrink-0">Table:</label>
-                        <select x-model="selectedTable" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-slate-200 focus:ring-emerald-500">
-                            <option value="">Select Table...</option>
-                            @foreach($tables as $t)
-                                <option value="{{ $t->table_number }}">Table #{{ $t->table_number }} ({{ $t->name ?? 'Standard' }})</option>
-                            @endforeach
-                        </select>
-                    </div>
+                    @if($showTableSelector)
+                        <div x-show="orderType === 'dine_in'" class="flex items-center gap-2">
+                            <label class="text-xs text-slate-400 shrink-0">Table:</label>
+                            <select x-model="selectedTable" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-slate-200 focus:ring-emerald-500">
+                                <option value="">Select Table...</option>
+                                @foreach($tables as $t)
+                                    <option value="{{ $t->table_number }}">Table #{{ $t->table_number }} ({{ $t->name ?? 'Standard' }})</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    @endif
+
+                    @if($showPreOrder)
+                        <div class="flex items-center gap-2">
+                            <label class="text-[11px] text-slate-400 shrink-0">Pickup Time:</label>
+                            <input type="datetime-local" x-model="scheduledFor"
+                                   class="w-full bg-slate-900 border border-slate-800 rounded-xl px-2.5 py-1 text-xs text-slate-200 focus:ring-emerald-500">
+                        </div>
+                    @endif
+
+                    @if($showServiceBooking)
+                        <div class="space-y-1.5">
+                            @if(($upcomingBookings ?? collect())->isNotEmpty())
+                                <select x-model="reservationId" @change="applyBookingPreset()"
+                                        class="w-full bg-slate-900 border border-sky-500/40 rounded-xl px-2.5 py-1.5 text-xs text-sky-200 focus:ring-sky-500">
+                                    <option value="">Load Booked Appointment (Optional)...</option>
+                                    @foreach($upcomingBookings as $bk)
+                                        <option value="{{ $bk->id }}">{{ $bk->booking_code ?: 'Booking' }} · {{ $bk->customer_name }} ({{ $bk->reservation_time }})</option>
+                                    @endforeach
+                                </select>
+                            @endif
+                            <div class="grid grid-cols-2 gap-1.5">
+                                <select x-model="assignedStaffId" class="bg-slate-900 border border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-slate-200 focus:ring-emerald-500">
+                                    <option value="">Assign {{ $terminology['staff_assignee'] ?? 'Staff' }}...</option>
+                                    @foreach(($staffMembers ?? collect()) as $member)
+                                        <option value="{{ $member->id }}">{{ $member->user?->name ?? 'Staff' }}</option>
+                                    @endforeach
+                                </select>
+                                <input type="text" x-model="customerName" placeholder="Client name"
+                                       class="bg-slate-900 border border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-slate-200 placeholder-slate-500">
+                            </div>
+                        </div>
+                    @endif
                 </div>
 
                 <!-- Cart Items List -->
@@ -235,6 +321,9 @@
                                 <h5 class="text-xs font-bold text-slate-200 truncate" x-text="item.name"></h5>
                                 <template x-if="item.variant_name">
                                     <span class="text-[10px] text-slate-400" x-text="'(' + item.variant_name + ')'"></span>
+                                </template>
+                                <template x-if="item.options_summary">
+                                    <div class="text-[10px] text-orange-300 font-medium" x-text="item.options_summary"></div>
                                 </template>
                                 <template x-if="item.addons && item.addons.length > 0">
                                     <div class="text-[10px] text-slate-500" x-text="item.addons.map(a => '+' + a.name).join(', ')"></div>
@@ -306,22 +395,63 @@
                 <button type="button" @click="showCustomizerModal = false" class="text-slate-400 hover:text-white">&times;</button>
             </div>
 
-            <!-- Variants (Radio) -->
+            <!-- Variants (Size / Color / Shade / Option) -->
             <template x-if="customizingItem?.variants && customizingItem.variants.length > 0">
                 <div>
-                    <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Select Variant</label>
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-2">
+                        {{ $showVariantMatrix ? 'Select Size / Color / Shade' : 'Select Variant' }}
+                    </label>
                     <div class="grid grid-cols-2 gap-2">
                         <template x-for="v in customizingItem.variants" :key="v.id">
                             <button type="button" @click="selectedVariant = v"
                                     :class="selectedVariant?.id === v.id ? 'bg-emerald-600 text-white border-emerald-500' : 'bg-slate-800 text-slate-300 border-slate-700'"
                                     class="p-2.5 rounded-xl border text-left text-xs font-bold transition">
                                 <div x-text="v.name_en"></div>
-                                <div class="text-[10px] opacity-80" x-text="'+$' + Number(v.price_adjustment).toFixed(2)"></div>
+                                <div class="text-[10px] opacity-80 flex items-center justify-between gap-2">
+                                    <span x-text="(Number(v.price_adjustment) >= 0 ? '+$' : '-$') + Math.abs(Number(v.price_adjustment)).toFixed(2)"></span>
+                                    <span x-show="v.stock_quantity > 0" x-text="Number(v.stock_quantity) + ' left'"></span>
+                                </div>
                             </button>
                         </template>
                     </div>
                 </div>
             </template>
+
+            @if ($showDrinkPresets)
+                <!-- Fast Barista & Bubble Tea Drink Customizer -->
+                <div class="space-y-3 p-3 rounded-2xl bg-slate-950/70 border border-slate-800">
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1.5">Temperature</label>
+                        <div class="grid grid-cols-2 gap-1.5 text-xs">
+                            <template x-for="t in ['Iced', 'Hot']" :key="t">
+                                <button type="button" @click="drinkOptions.temp = t"
+                                        :class="drinkOptions.temp === t ? 'bg-orange-600 text-white font-bold' : 'bg-slate-800 text-slate-300'"
+                                        class="py-1.5 rounded-lg transition" x-text="t"></button>
+                            </template>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1.5">Sugar Level</label>
+                        <div class="grid grid-cols-5 gap-1 text-[11px]">
+                            <template x-for="s in ['0%', '25%', '50%', '75%', '100%']" :key="s">
+                                <button type="button" @click="drinkOptions.sugar = s"
+                                        :class="drinkOptions.sugar === s ? 'bg-emerald-600 text-white font-bold' : 'bg-slate-800 text-slate-300'"
+                                        class="py-1 rounded-lg transition" x-text="s"></button>
+                            </template>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1.5">Ice Level</label>
+                        <div class="grid grid-cols-4 gap-1 text-[11px]">
+                            <template x-for="ice in ['No Ice', 'Less Ice', 'Normal', 'Extra']" :key="ice">
+                                <button type="button" @click="drinkOptions.ice = ice"
+                                        :class="drinkOptions.ice === ice ? 'bg-sky-600 text-white font-bold' : 'bg-slate-800 text-slate-300'"
+                                        class="py-1 rounded-lg transition" x-text="ice"></button>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+            @endif
 
             <!-- Add-ons (Checkbox) -->
             <template x-if="customizingItem?.addons && customizingItem.addons.length > 0">
@@ -462,9 +592,19 @@
         function posApp() {
             return {
                 searchQuery: '',
+                barcodeInput: '',
+                scanStatus: '',
                 selectedCategory: 'all',
-                orderType: 'dine_in',
+                orderType: '{{ $defaultOrderType }}',
                 selectedTable: '',
+                scheduledFor: '',
+                assignedStaffId: '',
+                reservationId: '',
+                customerName: '',
+                customerPhone: '',
+                bookingsList: {{ $bookingsJs }},
+                showDrinkPresets: {{ $showDrinkPresets ? 'true' : 'false' }},
+                drinkOptions: { temp: 'Iced', sugar: '50%', ice: 'Normal' },
                 cart: [],
                 showCustomizerModal: false,
                 customizingItem: null,
@@ -476,14 +616,44 @@
                 amountTendered: 0.00,
                 isCheckingOut: false,
 
+                applyBookingPreset() {
+                    const b = this.bookingsList.find(x => x.id === this.reservationId);
+                    if (b) {
+                        this.customerName = b.customer_name || '';
+                        this.customerPhone = b.customer_phone || '';
+                        this.assignedStaffId = b.staff_member_id || '';
+                    }
+                },
+
+                async scanBarcode() {
+                    const code = (this.barcodeInput || '').trim();
+                    if (!code) return;
+                    this.scanStatus = '';
+                    try {
+                        const res = await fetch("{{ route('business.pos.lookup-barcode') }}?code=" + encodeURIComponent(code));
+                        const data = await res.json();
+                        if (res.ok && data.found && data.product) {
+                            this.addToCartDirect(data.product, data.variant || null, [], null);
+                            this.scanStatus = 'Added: ' + data.product.name_en + (data.variant ? ' (' + data.variant.name_en + ')' : '');
+                            this.barcodeInput = '';
+                        } else {
+                            this.scanStatus = data.message || 'Item not found for code: ' + code;
+                        }
+                    } catch (e) {
+                        this.scanStatus = 'Barcode lookup failed.';
+                    }
+                },
+
                 addItem(product) {
-                    if ((product.variants && product.variants.length > 0) || (product.addons && product.addons.length > 0)) {
+                    const needsDrinkCustomizer = this.showDrinkPresets && ['beverage', 'food'].includes(product.product_type || 'beverage');
+                    if ((product.variants && product.variants.length > 0) || (product.addons && product.addons.length > 0) || needsDrinkCustomizer) {
                         this.customizingItem = product;
-                        this.selectedVariant = product.variants ? product.variants[0] : null;
+                        this.selectedVariant = (product.variants && product.variants.length > 0) ? product.variants[0] : null;
                         this.selectedAddons = [];
+                        this.drinkOptions = { temp: 'Iced', sugar: '50%', ice: 'Normal' };
                         this.showCustomizerModal = true;
                     } else {
-                        this.addToCartDirect(product, null, []);
+                        this.addToCartDirect(product, null, [], null);
                     }
                 },
 
@@ -497,11 +667,12 @@
                 },
 
                 confirmCustomization() {
-                    this.addToCartDirect(this.customizingItem, this.selectedVariant, this.selectedAddons);
+                    const opts = this.showDrinkPresets ? { ...this.drinkOptions } : null;
+                    this.addToCartDirect(this.customizingItem, this.selectedVariant, this.selectedAddons, opts);
                     this.showCustomizerModal = false;
                 },
 
-                addToCartDirect(product, variant, addons) {
+                addToCartDirect(product, variant, addons, options = null) {
                     let unitPrice = Number(product.base_price);
                     if (variant) unitPrice += Number(variant.price_adjustment);
                     let addonCost = 0;
@@ -510,11 +681,15 @@
                     }
                     unitPrice += addonCost;
 
+                    const optionsKey = JSON.stringify(options || {});
                     const existingIndex = this.cart.findIndex(i =>
                         i.product_id === product.id &&
                         i.variant_id === (variant ? variant.id : null) &&
+                        JSON.stringify(i.options || {}) === optionsKey &&
                         JSON.stringify(i.addons?.map(a => a.id).sort()) === JSON.stringify(addons?.map(a => a.id).sort())
                     );
+
+                    const optionsSummary = options ? [options.temp, options.sugar, options.ice].filter(Boolean).join(' · ') : '';
 
                     if (existingIndex > -1) {
                         this.cart[existingIndex].quantity += 1;
@@ -525,6 +700,8 @@
                             variant_id: variant ? variant.id : null,
                             variant_name: variant ? variant.name_en : null,
                             addons: addons ? [...addons] : [],
+                            options: options,
+                            options_summary: optionsSummary,
                             unit_price: unitPrice,
                             quantity: 1,
                         });
@@ -602,12 +779,18 @@
                         const payload = {
                             order_type: this.orderType,
                             table_number: this.orderType === 'dine_in' ? this.selectedTable : null,
+                            customer_name: this.customerName || null,
+                            customer_phone: this.customerPhone || null,
+                            assigned_staff_id: this.assignedStaffId || null,
+                            reservation_id: this.reservationId || null,
+                            scheduled_for: this.scheduledFor || null,
                             payment_method: this.paymentMethod,
                             amount_tendered: this.amountTendered,
                             items: this.cart.map(i => ({
                                 product_id: i.product_id,
                                 variant_id: i.variant_id,
                                 addons: i.addons ? i.addons.map(a => a.id) : [],
+                                options: i.options || null,
                                 quantity: i.quantity,
                             })),
                         };

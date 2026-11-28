@@ -1,11 +1,34 @@
-<x-business-layout title="Edit Product" heading="Edit Product: {{ $product->name_en }}">
+@php
+    $features = $catalogFeatures ?? [];
+    $itemLabel = $terminology['item_singular'] ?? 'Product';
+    $showBarcode = (bool) ($features['barcode'] ?? false);
+    $showBrand = (bool) ($features['brands'] ?? false);
+    $showExpiry = (bool) ($features['expiry_tracking'] ?? false);
+    $showDuration = (bool) ($features['service_bookings'] ?? false);
+    $showMatrix = (bool) ($features['variant_matrix'] ?? false);
+    $initialVariants = $product->variants->map(fn ($v): array => [
+        'id' => $v->id,
+        'name_en' => $v->name_en,
+        'name_km' => $v->name_km ?? '',
+        'size' => $v->size ?? '',
+        'color' => $v->color ?? '',
+        'shade' => $v->shade ?? '',
+        'barcode' => $v->barcode ?? '',
+        'stock_quantity' => (string) ((float) ($v->stock_quantity ?? 0)),
+        'price_adjustment' => (string) ((float) ($v->price_adjustment ?? 0)),
+    ])->values()->all();
+@endphp
+
+<x-business-layout title="Edit {{ $itemLabel }}" heading="Edit {{ $itemLabel }}: {{ $product->name_en }}">
 <div class="max-w-4xl p-6 bg-white border border-gray-100 rounded-2xl shadow-xs dark:bg-gray-800 dark:border-gray-700/60"
      x-data="{
-         trackInventory: {{ old('track_inventory', $product->track_inventory) ? 'true' : 'false' }}
+         trackInventory: {{ old('track_inventory', $product->track_inventory) ? 'true' : 'false' }},
+         variants: {{ \Illuminate\Support\Js::from($initialVariants) }}
      }">
     <form method="POST" action="{{ route('business.products.update', $product) }}" class="space-y-8">
         @csrf
         @method('PUT')
+        <input type="hidden" name="variants_submitted" value="1">
 
         <!-- Section 1: Basic Information -->
         <div>
@@ -58,6 +81,44 @@
                     <input type="text" name="sku" value="{{ old('sku', $product->sku) }}"
                            class="w-full text-sm rounded-xl border-gray-200 dark:border-gray-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 focus:border-orange-500 focus:ring-orange-500">
                 </div>
+
+                @if ($showBarcode || $product->barcode)
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">Barcode (EAN / UPC)</label>
+                        <input type="text" name="barcode" value="{{ old('barcode', $product->barcode) }}"
+                               class="w-full text-sm rounded-xl border-gray-200 dark:border-gray-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 font-mono focus:border-orange-500 focus:ring-orange-500">
+                    </div>
+                @endif
+
+                @if ($showBrand || $product->brand)
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">Brand / Manufacturer</label>
+                        <input type="text" name="brand" value="{{ old('brand', $product->brand) }}"
+                               class="w-full text-sm rounded-xl border-gray-200 dark:border-gray-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 focus:border-orange-500 focus:ring-orange-500">
+                    </div>
+                @endif
+
+                @if ($showExpiry || $product->expiry_date || $product->batch_number)
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">Batch / Lot Number</label>
+                        <input type="text" name="batch_number" value="{{ old('batch_number', $product->batch_number) }}"
+                               class="w-full text-sm rounded-xl border-gray-200 dark:border-gray-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 font-mono focus:border-orange-500 focus:ring-orange-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">Expiry Date</label>
+                        <input type="date" name="expiry_date" value="{{ old('expiry_date', $product->expiry_date?->format('Y-m-d')) }}"
+                               class="w-full text-sm rounded-xl border-gray-200 dark:border-gray-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 focus:border-orange-500 focus:ring-orange-500">
+                    </div>
+                @endif
+
+                @if ($showDuration || $product->duration_minutes)
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">Service Duration (Minutes)</label>
+                        <input type="number" min="5" max="1440" step="5" name="duration_minutes" value="{{ old('duration_minutes', $product->duration_minutes) }}"
+                               class="w-full text-sm rounded-xl border-gray-200 dark:border-gray-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 focus:border-orange-500 focus:ring-orange-500">
+                    </div>
+                @endif
 
                 <div class="sm:col-span-2">
                     <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">Primary Image URL</label>
@@ -134,7 +195,68 @@
             </div>
         </div>
 
-        <!-- Section 4: Add-ons -->
+        <!-- Section 4: Variants & Matrix -->
+        <div>
+            <div class="flex items-center justify-between mb-4 pb-2 border-b border-gray-100 dark:border-gray-700">
+                <h3 class="text-xs font-bold text-gray-900 dark:text-white uppercase tracking-wider">4. Variants (Sizes, Colors &amp; Stock)</h3>
+                <button type="button" @click="variants.push({ id: '', name_en: '', name_km: '', size: '', color: '', shade: '', barcode: '', stock_quantity: '0', price_adjustment: '0.00' })"
+                        class="text-xs font-bold text-orange-600 hover:text-orange-700 dark:text-orange-400">
+                    + Add Variant Option
+                </button>
+            </div>
+
+            <template x-for="(variant, index) in variants" :key="index">
+                <div class="grid grid-cols-1 sm:grid-cols-6 gap-2.5 mb-3 p-3 bg-gray-50 dark:bg-gray-900/50 rounded-xl border border-gray-100 dark:border-gray-700">
+                    <input type="hidden" :name="'variants[' + index + '][id]'" x-model="variant.id">
+                    <div class="sm:col-span-2">
+                        <input type="text" :name="'variants[' + index + '][name_en]'" x-model="variant.name_en" required
+                               placeholder="Variant Name"
+                               class="w-full text-xs rounded-lg border-gray-200 dark:border-gray-600 dark:bg-gray-900 dark:text-white px-2.5 py-2">
+                    </div>
+                    <div>
+                        <input type="text" :name="'variants[' + index + '][name_km]'" x-model="variant.name_km"
+                               placeholder="ឈ្មោះខ្មែរ"
+                               class="w-full text-xs rounded-lg border-gray-200 dark:border-gray-600 dark:bg-gray-900 dark:text-white px-2.5 py-2 font-khmer">
+                    </div>
+                    @if ($showMatrix)
+                        <div>
+                            <input type="text" :name="'variants[' + index + '][size]'" x-model="variant.size"
+                                   placeholder="Size"
+                                   class="w-full text-xs rounded-lg border-gray-200 dark:border-gray-600 dark:bg-gray-900 dark:text-white px-2.5 py-2">
+                        </div>
+                        <div>
+                            <input type="text" :name="'variants[' + index + '][color]'" x-model="variant.color"
+                                   placeholder="Color / Shade"
+                                   class="w-full text-xs rounded-lg border-gray-200 dark:border-gray-600 dark:bg-gray-900 dark:text-white px-2.5 py-2">
+                        </div>
+                    @endif
+                    <div>
+                        <input type="number" step="0.01" :name="'variants[' + index + '][price_adjustment]'" x-model="variant.price_adjustment" required
+                               placeholder="Price adj"
+                               class="w-full text-xs rounded-lg border-gray-200 dark:border-gray-600 dark:bg-gray-900 dark:text-white px-2.5 py-2">
+                    </div>
+                    @if ($showMatrix || $showBarcode)
+                        <div>
+                            <input type="number" step="1" :name="'variants[' + index + '][stock_quantity]'" x-model="variant.stock_quantity"
+                                   placeholder="Stock qty"
+                                   class="w-full text-xs rounded-lg border-gray-200 dark:border-gray-600 dark:bg-gray-900 dark:text-white px-2.5 py-2">
+                        </div>
+                        <div class="sm:col-span-2">
+                            <input type="text" :name="'variants[' + index + '][barcode]'" x-model="variant.barcode"
+                                   placeholder="Variant Barcode"
+                                   class="w-full text-xs rounded-lg border-gray-200 dark:border-gray-600 dark:bg-gray-900 dark:text-white px-2.5 py-2 font-mono">
+                        </div>
+                    @endif
+                    <div class="flex items-center justify-end">
+                        <button type="button" @click="variants.splice(index, 1)" class="text-xs font-semibold text-red-600 hover:text-red-700">
+                            Remove
+                        </button>
+                    </div>
+                </div>
+            </template>
+        </div>
+
+        <!-- Section 4b: Add-ons -->
         @if ($addons->count() > 0)
             <div>
                 <h3 class="text-xs font-bold text-gray-900 dark:text-white uppercase tracking-wider mb-4 pb-2 border-b border-gray-100 dark:border-gray-700">4. Linked Add-ons</h3>
